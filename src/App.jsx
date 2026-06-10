@@ -34,14 +34,17 @@ import {
   AlertCircle
 } from 'lucide-react';
 
-// Cable Standards
+// Exchange rate: 1 USD = 130 KES (approx)
+const USD_TO_KES = 130;
+
+// Cable Standards in KES
 const cableStandards = {
   cat5e: {
     name: "Cat5e",
     speed: "Up to 1 Gbps",
     distance: "100m",
-    price: 0.3,
-    priceUnit: "$/m",
+    price: 0.3 * USD_TO_KES,
+    priceUnit: "KES/m",
     description: "Budget option",
     color: "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400",
     maxDistance: 100
@@ -50,8 +53,8 @@ const cableStandards = {
     name: "Cat6",
     speed: "Up to 10 Gbps",
     distance: "55m",
-    price: 0.5,
-    priceUnit: "$/m",
+    price: 0.5 * USD_TO_KES,
+    priceUnit: "KES/m",
     description: "Recommended",
     color: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
     maxDistance: 55
@@ -60,8 +63,8 @@ const cableStandards = {
     name: "Cat6A",
     speed: "Up to 10 Gbps",
     distance: "100m",
-    price: 0.85,
-    priceUnit: "$/m",
+    price: 0.85 * USD_TO_KES,
+    priceUnit: "KES/m",
     description: "Best performance",
     color: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400",
     maxDistance: 100
@@ -70,8 +73,8 @@ const cableStandards = {
     name: "Fiber",
     speed: "Up to 100 Gbps",
     distance: "2000m",
-    price: 2.5,
-    priceUnit: "$/m",
+    price: 2.5 * USD_TO_KES,
+    priceUnit: "KES/m",
     description: "Backbone / long runs",
     color: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400",
     maxDistance: 2000
@@ -85,13 +88,21 @@ const defaultRooms = [
   { id: 3, name: "Backyard", icon: "TreePine" }
 ];
 
+// Device type configurations
+const deviceTypes = {
+  cctv: { label: "CCTV Camera", baseCable: 45, color: "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400", poe: true },
+  data: { label: "Data Point", baseCable: 35, color: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400", poe: false },
+  ap: { label: "Access Point", baseCable: 40, color: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400", poe: true },
+  voip: { label: "VoIP Phone", baseCable: 30, color: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400", poe: true }
+};
+
 function App() {
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved === 'true' || (saved === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
   });
   
-  const [setupStep, setSetupStep] = useState('rooms'); // 'rooms', 'cable', 'devices'
+  const [setupStep, setSetupStep] = useState('rooms');
   const [rooms, setRooms] = useState(() => {
     const saved = localStorage.getItem('cableiq_rooms');
     return saved ? JSON.parse(saved) : defaultRooms;
@@ -118,11 +129,11 @@ function App() {
   const [showNewProject, setShowNewProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
   const [showExportSuccess, setShowExportSuccess] = useState(false);
+  const [activeTab, setActiveTab] = useState('planner');
   const [buildingConfig, setBuildingConfig] = useState({
     width: 20,
     height: 15,
     floors: 1,
-    ceilingHeight: 3,
     serverRoomDistance: 25,
     serviceLoop: 3
   });
@@ -152,6 +163,11 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  // Format currency in KES
+  const formatKES = (amount) => {
+    return `KES ${Math.round(amount).toLocaleString()}`;
+  };
 
   // Add custom room
   const addCustomRoom = () => {
@@ -186,18 +202,18 @@ function App() {
 
   const calculateMaterials = () => {
     const totalCableRaw = calculateTotalCableLength();
-    const totalCable = totalCableRaw * (1 + wastageFactor / 100);
-    const cableBoxes = Math.ceil(totalCable / 305);
+    const totalCableWithWaste = totalCableRaw * (1 + wastageFactor / 100);
+    const cableBoxes = Math.ceil(totalCableWithWaste / 305);
     const keystoneJacks = calculateTotalPorts();
     const patchCords = calculateTotalPorts();
     const faceplates = Math.ceil(devices.length / 2);
     const patchPanels = Math.ceil(calculateTotalPorts() / 24);
     const cableManagers = Math.ceil(patchPanels / 2);
-    const totalCost = totalCable * cableStandards[selectedCable].price;
+    const totalCost = totalCableWithWaste * cableStandards[selectedCable].price;
     
     return { 
       totalCableRaw,
-      totalCableWithWaste: totalCable,
+      totalCableWithWaste,
       cableBoxes, 
       keystoneJacks, 
       patchCords, 
@@ -220,21 +236,24 @@ function App() {
     csvContent += `"Date: ${date}"\n`;
     csvContent += `"Cable Standard: ${cableStandard.name}"\n`;
     csvContent += `"Wastage Factor: ${wastageFactor}%"\n`;
+    csvContent += `"Exchange Rate: 1 USD = ${USD_TO_KES} KES"\n`;
     csvContent += `"Total Devices: ${devices.length}"\n`;
     csvContent += `"Total Ports: ${calculateTotalPorts()}"\n`;
     csvContent += `"Total Cable Length: ${Math.round(materials.totalCableRaw)} meters"\n`;
     csvContent += `"Total Cable with Waste: ${Math.round(materials.totalCableWithWaste)} meters"\n`;
-    csvContent += `"Estimated Cable Cost: $${Math.round(materials.totalCost)}"\n\n`;
+    csvContent += `"Estimated Cable Cost: ${formatKES(materials.totalCost)}"\n\n`;
     
     csvContent += `"MATERIALS LIST"\n`;
-    csvContent += `"Item","Quantity","Unit","Notes"\n`;
-    csvContent += `"${cableStandard.name} Cable",${Math.round(materials.totalCableWithWaste)},"meters","${cableStandard.description}"\n`;
-    csvContent += `"${cableStandard.name} Cable Box (305m)",${materials.cableBoxes},"boxes","Add 10-15% spare for waste"\n`;
-    csvContent += `"Keystone Jack (${cableStandard.name})",${materials.keystoneJacks},"pieces","One per port"\n`;
-    csvContent += `"Patch Cord (${cableStandard.name})",${materials.patchCords},"pieces","2m length recommended"\n`;
-    csvContent += `"Faceplate (2-port)",${materials.faceplates},"pieces","Assuming 2 ports per faceplate"\n`;
-    csvContent += `"Patch Panel (24-port)",${materials.patchPanels},"units","${cableStandard.name}, 19\" rack mount"\n`;
-    csvContent += `"Cable Manager",${materials.cableManagers},"units","1U horizontal"\n\n`;
+    csvContent += `"Item","Quantity","Unit","Unit Price (KES)","Total (KES)","Notes"\n`;
+    csvContent += `"${cableStandard.name} Cable",${Math.round(materials.totalCableWithWaste)},"meters",${Math.round(cableStandard.price)},${Math.round(materials.totalCost)},"${cableStandard.description}"\n`;
+    csvContent += `"${cableStandard.name} Cable Box (305m)",${materials.cableBoxes},"boxes",${Math.round(cableStandard.price * 305)},${Math.round(cableStandard.price * 305 * materials.cableBoxes)},"305m per box"\n`;
+    csvContent += `"Keystone Jack (${cableStandard.name})",${materials.keystoneJacks},"pieces",150,${materials.keystoneJacks * 150},"Cat6 rated"\n`;
+    csvContent += `"Patch Cord (${cableStandard.name})",${materials.patchCords},"pieces",450,${materials.patchCords * 450},"2m length"\n`;
+    csvContent += `"Faceplate (2-port)",${materials.faceplates},"pieces",200,${materials.faceplates * 200},"White, standard"\n`;
+    csvContent += `"Patch Panel (24-port)",${materials.patchPanels},"units",4500,${materials.patchPanels * 4500},"${cableStandard.name}, 19\" rack mount"\n`;
+    csvContent += `"Cable Manager",${materials.cableManagers},"units",2500,${materials.cableManagers * 2500},"1U horizontal"\n\n`;
+    
+    csvContent += `"TOTAL ESTIMATED COST: ${formatKES(materials.totalCost + (materials.keystoneJacks * 150) + (materials.patchCords * 450) + (materials.faceplates * 200) + (materials.patchPanels * 4500) + (materials.cableManagers * 2500))}"\n\n`;
     
     csvContent += `"ROOMS"\n`;
     rooms.forEach(room => {
@@ -289,7 +308,7 @@ function App() {
       room: selectedRoom,
       cableLength: cableLength ? parseFloat(cableLength) : Math.round(calculatedLength),
       ports: 1,
-      poe: newDeviceType !== 'data'
+      poe: deviceTypes[newDeviceType].poe
     };
     setDevices([...devices, newDevice]);
     setDeviceName('');
@@ -473,7 +492,7 @@ function App() {
                         </div>
                         <div className="flex items-center space-x-1">
                           <DollarSign className="w-3 h-3 text-gray-400" />
-                          <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>${standard.price}/m</span>
+                          <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{formatKES(standard.price)}/m</span>
                         </div>
                       </div>
                       <p className={`text-xs mt-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{standard.description}</p>
@@ -562,7 +581,7 @@ function App() {
                         <div key={device.id} className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
                           <div>
                             <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{device.name}</p>
-                            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{device.room} • {device.type} • {device.cableLength}m • {device.poe ? 'PoE' : 'Non-PoE'}</p>
+                            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{device.room} • {deviceTypes[device.type].label} • {device.cableLength}m • {device.poe ? 'PoE' : 'Non-PoE'}</p>
                           </div>
                           <button onClick={() => removeDevice(device.id)} className="text-red-400 hover:text-red-600">
                             <Trash2 className="w-4 h-4" />
@@ -590,7 +609,7 @@ function App() {
                     </div>
                     <div>
                       <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Est. Cost</p>
-                      <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>${Math.round(calculateTotalCableLength() * cableStandard.price)}</p>
+                      <p className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{formatKES(calculateTotalCableLength() * cableStandard.price)}</p>
                     </div>
                   </div>
                 </div>
@@ -634,7 +653,7 @@ function App() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Est. Cost</p>
-                  <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>${Math.round(calculateTotalCableLength() * cableStandard.price)}</p>
+                  <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{formatKES(calculateTotalCableLength() * cableStandard.price)}</p>
                 </div>
                 <DollarSign className="w-8 h-8 text-yellow-400" />
               </div>
@@ -661,6 +680,9 @@ function App() {
               <div>
                 <label className={`block text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'} mb-1`}>Project Name</label>
                 <input type="text" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} placeholder="e.g., Office Building - Phase 1" className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300'}`} autoFocus />
+              </div>
+              <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-50'}`}>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Exchange Rate: 1 USD = {USD_TO_KES} KES</p>
               </div>
             </div>
             <div className="flex space-x-3 mt-6">
