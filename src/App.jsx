@@ -1,93 +1,995 @@
-{/* Header */}
-<header className={`sticky top-0 z-20 backdrop-blur-xl border-b transition-all duration-300 ${darkMode ? 'bg-gray-900/80 border-gray-700/50' : 'bg-white/80 border-gray-200'}`}>
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-    <div className="flex items-center justify-between flex-wrap gap-3">
-      {/* Logo Section - Clickable Home */}
-      <div 
-        onClick={() => setCurrentView('welcome')}
-        className="flex items-center space-x-3 cursor-pointer group"
-      >
-        <div className="relative">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl blur-lg opacity-60 animate-pulse group-hover:opacity-100 transition-opacity"></div>
-          <div className="relative bg-gradient-to-r from-blue-600 to-cyan-600 p-2.5 rounded-xl shadow-lg">
-            <Cable className="w-6 h-6 text-white" />
-          </div>
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">CableIQ</h1>
-          <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Professional Structured Cabling Planner</p>
-        </div>
+// src/App.jsx
+import React, { useState, useEffect } from 'react';
+import { 
+  Plus, 
+  Camera, 
+  Wifi, 
+  Phone, 
+  Network, 
+  Cable,
+  MapPin,
+  ClipboardList,
+  Layers,
+  Download,
+  Trash2,
+  Settings,
+  FileText,
+  Moon,
+  Sun,
+  CheckCircle,
+  Server,
+  Home as HomeIcon,
+  Building,
+  TreePine,
+  ArrowRight,
+  DollarSign,
+  Gauge,
+  Sparkles,
+  Star,
+  Zap,
+  Printer,
+  Eye,
+  Save,
+  FolderOpen,
+  X
+} from 'lucide-react';
+
+// Exchange rate: 1 USD = 130 KES
+const USD_TO_KES = 130;
+
+// Cable Standards
+const cableStandards = {
+  cat5e: {
+    name: "Cat5e",
+    speed: "Up to 1 Gbps",
+    distance: "100m",
+    price: 0.3 * USD_TO_KES,
+    priceUnit: "KES/m",
+    description: "Budget option",
+    color: "from-yellow-500 to-orange-500",
+    maxDistance: 100,
+    recommended: false
+  },
+  cat6: {
+    name: "Cat6",
+    speed: "Up to 10 Gbps",
+    distance: "55m",
+    price: 0.5 * USD_TO_KES,
+    priceUnit: "KES/m",
+    description: "Recommended for most deployments",
+    color: "from-blue-500 to-cyan-500",
+    maxDistance: 55,
+    recommended: true
+  },
+  cat6a: {
+    name: "Cat6A",
+    speed: "Up to 10 Gbps",
+    distance: "100m",
+    price: 0.85 * USD_TO_KES,
+    priceUnit: "KES/m",
+    description: "Best performance, future-proof",
+    color: "from-green-500 to-emerald-500",
+    maxDistance: 100,
+    recommended: false
+  },
+  fiber: {
+    name: "Fiber",
+    speed: "Up to 100 Gbps",
+    distance: "2000m",
+    price: 2.5 * USD_TO_KES,
+    priceUnit: "KES/m",
+    description: "Backbone / long runs",
+    color: "from-purple-500 to-pink-500",
+    maxDistance: 2000,
+    recommended: false
+  }
+};
+
+// Default rooms
+const defaultRooms = [
+  { id: 1, name: "Garage", icon: "Home" },
+  { id: 2, name: "Entrance/Lobby", icon: "Building" },
+  { id: 3, name: "Backyard", icon: "TreePine" }
+];
+
+// Device types
+const deviceTypes = {
+  cctv: { 
+    label: "CCTV Camera", 
+    baseCable: 45, 
+    icon: Camera,
+    color: "from-red-500 to-rose-500",
+    poe: true,
+    category: "Security",
+    price: 4500
+  },
+  data: { 
+    label: "Data Point", 
+    baseCable: 35, 
+    icon: Network,
+    color: "from-blue-500 to-indigo-500",
+    poe: false,
+    category: "Networking",
+    price: 2000
+  },
+  ap: { 
+    label: "Access Point", 
+    baseCable: 40, 
+    icon: Wifi,
+    color: "from-green-500 to-teal-500",
+    poe: true,
+    category: "Wireless",
+    price: 8500
+  },
+  voip: { 
+    label: "VoIP Phone", 
+    baseCable: 30, 
+    icon: Phone,
+    color: "from-purple-500 to-violet-500",
+    poe: true,
+    category: "Communications",
+    price: 6500
+  }
+};
+
+// Icon mapping for rooms
+const getRoomIcon = (iconName) => {
+  switch(iconName) {
+    case 'Home': return HomeIcon;
+    case 'Building': return Building;
+    case 'TreePine': return TreePine;
+    default: return HomeIcon;
+  }
+};
+
+// Generate PDF
+const generatePDF = (content, filename) => {
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${filename}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 40px; max-width: 1200px; margin: 0 auto; }
+        h1 { color: #2563eb; border-bottom: 3px solid #2563eb; padding-bottom: 10px; }
+        h2 { color: #1e40af; margin-top: 30px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #2563eb; color: white; }
+        .summary { background: #f3f4f6; padding: 20px; border-radius: 10px; margin: 20px 0; }
+        .footer { margin-top: 40px; text-align: center; color: #6b7280; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      ${content}
+      <div class="footer">Generated by CableIQ - Professional Structured Cabling Planner</div>
+      <script>
+        window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 500); };
+      <\/script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
+
+function App() {
+  const [darkMode, setDarkMode] = useState(true);
+  const [currentView, setCurrentView] = useState('welcome');
+  const [rooms, setRooms] = useState(() => {
+    const saved = localStorage.getItem('cableiq_rooms');
+    return saved ? JSON.parse(saved) : defaultRooms;
+  });
+  const [customRoomName, setCustomRoomName] = useState('');
+  const [selectedCable, setSelectedCable] = useState('cat6');
+  const [wastageFactor, setWastageFactor] = useState(15);
+  const [projects, setProjects] = useState(() => {
+    const saved = localStorage.getItem('cableiq_projects');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [currentProject, setCurrentProject] = useState(() => {
+    const saved = localStorage.getItem('cableiq_current_project');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [devices, setDevices] = useState(() => {
+    const saved = localStorage.getItem('cableiq_devices');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [newDeviceType, setNewDeviceType] = useState('data');
+  const [deviceName, setDeviceName] = useState('');
+  const [selectedRoom, setSelectedRoom] = useState('');
+  const [cableLength, setCableLength] = useState('');
+  const [showNewProject, setShowNewProject] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [showExportSuccess, setShowExportSuccess] = useState(false);
+  const [showSaveProjectModal, setShowSaveProjectModal] = useState(false);
+  const [showLoadProjectModal, setShowLoadProjectModal] = useState(false);
+
+  // Save to localStorage
+  useEffect(() => {
+    localStorage.setItem('cableiq_rooms', JSON.stringify(rooms));
+  }, [rooms]);
+  
+  useEffect(() => {
+    localStorage.setItem('cableiq_projects', JSON.stringify(projects));
+  }, [projects]);
+  
+  useEffect(() => {
+    localStorage.setItem('cableiq_current_project', JSON.stringify(currentProject));
+  }, [currentProject]);
+  
+  useEffect(() => {
+    localStorage.setItem('cableiq_devices', JSON.stringify(devices));
+  }, [devices]);
+  
+  useEffect(() => {
+    localStorage.setItem('darkMode', darkMode);
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  // Calculations
+  const calculateTotalCableLength = () => {
+    return devices.reduce((sum, d) => sum + (d.cableLength || 35), 0);
+  };
+
+  const calculateTotalPorts = () => {
+    return devices.length;
+  };
+
+  const calculateTotalCost = () => {
+    const cableCost = calculateTotalCableLength() * cableStandards[selectedCable].price * (1 + wastageFactor / 100);
+    const deviceCost = devices.reduce((sum, d) => sum + (deviceTypes[d.type]?.price || 0), 0);
+    const hardwareCost = devices.length * 150 + devices.length * 450 + Math.ceil(devices.length / 2) * 200 + Math.ceil(devices.length / 24) * 4500;
+    return { cableCost, deviceCost, hardwareCost, total: cableCost + deviceCost + hardwareCost };
+  };
+
+  const calculatePoEBudget = () => {
+    return devices.filter(d => deviceTypes[d.type]?.poe).length * 15;
+  };
+
+  const formatKES = (amount) => `KES ${Math.round(amount).toLocaleString()}`;
+
+  const addCustomRoom = () => {
+    if (!customRoomName.trim()) return;
+    setRooms([...rooms, { id: Date.now(), name: customRoomName, icon: "Home" }]);
+    setCustomRoomName('');
+  };
+
+  const removeRoom = (roomId) => {
+    setRooms(rooms.filter(room => room.id !== roomId));
+  };
+
+  const addDevice = () => {
+    if (!deviceName.trim()) {
+      alert("Please enter a device name");
+      return;
+    }
+    if (!selectedRoom) {
+      alert("Please select a room");
+      return;
+    }
+    
+    const newDevice = {
+      id: Date.now(),
+      name: deviceName,
+      type: newDeviceType,
+      room: selectedRoom,
+      cableLength: cableLength ? parseFloat(cableLength) : 35,
+      ports: 1,
+      poe: deviceTypes[newDeviceType].poe
+    };
+    setDevices([...devices, newDevice]);
+    setDeviceName('');
+    setCableLength('');
+    setSelectedRoom('');
+    setShowExportSuccess(true);
+    setTimeout(() => setShowExportSuccess(false), 2000);
+  };
+
+  const removeDevice = (id) => {
+    setDevices(devices.filter(device => device.id !== id));
+  };
+
+  const saveCurrentProject = () => {
+    if (!currentProject) {
+      setShowSaveProjectModal(true);
+      return;
+    }
+    const updatedProject = {
+      ...currentProject,
+      devices: devices,
+      rooms: rooms,
+      cableStandard: selectedCable,
+      wastageFactor: wastageFactor,
+      lastModified: new Date().toISOString(),
+      stats: {
+        totalDevices: devices.length,
+        totalCable: calculateTotalCableLength(),
+        totalCost: calculateTotalCost().total
+      }
+    };
+    const updatedProjects = projects.map(p => p.id === currentProject.id ? updatedProject : p);
+    setProjects(updatedProjects);
+    setCurrentProject(updatedProject);
+    setShowExportSuccess(true);
+    setTimeout(() => setShowExportSuccess(false), 2000);
+  };
+
+  const createNewProject = () => {
+    if (!newProjectName.trim()) return;
+    const newProject = {
+      id: Date.now(),
+      name: newProjectName,
+      date: new Date().toISOString().split('T')[0],
+      devices: devices,
+      rooms: rooms,
+      cableStandard: selectedCable,
+      wastageFactor: wastageFactor,
+      stats: {
+        totalDevices: devices.length,
+        totalCable: calculateTotalCableLength(),
+        totalCost: calculateTotalCost().total
+      }
+    };
+    setProjects([newProject, ...projects]);
+    setCurrentProject(newProject);
+    setShowNewProject(false);
+    setShowSaveProjectModal(false);
+    setNewProjectName('');
+    setCurrentView('planner');
+    setShowExportSuccess(true);
+    setTimeout(() => setShowExportSuccess(false), 2000);
+  };
+
+  const loadProject = (project) => {
+    setCurrentProject(project);
+    setDevices(project.devices || []);
+    setRooms(project.rooms || defaultRooms);
+    setSelectedCable(project.cableStandard || 'cat6');
+    setWastageFactor(project.wastageFactor || 15);
+    setShowLoadProjectModal(false);
+    setCurrentView('planner');
+    setShowExportSuccess(true);
+    setTimeout(() => setShowExportSuccess(false), 2000);
+  };
+
+  const deleteProject = (projectId) => {
+    if (window.confirm('Delete this project permanently?')) {
+      const newProjects = projects.filter(p => p.id !== projectId);
+      setProjects(newProjects);
+      if (currentProject?.id === projectId) {
+        setCurrentProject(null);
+        setDevices([]);
+      }
+    }
+  };
+
+  const exportAsPDF = () => {
+    const costs = calculateTotalCost();
+    const cableStandard = cableStandards[selectedCable];
+    
+    const pdfContent = `
+      <h1>CableIQ - Bill of Materials</h1>
+      <p><strong>Project:</strong> ${currentProject?.name || 'New Project'}</p>
+      <p><strong>Date:</strong> ${new Date().toLocaleString()}</p>
+      <p><strong>Cable Type:</strong> ${cableStandard.name} (${cableStandard.speed})</p>
+      <p><strong>Wastage Factor:</strong> ${wastageFactor}%</p>
+      
+      <div class="summary">
+        <h2>Project Summary</h2>
+        <table>
+          <tr><th>Metric</th><th>Value</th></tr>
+          <tr><td>Total Devices</td><td>${devices.length}</td></tr>
+          <tr><td>Total Cable Length</td><td>${calculateTotalCableLength()} meters</td></tr>
+          <tr><td>Cable with Waste</td><td>${Math.round(calculateTotalCableLength() * (1 + wastageFactor / 100))} meters</td></tr>
+          <tr><td>Total Ports</td><td>${calculateTotalPorts()}</td></tr>
+          <tr><td>PoE Budget Required</td><td>${calculatePoEBudget()}W</td></tr>
+          <tr><td><strong>Total Estimated Cost</strong></td><td><strong>${formatKES(costs.total)}</strong></td></tr>
+        </table>
       </div>
       
-      <div className="flex items-center space-x-2">
-        {/* Home Button */}
-        <button 
-          onClick={() => setCurrentView('welcome')}
-          className={`p-2.5 rounded-xl transition-all duration-300 flex items-center space-x-2 ${
-            currentView === 'welcome' 
-              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' 
-              : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-          title="Go to Home"
-        >
-          <HomeIcon className="w-5 h-5" />
-          <span className="hidden sm:inline text-sm font-medium">Home</span>
-        </button>
-        
-        <div className={`px-3 py-1.5 rounded-lg text-xs font-mono ${darkMode ? 'bg-gray-800 text-green-400' : 'bg-gray-100 text-green-600'}`}>
-          <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse mr-2"></span>
-          ONLINE
-        </div>
-        
-        <button 
-          onClick={() => setDarkMode(!darkMode)}
-          className={`p-2.5 rounded-xl transition-all duration-300 ${darkMode ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
-        >
-          {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-        </button>
-      </div>
-    </div>
+      <h2>Materials List</h2>
+      <table>
+        <tr><th>Item</th><th>Quantity</th><th>Unit Price</th><th>Total</th></tr>
+        <tr><td>${cableStandard.name} Cable</td><td>${Math.round(calculateTotalCableLength() * (1 + wastageFactor / 100))} meters</td><td>${formatKES(cableStandard.price)}</td><td>${formatKES(costs.cableCost)}</td></tr>
+        <tr><td>Cable Box (305m)</td><td>${Math.ceil(calculateTotalCableLength() / 305)}</td><td>-</td><td>-</td></tr>
+        <tr><td>Keystone Jacks</td><td>${devices.length}</td><td>${formatKES(150)}</td><td>${formatKES(devices.length * 150)}</td></tr>
+        <tr><td>Patch Cords</td><td>${devices.length}</td><td>${formatKES(450)}</td><td>${formatKES(devices.length * 450)}</td></tr>
+        <tr><td>Faceplates (2-port)</td><td>${Math.ceil(devices.length / 2)}</td><td>${formatKES(200)}</td><td>${formatKES(Math.ceil(devices.length / 2) * 200)}</td></tr>
+        <tr><td>Patch Panel (24-port)</td><td>${Math.ceil(devices.length / 24)}</td><td>${formatKES(4500)}</td><td>${formatKES(Math.ceil(devices.length / 24) * 4500)}</td></tr>
+      </table>
+    `;
     
-    {/* Navigation Tabs - Only show when not on welcome page */}
-    {currentView !== 'welcome' && (
-      <div className="flex flex-wrap gap-2 mt-4">
-        <button 
-          onClick={() => setCurrentView('planner')} 
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${currentView === 'planner' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-        >
-          <div className="flex items-center space-x-2">
-            <Plus className="w-4 h-4" />
-            <span>Planner</span>
+    generatePDF(pdfContent, `BOM_${currentProject?.name || 'Project'}.pdf`);
+  };
+
+  const exportAsCSV = () => {
+    const costs = calculateTotalCost();
+    const cableStandard = cableStandards[selectedCable];
+    let csvContent = `"CABLEIQ - BILL OF MATERIALS"\n`;
+    csvContent += `"Project: ${currentProject?.name || 'New Project'}"\n`;
+    csvContent += `"Date: ${new Date().toLocaleString()}"\n`;
+    csvContent += `"Cable Type: ${cableStandard.name} (${cableStandard.speed})"\n`;
+    csvContent += `"Wastage Factor: ${wastageFactor}%"\n\n`;
+    csvContent += `"SUMMARY","Value"\n`;
+    csvContent += `"Total Devices",${devices.length}\n`;
+    csvContent += `"Total Cable Length",${calculateTotalCableLength()} meters\n`;
+    csvContent += `"Total Ports",${calculateTotalPorts()}\n`;
+    csvContent += `"PoE Budget",${calculatePoEBudget()}W\n`;
+    csvContent += `"Total Cost",${formatKES(costs.total)}\n\n`;
+    csvContent += `"MATERIALS LIST","Quantity","Unit","Unit Price","Total"\n`;
+    csvContent += `"${cableStandard.name} Cable",${Math.round(calculateTotalCableLength() * (1 + wastageFactor / 100))},"meters",${formatKES(cableStandard.price)},${formatKES(costs.cableCost)}\n`;
+    csvContent += `"Keystone Jacks",${devices.length},"pieces","150",${formatKES(devices.length * 150)}\n`;
+    csvContent += `"Patch Cords",${devices.length},"pieces","450",${formatKES(devices.length * 450)}\n`;
+    csvContent += `"Faceplates",${Math.ceil(devices.length / 2)},"pieces","200",${formatKES(Math.ceil(devices.length / 2) * 200)}\n`;
+    csvContent += `"Patch Panel",${Math.ceil(devices.length / 24)},"units","4500",${formatKES(Math.ceil(devices.length / 24) * 4500)}\n\n`;
+    csvContent += `"DEVICES BY ROOM","Type","Cable Length","PoE"\n`;
+    devices.forEach(d => {
+      csvContent += `"${d.room}","${d.name} (${deviceTypes[d.type]?.label})",${d.cableLength}m,"${d.poe ? 'Yes' : 'No'}"\n`;
+    });
+    
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `BOM_${currentProject?.name || 'Project'}_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setShowExportSuccess(true);
+    setTimeout(() => setShowExportSuccess(false), 3000);
+  };
+
+  const totalDevicesByRoom = (roomName) => {
+    return devices.filter(d => d.room === roomName).length;
+  };
+
+  const whatYouCanPlan = [
+    { 
+      icon: Camera, 
+      title: "CCTV Planning", 
+      desc: "Calculate cable runs for IP and analog cameras", 
+      color: "from-red-500 to-rose-500",
+      action: () => { setCurrentView('planner'); setNewDeviceType('cctv'); setDeviceName('CCTV Camera ' + (devices.filter(d => d.type === 'cctv').length + 1)); }
+    },
+    { 
+      icon: Network, 
+      title: "Data Points", 
+      desc: "Plan ethernet drops for workstations and servers", 
+      color: "from-blue-500 to-indigo-500",
+      action: () => { setCurrentView('planner'); setNewDeviceType('data'); setDeviceName('Data Point ' + (devices.filter(d => d.type === 'data').length + 1)); }
+    },
+    { 
+      icon: Wifi, 
+      title: "Access Points", 
+      desc: "Position wireless APs with proper cable routing", 
+      color: "from-green-500 to-teal-500",
+      action: () => { setCurrentView('planner'); setNewDeviceType('ap'); setDeviceName('AP ' + (devices.filter(d => d.type === 'ap').length + 1)); }
+    },
+    { 
+      icon: Phone, 
+      title: "VoIP / Phones", 
+      desc: "Route structured cabling for desk phones", 
+      color: "from-purple-500 to-violet-500",
+      action: () => { setCurrentView('planner'); setNewDeviceType('voip'); setDeviceName('VoIP Phone ' + (devices.filter(d => d.type === 'voip').length + 1)); }
+    }
+  ];
+
+  const costs = calculateTotalCost();
+
+  return (
+    <div className={`min-h-screen transition-all duration-500 ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+      
+      {/* Success Toast */}
+      {showExportSuccess && (
+        <div className="fixed top-20 right-4 z-50 animate-bounce">
+          <div className="bg-green-500 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3">
+            <CheckCircle className="w-5 h-5" />
+            <span className="font-semibold">Success!</span>
           </div>
-        </button>
-        <button 
-          onClick={() => setShowLoadProjectModal(true)} 
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-        >
-          <div className="flex items-center space-x-2">
-            <FolderOpen className="w-4 h-4" />
-            <span>Projects ({projects.length})</span>
+        </div>
+      )}
+    
+      {/* Header */}
+      <header className={`sticky top-0 z-20 border-b transition-all duration-300 ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            {/* Logo Section - Clickable Home */}
+            <div 
+              onClick={() => setCurrentView('welcome')}
+              className="flex items-center space-x-3 cursor-pointer group"
+            >
+              <div className="relative">
+                <div className="relative bg-blue-600 p-2.5 rounded-xl shadow-lg">
+                  <Cable className="w-6 h-6 text-white" />
+                </div>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-blue-600">CableIQ</h1>
+                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Professional Structured Cabling Planner</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              {/* Home Button */}
+              <button 
+                onClick={() => setCurrentView('welcome')}
+                className={`px-4 py-2 rounded-xl transition-all duration-300 flex items-center space-x-2 ${
+                  currentView === 'welcome' 
+                    ? 'bg-blue-600 text-white shadow-lg' 
+                    : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                title="Go to Home"
+              >
+                <HomeIcon className="w-5 h-5" />
+                <span className="hidden sm:inline text-sm font-medium">Home</span>
+              </button>
+              
+              <div className={`px-3 py-1.5 rounded-lg text-xs font-mono ${darkMode ? 'bg-gray-800 text-green-400' : 'bg-gray-100 text-green-600'}`}>
+                <span className="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse mr-2"></span>
+                ONLINE
+              </div>
+              
+              <button 
+                onClick={() => setDarkMode(!darkMode)}
+                className={`p-2.5 rounded-xl transition-all duration-300 ${darkMode ? 'bg-gray-800 text-yellow-400 hover:bg-gray-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              >
+                {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+            </div>
           </div>
-        </button>
-        <button 
-          onClick={() => setCurrentView('materials')} 
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${currentView === 'materials' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-        >
-          <div className="flex items-center space-x-2">
-            <FileText className="w-4 h-4" />
-            <span>Materials</span>
+          
+          {/* Navigation Tabs - Only show when not on welcome page */}
+          {currentView !== 'welcome' && (
+            <div className="flex flex-wrap gap-2 mt-4">
+              <button 
+                onClick={() => setCurrentView('planner')} 
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${currentView === 'planner' ? 'bg-blue-600 text-white shadow-lg' : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Plus className="w-4 h-4" />
+                  <span>Planner</span>
+                </div>
+              </button>
+              <button 
+                onClick={() => setShowLoadProjectModal(true)} 
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                <div className="flex items-center space-x-2">
+                  <FolderOpen className="w-4 h-4" />
+                  <span>Projects ({projects.length})</span>
+                </div>
+              </button>
+              <button 
+                onClick={() => setCurrentView('materials')} 
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${currentView === 'materials' ? 'bg-blue-600 text-white shadow-lg' : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                <div className="flex items-center space-x-2">
+                  <FileText className="w-4 h-4" />
+                  <span>Materials</span>
+                </div>
+              </button>
+              <button 
+                onClick={() => setCurrentView('preview')} 
+                className={`px-4 py-2 rounded-lg font-medium transition-all ${currentView === 'preview' ? 'bg-blue-600 text-white shadow-lg' : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                <div className="flex items-center space-x-2">
+                  <Eye className="w-4 h-4" />
+                  <span>Preview</span>
+                </div>
+              </button>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
+        
+        {/* Welcome Section */}
+        {currentView === 'welcome' && (
+          <div className="text-center py-12">
+            <div className="mb-8">
+              <div className="inline-block p-4 bg-blue-600 rounded-3xl shadow-2xl mb-6">
+                <Cable className="w-16 h-16 text-white" />
+              </div>
+              <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Structured Cabling Planner
+              </h2>
+              <p className={`text-lg max-w-2xl mx-auto ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                Plan your installation before you pull a single cable. Map out CCTV cameras, data points, access points, and more.
+              </p>
+            </div>
+
+            {/* What You Can Plan Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+              {whatYouCanPlan.map((item, i) => {
+                const IconComponent = item.icon;
+                return (
+                  <div
+                    key={i}
+                    className={`relative group cursor-pointer transition-all duration-500 hover:scale-105`}
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-r ${item.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-30 transition-opacity duration-500`}></div>
+                    <div className={`relative p-6 rounded-2xl border transition-all duration-300 shadow-lg ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                      <div className={`w-14 h-14 rounded-xl bg-gradient-to-r ${item.color} flex items-center justify-center mb-4 shadow-lg`}>
+                        <IconComponent className="w-7 h-7 text-white" />
+                      </div>
+                      <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>{item.title}</h3>
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{item.desc}</p>
+                      <button 
+                        onClick={item.action}
+                        className="mt-4 flex items-center text-blue-600 text-sm font-medium hover:text-blue-700 transition-colors"
+                      >
+                        <span>Plan now</span>
+                        <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <button 
+              onClick={() => setCurrentView('planner')}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-xl transition-all duration-300 shadow-xl text-lg flex items-center space-x-3 mx-auto"
+            >
+              <Sparkles className="w-5 h-5" />
+              <span>Start New Project</span>
+              <ArrowRight className="w-5 h-5" />
+            </button>
           </div>
-        </button>
-        <button 
-          onClick={() => setCurrentView('preview')} 
-          className={`px-4 py-2 rounded-lg font-medium transition-all ${currentView === 'preview' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg' : darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-        >
-          <div className="flex items-center space-x-2">
-            <Eye className="w-4 h-4" />
-            <span>Preview</span>
+        )}
+
+        {/* Planner View */}
+        {currentView === 'planner' && (
+          <div className="space-y-6">
+            {/* Project Header */}
+            <div className={`flex justify-between items-center p-4 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+              <div>
+                <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Project Planner</h2>
+                {currentProject && <p className="text-sm text-blue-600">{currentProject.name}</p>}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={saveCurrentProject} className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white flex items-center space-x-2">
+                  <Save className="w-4 h-4" />
+                  <span>Save Project</span>
+                </button>
+                <button onClick={() => setShowLoadProjectModal(true)} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white flex items-center space-x-2">
+                  <FolderOpen className="w-4 h-4" />
+                  <span>Load Project</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Rooms Section */}
+            <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+              <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <MapPin className="w-5 h-5 text-blue-500" />
+                <span>Rooms / Areas</span>
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {rooms.map(room => {
+                  const Icon = getRoomIcon(room.icon);
+                  const deviceCount = totalDevicesByRoom(room.name);
+                  return (
+                    <div key={room.id} className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                      <div className="flex items-center space-x-2">
+                        <Icon className="w-4 h-4 text-blue-500" />
+                        <span className={`text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>{room.name}</span>
+                        {deviceCount > 0 && <span className="text-xs text-blue-500">({deviceCount})</span>}
+                      </div>
+                      <button onClick={() => removeRoom(room.id)} className="text-red-400 hover:text-red-600">
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={customRoomName}
+                  onChange={(e) => setCustomRoomName(e.target.value)}
+                  placeholder="New room name..."
+                  className={`flex-1 px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`}
+                  onKeyPress={(e) => e.key === 'Enter' && addCustomRoom()}
+                />
+                <button onClick={addCustomRoom} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white">
+                  Add Room
+                </button>
+              </div>
+            </div>
+
+            {/* Add Device Section */}
+            <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+              <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Add Device</h3>
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                <select value={selectedRoom} onChange={(e) => setSelectedRoom(e.target.value)} className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
+                  <option value="">Select Room</option>
+                  {rooms.map(room => <option key={room.id} value={room.name}>{room.name}</option>)}
+                </select>
+                <select value={newDeviceType} onChange={(e) => setNewDeviceType(e.target.value)} className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
+                  <option value="cctv">CCTV Camera</option>
+                  <option value="data">Data Point</option>
+                  <option value="ap">Access Point</option>
+                  <option value="voip">VoIP Phone</option>
+                </select>
+                <input type="text" value={deviceName} onChange={(e) => setDeviceName(e.target.value)} placeholder="Device name" className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`} />
+                <input type="number" value={cableLength} onChange={(e) => setCableLength(e.target.value)} placeholder="Cable length (m)" className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`} />
+                <button onClick={addDevice} className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white">Add Device</button>
+              </div>
+            </div>
+
+            {/* Devices List */}
+            <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+              <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Planned Devices ({devices.length})</h3>
+              {devices.length === 0 ? (
+                <div className={`text-center py-8 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <Network className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No devices added yet</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {devices.map(device => {
+                    const DeviceIcon = deviceTypes[device.type].icon;
+                    return (
+                      <div key={device.id} className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                        <div className="flex items-center space-x-3">
+                          <div className={`p-2 rounded-lg bg-gradient-to-r ${deviceTypes[device.type].color}`}>
+                            <DeviceIcon className="w-4 h-4 text-white" />
+                          </div>
+                          <div>
+                            <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{device.name}</p>
+                            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{device.room} • {deviceTypes[device.type].label} • {device.cableLength}m • {device.poe ? 'PoE' : 'Non-PoE'}</p>
+                          </div>
+                        </div>
+                        <button onClick={() => removeDevice(device.id)} className="text-red-400 hover:text-red-600">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
-        </button>
+        )}
+
+        {/* Materials View */}
+        {currentView === 'materials' && (
+          <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+            <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
+              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Bill of Materials</h2>
+              <div className="flex gap-3">
+                <button onClick={exportAsPDF} className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white flex items-center space-x-2">
+                  <Printer className="w-4 h-4" />
+                  <span>Export PDF</span>
+                </button>
+                <button onClick={exportAsCSV} className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white flex items-center space-x-2">
+                  <Download className="w-4 h-4" />
+                  <span>Export CSV</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Devices</p>
+                <p className="text-2xl font-bold text-blue-600">{devices.length}</p>
+              </div>
+              <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Cable Length</p>
+                <p className="text-2xl font-bold text-blue-600">{calculateTotalCableLength()}m</p>
+              </div>
+              <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>PoE Budget</p>
+                <p className="text-2xl font-bold text-blue-600">{calculatePoEBudget()}W</p>
+              </div>
+              <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Cost</p>
+                <p className="text-2xl font-bold text-green-600">{formatKES(costs.total)}</p>
+              </div>
+            </div>
+
+            {/* Materials Table */}
+            <h3 className={`text-lg font-bold mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Materials Required</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-100'}>
+                  <tr>
+                    <th className={`p-3 text-left ${darkMode ? 'text-white' : 'text-gray-900'}`}>Item</th>
+                    <th className={`p-3 text-left ${darkMode ? 'text-white' : 'text-gray-900'}`}>Quantity</th>
+                    <th className={`p-3 text-left ${darkMode ? 'text-white' : 'text-gray-900'}`}>Unit</th>
+                    <th className={`p-3 text-left ${darkMode ? 'text-white' : 'text-gray-900'}`}>Unit Price</th>
+                    <th className={`p-3 text-left ${darkMode ? 'text-white' : 'text-gray-900'}`}>Total</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                  <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                    <td className="p-3">{cableStandards[selectedCable].name} Cable</td>
+                    <td className="p-3">{Math.round(calculateTotalCableLength() * (1 + wastageFactor / 100))}</td>
+                    <td className="p-3">meters</td>
+                    <td className="p-3">{formatKES(cableStandards[selectedCable].price)}</td>
+                    <td className="p-3">{formatKES(costs.cableCost)}</td>
+                  </tr>
+                  <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                    <td className="p-3">Cable Box (305m)</td>
+                    <td className="p-3">{Math.ceil(calculateTotalCableLength() / 305)}</td>
+                    <td className="p-3">boxes</td>
+                    <td className="p-3">-</td>
+                    <td className="p-3">-</td>
+                  </tr>
+                  <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                    <td className="p-3">Keystone Jacks</td>
+                    <td className="p-3">{devices.length}</td>
+                    <td className="p-3">pieces</td>
+                    <td className="p-3">{formatKES(150)}</td>
+                    <td className="p-3">{formatKES(devices.length * 150)}</td>
+                  </tr>
+                  <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                    <td className="p-3">Patch Cords</td>
+                    <td className="p-3">{devices.length}</td>
+                    <td className="p-3">pieces</td>
+                    <td className="p-3">{formatKES(450)}</td>
+                    <td className="p-3">{formatKES(devices.length * 450)}</td>
+                  </tr>
+                  <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                    <td className="p-3">Faceplates (2-port)</td>
+                    <td className="p-3">{Math.ceil(devices.length / 2)}</td>
+                    <td className="p-3">pieces</td>
+                    <td className="p-3">{formatKES(200)}</td>
+                    <td className="p-3">{formatKES(Math.ceil(devices.length / 2) * 200)}</td>
+                  </tr>
+                  <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                    <td className="p-3">Patch Panel (24-port)</td>
+                    <td className="p-3">{Math.ceil(devices.length / 24)}</td>
+                    <td className="p-3">units</td>
+                    <td className="p-3">{formatKES(4500)}</td>
+                    <td className="p-3">{formatKES(Math.ceil(devices.length / 24) * 4500)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Devices by Room */}
+            <h3 className={`text-lg font-bold mt-6 mb-3 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Devices by Room</h3>
+            {rooms.map(room => {
+              const roomDevices = devices.filter(d => d.room === room.name);
+              if (roomDevices.length === 0) return null;
+              return (
+                <div key={room.id} className="mb-4">
+                  <h4 className={`font-semibold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{room.name}</h4>
+                  <div className="space-y-1">
+                    {roomDevices.map(device => (
+                      <div key={device.id} className={`text-sm p-2 rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+                        • {device.name} ({deviceTypes[device.type].label}) - {device.cableLength}m {device.poe ? '[PoE]' : ''}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Preview View */}
+        {currentView === 'preview' && (
+          <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+            <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Network Topology Preview</h3>
+            <div className={`relative min-h-[400px] rounded-xl p-6 overflow-x-auto ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
+              {/* Core Switch */}
+              <div className="flex justify-center mb-8">
+                <div className="bg-blue-600 rounded-xl p-4 shadow-xl text-center min-w-[150px]">
+                  <Server className="w-8 h-8 mx-auto mb-2 text-white" />
+                  <p className="text-white font-bold">Core Switch</p>
+                  <p className="text-xs text-blue-200">48-Port Gigabit</p>
+                  <p className="text-xs text-blue-200">{calculatePoEBudget()}W PoE Budget</p>
+                </div>
+              </div>
+              
+              {/* Patch Panel */}
+              <div className="flex justify-center mb-8">
+                <div className="bg-cyan-600 rounded-xl p-4 shadow-xl text-center min-w-[150px]">
+                  <Layers className="w-8 h-8 mx-auto mb-2 text-white" />
+                  <p className="text-white font-bold">Patch Panel</p>
+                  <p className="text-xs text-cyan-200">{Math.ceil(devices.length / 24)}x 24-Port Units</p>
+                </div>
+              </div>
+              
+              {/* Rooms Distribution */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                {rooms.map(room => {
+                  const roomDevices = devices.filter(d => d.room === room.name);
+                  if (roomDevices.length === 0) return null;
+                  const Icon = getRoomIcon(room.icon);
+                  return (
+                    <div key={room.id} className={`rounded-lg p-3 ${darkMode ? 'bg-gray-800' : 'bg-white border border-gray-200'}`}>
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Icon className="w-4 h-4 text-blue-500" />
+                        <span className={`text-sm font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{room.name}</span>
+                        <span className="text-xs text-blue-500">{roomDevices.length} devices</span>
+                      </div>
+                      <div className="space-y-1">
+                        {roomDevices.slice(0, 3).map(device => {
+                          const DeviceIcon = deviceTypes[device.type].icon;
+                          return (
+                            <div key={device.id} className="flex items-center space-x-2 text-xs text-gray-500">
+                              <DeviceIcon className="w-3 h-3" />
+                              <span>{device.name}</span>
+                              <span>{device.cableLength}m</span>
+                            </div>
+                          );
+                        })}
+                        {roomDevices.length > 3 && <p className="text-xs text-gray-500">+{roomDevices.length - 3} more</p>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-    )}
-  </div>
-</header>
+
+      {/* Load Projects Modal */}
+      {showLoadProjectModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Saved Projects</h3>
+              <button onClick={() => setShowLoadProjectModal(false)} className="p-1 hover:bg-gray-200 rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            {projects.length === 0 ? (
+              <div className={`text-center py-8 ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
+                <FolderOpen className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>No saved projects yet</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {projects.map(project => (
+                  <div key={project.id} className={`flex items-center justify-between p-4 rounded-lg border ${darkMode ? 'border-gray-700 hover:bg-gray-700' : 'border-gray-200 hover:bg-gray-50'}`}>
+                    <div>
+                      <p className={`font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>{project.name}</p>
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Created: {project.date} • {project.stats?.totalDevices || 0} devices</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => loadProject(project)} className="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm">Load</button>
+                      <button onClick={() => deleteProject(project.id)} className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-white text-sm">Delete</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Save New Project Modal */}
+      {showSaveProjectModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className={`${darkMode ? 'bg-gray-800' : 'bg-white'} rounded-2xl shadow-2xl max-w-md w-full p-6`}>
+            <h3 className={`text-xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Save Project</h3>
+            <input 
+              type="text" 
+              value={newProjectName} 
+              onChange={(e) => setNewProjectName(e.target.value)} 
+              placeholder="Project name" 
+              className={`w-full px-4 py-3 rounded-xl border mb-4 focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`}
+              autoFocus
+            />
+            <div className="flex gap-3">
+              <button onClick={createNewProject} className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 rounded-xl text-white">Save</button>
+              <button onClick={() => setShowSaveProjectModal(false)} className="flex-1 py-3 bg-gray-600 hover:bg-gray-700 rounded-xl text-white">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default App;
