@@ -92,7 +92,7 @@ const defaultRooms = [
   { id: 4, name: "Office", icon: "Home" }
 ];
 
-// Device types
+// Device types (faceplate type now included)
 const deviceTypes = {
   cctv: { 
     label: "CCTV Camera", 
@@ -101,7 +101,9 @@ const deviceTypes = {
     color: "from-red-500 to-rose-500",
     poe: true,
     category: "Security",
-    price: 4500
+    price: 4500,
+    hasFaceplate: false,   // No faceplate, direct cable
+    defaultPorts: 1
   },
   data: { 
     label: "Data Point", 
@@ -110,7 +112,9 @@ const deviceTypes = {
     color: "from-blue-500 to-indigo-500",
     poe: false,
     category: "Networking",
-    price: 2000
+    price: 2000,
+    hasFaceplate: true,
+    defaultPorts: 1   // will be overridden by faceplate type
   },
   ap: { 
     label: "Access Point", 
@@ -119,7 +123,9 @@ const deviceTypes = {
     color: "from-green-500 to-teal-500",
     poe: true,
     category: "Wireless",
-    price: 8500
+    price: 8500,
+    hasFaceplate: false,
+    defaultPorts: 1
   },
   voip: { 
     label: "VoIP Phone", 
@@ -128,7 +134,9 @@ const deviceTypes = {
     color: "from-purple-500 to-violet-500",
     poe: true,
     category: "Communications",
-    price: 6500
+    price: 6500,
+    hasFaceplate: false,
+    defaultPorts: 1
   }
 };
 
@@ -196,6 +204,7 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [newDeviceType, setNewDeviceType] = useState('data');
+  const [faceplateType, setFaceplateType] = useState('single'); // 'single' or 'dual'
   const [deviceName, setDeviceName] = useState('');
   const [selectedRoom, setSelectedRoom] = useState('');
   const [cableLength, setCableLength] = useState('');
@@ -231,19 +240,51 @@ function App() {
     }
   }, [darkMode]);
 
+  // Helper: get number of ports for a device
+  const getDevicePorts = (device) => {
+    if (device.type === 'data') {
+      return device.faceplateType === 'dual' ? 2 : 1;
+    }
+    return 1;
+  };
+
+  // Helper: get number of cables (same as ports)
+  const getDeviceCableCount = (device) => getDevicePorts(device);
+
   // Calculations
   const calculateTotalCableLength = () => {
-    return devices.reduce((sum, d) => sum + (d.cableLength || 35), 0);
+    // For data points with dual faceplate, length applies per cable? Usually each port has its own cable run.
+    // We'll multiply base length by number of ports.
+    return devices.reduce((sum, device) => {
+      const ports = getDevicePorts(device);
+      const perCableLength = device.cableLength || 35;
+      return sum + (perCableLength * ports);
+    }, 0);
   };
 
   const calculateTotalPorts = () => {
-    return devices.length;
+    return devices.reduce((sum, device) => sum + getDevicePorts(device), 0);
+  };
+
+  const calculateTotalCables = () => {
+    return devices.reduce((sum, device) => sum + getDeviceCableCount(device), 0);
+  };
+
+  const calculateTotalFaceplates = () => {
+    // Only data points have faceplates, each device is one faceplate unit
+    return devices.filter(d => d.type === 'data').length;
   };
 
   const calculateTotalCost = () => {
-    const cableCost = calculateTotalCableLength() * cableStandards[selectedCable].price * (1 + wastageFactor / 100);
+    const totalCableMeters = calculateTotalCableLength();
+    const cableCost = totalCableMeters * cableStandards[selectedCable].price * (1 + wastageFactor / 100);
     const deviceCost = devices.reduce((sum, d) => sum + (deviceTypes[d.type]?.price || 0), 0);
-    const hardwareCost = devices.length * 150 + devices.length * 450 + Math.ceil(devices.length / 2) * 200 + Math.ceil(devices.length / 24) * 4500;
+    const totalPorts = calculateTotalPorts();
+    const totalFaceplates = calculateTotalFaceplates();
+    const hardwareCost = totalPorts * 150   // keystone jacks
+                       + totalPorts * 450   // patch cords
+                       + totalFaceplates * 200   // faceplates (each device is one plate)
+                       + Math.ceil(totalPorts / 24) * 4500; // patch panels
     return { cableCost, deviceCost, hardwareCost, total: cableCost + deviceCost + hardwareCost };
   };
 
@@ -273,19 +314,22 @@ function App() {
       return;
     }
     
+    const ports = (newDeviceType === 'data' && faceplateType === 'dual') ? 2 : 1;
     const newDevice = {
       id: Date.now(),
       name: deviceName,
       type: newDeviceType,
       room: selectedRoom,
       cableLength: cableLength ? parseFloat(cableLength) : 35,
-      ports: 1,
+      faceplateType: newDeviceType === 'data' ? faceplateType : null,
+      ports: ports,
       poe: deviceTypes[newDeviceType].poe
     };
     setDevices([...devices, newDevice]);
     setDeviceName('');
     setCableLength('');
     setSelectedRoom('');
+    setFaceplateType('single');
     setShowExportSuccess(true);
     setTimeout(() => setShowExportSuccess(false), 2000);
   };
@@ -371,6 +415,9 @@ function App() {
   const exportAsPDF = () => {
     const costs = calculateTotalCost();
     const cableStandard = cableStandards[selectedCable];
+    const totalPorts = calculateTotalPorts();
+    const totalCables = calculateTotalCables();
+    const totalFaceplates = calculateTotalFaceplates();
     
     const pdfContent = `
       <h1>CableIQ - Bill of Materials</h1>
@@ -383,10 +430,10 @@ function App() {
         <h2>Project Summary</h2>
         <table>
           <tr><th>Metric</th><th>Value</th></tr>
-          <tr><td>Total Devices</td><td>${devices.length}</td></tr>
-          <tr><td>Total Cable Length</td><td>${calculateTotalCableLength()} meters</td></tr>
+          <tr><td>Total Devices (Faceplates)</td><td>${totalFaceplates} (${devices.length} total devices)</td></tr>
+          <tr><td>Total Cables / Ports</td><td>${totalCables} cables / ${totalPorts} ports</td></tr>
+          <tr><td>Total Cable Length (before waste)</td><td>${calculateTotalCableLength()} meters</td></tr>
           <tr><td>Cable with Waste</td><td>${Math.round(calculateTotalCableLength() * (1 + wastageFactor / 100))} meters</td></tr>
-          <tr><td>Total Ports</td><td>${calculateTotalPorts()}</td></tr>
           <tr><td>PoE Budget Required</td><td>${calculatePoEBudget()}W</td></tr>
           <tr><td><strong>Total Estimated Cost</strong></td><td><strong>${formatKES(costs.total)}</strong></td></tr>
         </table>
@@ -397,10 +444,10 @@ function App() {
         <tr><th>Item</th><th>Quantity</th><th>Unit Price</th><th>Total</th></tr>
         <tr><td>${cableStandard.name} Cable</td><td>${Math.round(calculateTotalCableLength() * (1 + wastageFactor / 100))} meters</td><td>${formatKES(cableStandard.price)}</td><td>${formatKES(costs.cableCost)}</td></tr>
         <tr><td>Cable Box (305m)</td><td>${Math.ceil(calculateTotalCableLength() / 305)}</td><td>-</td><td>-</td></tr>
-        <tr><td>Keystone Jacks</td><td>${devices.length}</td><td>${formatKES(150)}</td><td>${formatKES(devices.length * 150)}</td></tr>
-        <tr><td>Patch Cords</td><td>${devices.length}</td><td>${formatKES(450)}</td><td>${formatKES(devices.length * 450)}</td></tr>
-        <tr><td>Faceplates (2-port)</td><td>${Math.ceil(devices.length / 2)}</td><td>${formatKES(200)}</td><td>${formatKES(Math.ceil(devices.length / 2) * 200)}</td></tr>
-        <tr><td>Patch Panel (24-port)</td><td>${Math.ceil(devices.length / 24)}</td><td>${formatKES(4500)}</td><td>${formatKES(Math.ceil(devices.length / 24) * 4500)}</td></tr>
+        <tr><td>Keystone Jacks</td><td>${totalPorts}</td><td>${formatKES(150)}</td><td>${formatKES(totalPorts * 150)}</td></tr>
+        <tr><td>Patch Cords</td><td>${totalPorts}</td><td>${formatKES(450)}</td><td>${formatKES(totalPorts * 450)}</td></tr>
+        <tr><td>Faceplates (2-port)</td><td>${totalFaceplates}</td><td>${formatKES(200)}</td><td>${formatKES(totalFaceplates * 200)}</td></tr>
+        <tr><td>Patch Panel (24-port)</td><td>${Math.ceil(totalPorts / 24)}</td><td>${formatKES(4500)}</td><td>${formatKES(Math.ceil(totalPorts / 24) * 4500)}</td></tr>
       </table>
     `;
     
@@ -410,26 +457,34 @@ function App() {
   const exportAsCSV = () => {
     const costs = calculateTotalCost();
     const cableStandard = cableStandards[selectedCable];
+    const totalPorts = calculateTotalPorts();
+    const totalCables = calculateTotalCables();
+    const totalFaceplates = calculateTotalFaceplates();
+    
     let csvContent = `"CABLEIQ - BILL OF MATERIALS"\n`;
     csvContent += `"Project: ${currentProject?.name || 'New Project'}"\n`;
     csvContent += `"Date: ${new Date().toLocaleString()}"\n`;
     csvContent += `"Cable Type: ${cableStandard.name} (${cableStandard.speed})"\n`;
     csvContent += `"Wastage Factor: ${wastageFactor}%"\n\n`;
     csvContent += `"SUMMARY","Value"\n`;
-    csvContent += `"Total Devices",${devices.length}\n`;
+    csvContent += `"Total Faceplates (Devices)",${totalFaceplates}\n`;
+    csvContent += `"Total Cables",${totalCables}\n`;
+    csvContent += `"Total Ports",${totalPorts}\n`;
     csvContent += `"Total Cable Length",${calculateTotalCableLength()} meters\n`;
-    csvContent += `"Total Ports",${calculateTotalPorts()}\n`;
+    csvContent += `"Cable with Waste",${Math.round(calculateTotalCableLength() * (1 + wastageFactor / 100))} meters\n`;
     csvContent += `"PoE Budget",${calculatePoEBudget()}W\n`;
     csvContent += `"Total Cost",${formatKES(costs.total)}\n\n`;
     csvContent += `"MATERIALS LIST","Quantity","Unit","Unit Price","Total"\n`;
     csvContent += `"${cableStandard.name} Cable",${Math.round(calculateTotalCableLength() * (1 + wastageFactor / 100))},"meters",${formatKES(cableStandard.price)},${formatKES(costs.cableCost)}\n`;
-    csvContent += `"Keystone Jacks",${devices.length},"pieces","150",${formatKES(devices.length * 150)}\n`;
-    csvContent += `"Patch Cords",${devices.length},"pieces","450",${formatKES(devices.length * 450)}\n`;
-    csvContent += `"Faceplates",${Math.ceil(devices.length / 2)},"pieces","200",${formatKES(Math.ceil(devices.length / 2) * 200)}\n`;
-    csvContent += `"Patch Panel",${Math.ceil(devices.length / 24)},"units","4500",${formatKES(Math.ceil(devices.length / 24) * 4500)}\n\n`;
-    csvContent += `"DEVICES BY ROOM","Type","Cable Length","PoE"\n`;
+    csvContent += `"Keystone Jacks",${totalPorts},"pieces","150",${formatKES(totalPorts * 150)}\n`;
+    csvContent += `"Patch Cords",${totalPorts},"pieces","450",${formatKES(totalPorts * 450)}\n`;
+    csvContent += `"Faceplates (2-port)",${totalFaceplates},"pieces","200",${formatKES(totalFaceplates * 200)}\n`;
+    csvContent += `"Patch Panel (24-port)",${Math.ceil(totalPorts / 24)},"units","4500",${formatKES(Math.ceil(totalPorts / 24) * 4500)}\n\n`;
+    csvContent += `"DEVICES DETAIL","Room","Type","Faceplate","Cables","Cable Length","PoE"\n`;
     devices.forEach(d => {
-      csvContent += `"${d.room}","${d.name} (${deviceTypes[d.type]?.label})",${d.cableLength}m,"${d.poe ? 'Yes' : 'No'}"\n`;
+      const ports = getDevicePorts(d);
+      const cables = ports;
+      csvContent += `"${d.name}","${d.room}","${deviceTypes[d.type]?.label}","${d.type === 'data' ? (d.faceplateType === 'dual' ? 'Dual-port' : 'Single-port') : 'N/A'}",${cables},${d.cableLength}m,"${d.poe ? 'Yes' : 'No'}"\n`;
     });
     
     const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
@@ -479,6 +534,8 @@ function App() {
   ];
 
   const costs = calculateTotalCost();
+  const totalPorts = calculateTotalPorts();
+  const totalFaceplates = calculateTotalFaceplates();
 
   return (
     <div className={`min-h-screen transition-all duration-500 ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
@@ -706,7 +763,7 @@ function App() {
             {/* Add Device Section */}
             <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Add Device</h3>
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
                 <select value={selectedRoom} onChange={(e) => setSelectedRoom(e.target.value)} className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
                   <option value="">Select Room</option>
                   {rooms.map(room => <option key={room.id} value={room.name}>{room.name}</option>)}
@@ -717,6 +774,12 @@ function App() {
                   <option value="ap">Access Point</option>
                   <option value="voip">VoIP Phone</option>
                 </select>
+                {newDeviceType === 'data' && (
+                  <select value={faceplateType} onChange={(e) => setFaceplateType(e.target.value)} className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
+                    <option value="single">Single Port (1 cable, 1 keystone)</option>
+                    <option value="dual">Dual Port (2 cables, 2 keystones)</option>
+                  </select>
+                )}
                 <input type="text" value={deviceName} onChange={(e) => setDeviceName(e.target.value)} placeholder="Device name" className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`} />
                 <input type="number" value={cableLength} onChange={(e) => setCableLength(e.target.value)} placeholder="Cable length (m)" className={`px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' : 'bg-white border-gray-300 text-gray-900'}`} />
                 <button onClick={addDevice} className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-white">Add Device</button>
@@ -735,6 +798,8 @@ function App() {
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {devices.map(device => {
                     const DeviceIcon = deviceTypes[device.type].icon;
+                    const ports = getDevicePorts(device);
+                    const faceplateInfo = device.type === 'data' ? (device.faceplateType === 'dual' ? 'Dual-port' : 'Single-port') : '';
                     return (
                       <div key={device.id} className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
                         <div className="flex items-center space-x-3">
@@ -743,7 +808,13 @@ function App() {
                           </div>
                           <div>
                             <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{device.name}</p>
-                            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{device.room} • {deviceTypes[device.type].label} • {device.cableLength}m • {device.poe ? 'PoE' : 'Non-PoE'}</p>
+                            <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                              {device.room} • {deviceTypes[device.type].label}
+                              {faceplateInfo && ` • ${faceplateInfo}`}
+                              {` • ${ports} port${ports !== 1 ? 's' : ''}`}
+                              {` • ${device.cableLength}m per port`}
+                              {` • ${device.poe ? 'PoE' : 'Non-PoE'}`}
+                            </p>
                           </div>
                         </div>
                         <button onClick={() => removeDevice(device.id)} className="text-red-400 hover:text-red-600">
@@ -778,16 +849,16 @@ function App() {
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Devices</p>
-                <p className="text-2xl font-bold text-blue-600">{devices.length}</p>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Faceplates</p>
+                <p className="text-2xl font-bold text-blue-600">{totalFaceplates}</p>
               </div>
               <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Cable Length</p>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Cables / Ports</p>
+                <p className="text-2xl font-bold text-blue-600">{calculateTotalCables()} / {totalPorts}</p>
+              </div>
+              <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Cable Length</p>
                 <p className="text-2xl font-bold text-blue-600">{calculateTotalCableLength()}m</p>
-              </div>
-              <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>PoE Budget</p>
-                <p className="text-2xl font-bold text-blue-600">{calculatePoEBudget()}W</p>
               </div>
               <div className={`p-4 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
                 <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Cost</p>
@@ -825,31 +896,31 @@ function App() {
                   </tr>
                   <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
                     <td className="p-3">Keystone Jacks</td>
-                    <td className="p-3">{devices.length}</td>
+                    <td className="p-3">{totalPorts}</td>
                     <td className="p-3">pieces</td>
                     <td className="p-3">{formatKES(150)}</td>
-                    <td className="p-3">{formatKES(devices.length * 150)}</td>
+                    <td className="p-3">{formatKES(totalPorts * 150)}</td>
                   </tr>
                   <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
                     <td className="p-3">Patch Cords</td>
-                    <td className="p-3">{devices.length}</td>
+                    <td className="p-3">{totalPorts}</td>
                     <td className="p-3">pieces</td>
                     <td className="p-3">{formatKES(450)}</td>
-                    <td className="p-3">{formatKES(devices.length * 450)}</td>
+                    <td className="p-3">{formatKES(totalPorts * 450)}</td>
                   </tr>
                   <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
                     <td className="p-3">Faceplates (2-port)</td>
-                    <td className="p-3">{Math.ceil(devices.length / 2)}</td>
+                    <td className="p-3">{totalFaceplates}</td>
                     <td className="p-3">pieces</td>
                     <td className="p-3">{formatKES(200)}</td>
-                    <td className="p-3">{formatKES(Math.ceil(devices.length / 2) * 200)}</td>
+                    <td className="p-3">{formatKES(totalFaceplates * 200)}</td>
                   </tr>
                   <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
                     <td className="p-3">Patch Panel (24-port)</td>
-                    <td className="p-3">{Math.ceil(devices.length / 24)}</td>
+                    <td className="p-3">{Math.ceil(totalPorts / 24)}</td>
                     <td className="p-3">units</td>
                     <td className="p-3">{formatKES(4500)}</td>
-                    <td className="p-3">{formatKES(Math.ceil(devices.length / 24) * 4500)}</td>
+                    <td className="p-3">{formatKES(Math.ceil(totalPorts / 24) * 4500)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -864,11 +935,15 @@ function App() {
                 <div key={room.id} className="mb-4">
                   <h4 className={`font-semibold mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>{room.name}</h4>
                   <div className="space-y-1">
-                    {roomDevices.map(device => (
-                      <div key={device.id} className={`text-sm p-2 rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
-                        • {device.name} ({deviceTypes[device.type].label}) - {device.cableLength}m {device.poe ? '[PoE]' : ''}
-                      </div>
-                    ))}
+                    {roomDevices.map(device => {
+                      const ports = getDevicePorts(device);
+                      return (
+                        <div key={device.id} className={`text-sm p-2 rounded ${darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+                          • {device.name} ({deviceTypes[device.type].label}) - {ports} port{ports !== 1 ? 's' : ''}, {device.cableLength}m/port {device.poe ? '[PoE]' : ''}
+                          {device.type === 'data' && ` [${device.faceplateType === 'dual' ? 'Dual-port faceplate' : 'Single-port faceplate'}]`}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
@@ -888,6 +963,7 @@ function App() {
                   <p className="text-white font-bold">Core Switch</p>
                   <p className="text-xs text-blue-200">48-Port Gigabit</p>
                   <p className="text-xs text-blue-200">{calculatePoEBudget()}W PoE Budget</p>
+                  <p className="text-xs text-blue-200">{totalPorts} ports used</p>
                 </div>
               </div>
               
@@ -896,7 +972,8 @@ function App() {
                 <div className="bg-cyan-600 rounded-xl p-4 shadow-xl text-center min-w-[150px]">
                   <Layers className="w-8 h-8 mx-auto mb-2 text-white" />
                   <p className="text-white font-bold">Patch Panel</p>
-                  <p className="text-xs text-cyan-200">{Math.ceil(devices.length / 24)}x 24-Port Units</p>
+                  <p className="text-xs text-cyan-200">{Math.ceil(totalPorts / 24)}x 24-Port Units</p>
+                  <p className="text-xs text-cyan-200">{totalPorts} total ports</p>
                 </div>
               </div>
               
@@ -916,10 +993,12 @@ function App() {
                       <div className="space-y-1">
                         {roomDevices.slice(0, 3).map(device => {
                           const DeviceIcon = deviceTypes[device.type].icon;
+                          const ports = getDevicePorts(device);
                           return (
                             <div key={device.id} className="flex items-center space-x-2 text-xs text-gray-500">
                               <DeviceIcon className="w-3 h-3" />
                               <span>{device.name}</span>
+                              <span>{ports} port{ports !== 1 ? 's' : ''}</span>
                               <span>{device.cableLength}m</span>
                             </div>
                           );
