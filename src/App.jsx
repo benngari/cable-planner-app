@@ -89,7 +89,8 @@ const cableStandards = {
 const defaultRooms = [
   { id: 1, name: "Garage", icon: "Home" },
   { id: 2, name: "Entrance/Lobby", icon: "Building" },
-  { id: 3, name: "Backyard", icon: "TreePine" }
+  { id: 3, name: "Backyard", icon: "TreePine" },
+  { id: 4, name: "Office", icon: "Home" }
 ];
 
 // Device types
