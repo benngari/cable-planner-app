@@ -12,7 +12,6 @@ import {
   Layers,
   Download,
   Trash2,
-  Settings,
   FileText,
   Moon,
   Sun,
@@ -85,7 +84,7 @@ const cableStandards = {
   }
 };
 
-// Default rooms
+// Default rooms - includes Office
 const defaultRooms = [
   { id: 1, name: "Garage", icon: "Home" },
   { id: 2, name: "Entrance/Lobby", icon: "Building" },
