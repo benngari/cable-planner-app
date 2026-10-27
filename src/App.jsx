@@ -40,7 +40,6 @@ const PRICING = {
   dvrImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Digital_Video_Recorder.jpg/640px-Digital_Video_Recorder.jpg',
   installationCost: 4500,
   
-  // Cabling Standards Pricing (Per Meter)
   cablingStandards: {
     cat5e: { name: 'Cat5e', price: 39, speed: '1 Gbps' },
     cat6: { name: 'Cat6', price: 65, speed: '10 Gbps' },
@@ -65,10 +64,10 @@ const cabDeviceTypes = {
 function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [currentView, setCurrentView] = useState('welcome'); 
-  const [activeProject, setActiveProject] = useState('cctv'); // 'cctv' or 'cabling'
+  const [activeProject, setActiveProject] = useState('cctv');
   const [isExporting, setIsExporting] = useState(false);
 
-  // --- Shared Client & Business State ---
+  // Shared Client & Business State
   const [clientInfo, setClientInfo] = useState({ name: '', phone: '', address: '' });
   const [businessInfo, setBusinessInfo] = useState({ 
     name: 'Ngari Tech Solutions', 
@@ -77,20 +76,20 @@ function App() {
     mpesa: 'Paybill 400200, Acc: 0110...' 
   });
 
-  // --- Custom Items State (Shared for both) ---
+  // Custom Items State
   const [customItems, setCustomItems] = useState([]);
   const [customItemName, setCustomItemName] = useState('');
   const [customItemPrice, setCustomItemPrice] = useState('');
   const [customItemQty, setCustomItemQty] = useState(1);
 
-  // --- CCTV State ---
+  // CCTV State
   const [brand, setBrand] = useState('hikvision');
   const [cameraType, setCameraType] = useState('bullet');
   const [quantity, setQuantity] = useState(4);
   const [hasMonitor, setHasMonitor] = useState(false);
   const [cableLength, setCableLength] = useState(50);
 
-  // --- Cabling State ---
+  // Cabling State
   const [cabRooms, setCabRooms] = useState(defaultCabRooms);
   const [cabDevices, setCabDevices] = useState([]);
   const [cabStandard, setCabStandard] = useState('cat6');
@@ -109,7 +108,7 @@ function App() {
 
   const formatKES = (amount) => `KSh ${Math.round(amount).toLocaleString()}`;
 
-  // ======================= CUSTOM ITEMS LOGIC =======================
+  // Custom Items Logic
   const addCustomItem = () => {
     if (!customItemName || !customItemPrice) return alert("Please enter item name and price");
     setCustomItems([...customItems, { 
@@ -124,10 +123,9 @@ function App() {
   };
 
   const removeCustomItem = (id) => setCustomItems(customItems.filter(i => i.id !== id));
-  
   const getCustomItemsTotal = () => customItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-  // ======================= CCTV CALCULATIONS =======================
+  // CCTV Calculations
   const loadJumiaKit = () => {
     setBrand('hikvision');
     setCameraType('bullet');
@@ -150,13 +148,12 @@ function App() {
   const calculateCCTVTotal = () => calculateHardwareCost() + PRICING.installationCost + getCustomItemsTotal();
   const selectedDvr = quantity <= 4 ? PRICING.brands[brand].dvr4 : PRICING.brands[brand].dvr8;
 
-  // ======================= CABLING CALCULATIONS =======================
+  // Cabling Calculations
   const addCabRoom = () => {
     if (!newCabRoom.trim()) return;
     setCabRooms([...cabRooms, { id: Date.now(), name: newCabRoom }]);
     setNewCabRoom('');
   };
-
   const removeCabRoom = (id) => setCabRooms(cabRooms.filter(r => r.id !== id));
 
   const addCabDevice = () => {
@@ -173,13 +170,11 @@ function App() {
     setCabDeviceName('');
     setCabCableLength('');
   };
-
   const removeCabDevice = (id) => setCabDevices(cabDevices.filter(d => d.id !== id));
 
   const getCabTotals = () => {
     let totalPorts = 0;
     let totalLength = 0;
-    
     cabDevices.forEach(d => {
       const ports = (d.type === 'data' && d.faceplate === 'dual') ? 2 : 1;
       totalPorts += ports;
@@ -197,7 +192,6 @@ function App() {
     const cableCost = totalWithWaste * cablePrice;
     const hardwareCost = (keystones * 150) + (patchCords * 450) + (faceplates * 200) + (patchPanels * 4500);
     const laborCost = 4500;
-    
     const customTotal = getCustomItemsTotal();
     const totalCost = cableCost + hardwareCost + laborCost + customTotal;
 
@@ -208,7 +202,6 @@ function App() {
   };
   const cabTotals = getCabTotals();
 
-  // ======================= PDF EXPORT =======================
   const handleDownloadPDF = () => {
     setIsExporting(true);
     const element = document.getElementById('pdf-report-container');
@@ -371,7 +364,6 @@ function App() {
               </div>
             </div>
 
-            {/* CUSTOM ITEMS SECTION */}
             <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 <ShoppingCart className="w-5 h-5 text-blue-500" /> <span>Additional Items Required</span>
@@ -434,7 +426,6 @@ function App() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Form Column */}
               <div className="space-y-6 lg:col-span-1">
                 <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                   <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -489,7 +480,6 @@ function App() {
                 </div>
               </div>
 
-              {/* List Column */}
               <div className="lg:col-span-2 space-y-6">
                 <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                   <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Planned Devices</h3>
@@ -513,7 +503,6 @@ function App() {
                   )}
                 </div>
 
-                {/* CUSTOM ITEMS SECTION */}
                 <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                   <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     <ShoppingCart className="w-5 h-5 text-blue-500" /> <span>Additional Items Required</span>
@@ -661,6 +650,32 @@ function App() {
                       </ol>
                     </div>
 
+                    {/* CCTV SYSTEM TOPOLOGY DIAGRAM */}
+                    <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>SYSTEM TOPOLOGY</div>
+                    <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px', marginBottom: '20px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
+                        <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '15px 25px', borderRadius: '8px', textAlign: 'center', width: '200px' }}>
+                          <strong>{selectedDvr.name}</strong><br/>
+                          <span style={{ fontSize: '10px' }}>Main Recorder</span>
+                        </div>
+                      </div>
+                      <div style={{ height: '30px', width: '2px', backgroundColor: '#9ca3af', margin: '0 auto' }}></div>
+                      <div style={{ height: '2px', width: '80%', backgroundColor: '#9ca3af', margin: '0 auto 20px auto' }}></div>
+                      
+                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '15px' }}>
+                        {Array.from({ length: quantity }).map((_, i) => (
+                          <div key={i} style={{ backgroundColor: 'white', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', width: '100px', textAlign: 'center' }}>
+                            <Camera style={{ width: '20px', height: '20px', color: '#f97316', margin: '0 auto 5px auto' }} />
+                            <strong style={{ fontSize: '11px', display: 'block' }}>Camera {i + 1}</strong>
+                            <span style={{ fontSize: '9px', color: '#64748b' }}>Coaxial Cable</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p style={{ fontSize: '11px', color: '#64748b', marginTop: '20px', fontStyle: 'italic' }}>
+                        All cameras connect via RG59 coaxial cable for video, and 2-core power cable to the centralized 5A Power Supply.
+                      </p>
+                    </div>
+
                     <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>PRICE BREAKDOWN</div>
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '13px' }}>
                       <thead>
@@ -706,6 +721,41 @@ function App() {
                         <tr><td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb' }}><strong>Total Cable Length (inc 15% slack)</strong></td><td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb' }}>{Math.round(cabTotals.totalWithWaste)} meters</td></tr>
                       </tbody>
                     </table>
+
+                    {/* CABLING TOPOLOGY DIAGRAM */}
+                    <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>NETWORK TOPOLOGY</div>
+                    <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px', marginBottom: '20px', textAlign: 'center' }}>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
+                        <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '15px 25px', borderRadius: '8px', textAlign: 'center', width: '200px' }}>
+                          <strong>Core Switch</strong><br/>
+                          <span style={{ fontSize: '10px' }}>Main Distribution</span>
+                        </div>
+                      </div>
+                      <div style={{ height: '20px', width: '2px', backgroundColor: '#9ca3af', margin: '0 auto' }}></div>
+                      <div style={{ backgroundColor: '#0ea5e9', color: 'white', padding: '10px 25px', borderRadius: '8px', textAlign: 'center', display: 'inline-block', width: '200px', marginBottom: '20px' }}>
+                        <strong>{cabTotals.patchPanels}x Patch Panel</strong>
+                      </div>
+                      <div style={{ height: '20px', width: '2px', backgroundColor: '#9ca3af', margin: '0 auto' }}></div>
+                      <div style={{ height: '2px', width: '80%', backgroundColor: '#9ca3af', margin: '0 auto 20px auto' }}></div>
+
+                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '15px' }}>
+                        {cabRooms.map(room => {
+                          const devCount = cabDevices.filter(d => d.room === room.name).length;
+                          if (devCount === 0) return null;
+                          return (
+                            <div key={room.id} style={{ backgroundColor: 'white', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', width: '120px', textAlign: 'center' }}>
+                              <MapPin style={{ width: '20px', height: '20px', color: '#10b981', margin: '0 auto 5px auto' }} />
+                              <strong style={{ fontSize: '11px', display: 'block' }}>{room.name}</strong>
+                              <span style={{ fontSize: '9px', color: '#64748b' }}>{devCount} devices</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p style={{ fontSize: '11px', color: '#64748b', marginTop: '20px', fontStyle: 'italic' }}>
+                        Devices connect via {PRICING.cablingStandards[cabStandard].name} cable to faceplates, which route back to the Patch Panel and Core Switch.
+                      </p>
+                    </div>
 
                     <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>BILL OF MATERIALS</div>
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '13px' }}>
@@ -782,15 +832,13 @@ function App() {
           </div>
         )}
 
-        {/* ======================= NETWORK PREVIEW ======================= */}
+        {/* ======================= NETWORK PREVIEW (UI) ======================= */}
         {currentView === 'preview' && (
           <div className={`p-10 rounded-xl text-center border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
             <MonitorPlay className="w-16 h-16 text-purple-500 mx-auto mb-4" />
-            <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Network Topology</h2>
+            <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Network Topology Preview</h2>
             <p className={`mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              {activeProject === 'cctv' 
-                ? `Your CCTV system includes ${quantity} ${cameraType} cameras connected to a ${selectedDvr.name}.`
-                : `Your structured cabling system includes ${cabDevices.length} devices across ${cabRooms.length} rooms.`}
+              This is a quick visual preview. The full detailed topology diagram is included in the exported PDF.
             </p>
             <div className="flex justify-center gap-4 flex-wrap">
               {activeProject === 'cctv' ? (
