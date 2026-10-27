@@ -1,7 +1,7 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Camera, Wifi, Phone, Network, Cable, MapPin, Layers, Download, Trash2, FileText, Moon, Sun, CheckCircle, Server, Home as HomeIcon, Building, TreePine, ArrowRight, DollarSign, Gauge, Sparkles, Star, Zap, Printer, Eye, Save, FolderOpen, X, User, Briefcase, PhoneCall
+  Plus, Camera, Wifi, Phone, Network, Cable, MapPin, Layers, Download, Trash2, FileText, Moon, Sun, CheckCircle, Server, Home as HomeIcon, Building, TreePine, ArrowRight, DollarSign, Gauge, Sparkles, Star, Zap, Printer, Eye, Save, FolderOpen, X, User, Briefcase, FileSpreadsheet, MonitorPlay
 } from 'lucide-react';
 
 const USD_TO_KES = 130;
@@ -41,12 +41,8 @@ const getRoomIcon = (iconName) => {
 // Generate the beautiful PDF matching the Kenyan Quotation format
 const generateQuotationPDF = (data) => {
   const printWindow = window.open('', '_blank');
-  const { 
-    clientInfo, businessInfo, devices, customItems, totalCost, 
-    cableCost, laborCost, materialsCost, dateStr 
-  } = data;
+  const { clientInfo, businessInfo, devices, customItems, totalCost, kitPrice, materialsCost, laborCost, setupCost, dateStr } = data;
 
-  // Filter cameras
   const cameras = devices.filter(d => d.type === 'cctv');
   
   printWindow.document.write(`
@@ -81,15 +77,11 @@ const generateQuotationPDF = (data) => {
         .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 11px; color: #6b7280; }
         .sig-box { margin-top: 40px; display: flex; justify-content: space-between; }
         .sig-line { width: 45%; border-bottom: 1px solid #333; padding-bottom: 5px; margin-bottom: 5px; }
-        @media print {
-          .page { max-width: 100%; padding: 20px; }
-          .page-break { page-break-before: always; }
-        }
+        @media print { .page { max-width: 100%; padding: 20px; } .page-break { page-break-before: always; } }
       </style>
     </head>
     <body>
       <div class="page">
-        <!-- HEADER -->
         <div class="header">
           <div>
             <h1>QUOTATION</h1>
@@ -101,7 +93,6 @@ const generateQuotationPDF = (data) => {
           </div>
         </div>
 
-        <!-- CLIENT DETAILS -->
         <div class="details">
           <div>
             <h3>PREPARED BY</h3>
@@ -127,7 +118,6 @@ const generateQuotationPDF = (data) => {
               <li>${data.cableLength}m RG59 Two-in-one Coaxial Cable</li>
               <li>12 x BNC and DC Jack Connectors</li>
             </ul>
-            <p style="font-size:11px; color:#666; margin-top:10px;"><strong>Storage:</strong> About 5-8 days of footage before oldest is overwritten.</p>
           </div>
           <div style="width: 200px; text-align: center;">
              <div style="background:#f3f4f6; height:150px; display:flex; align-items:center; justify-content:center; border:1px dashed #ccc; border-radius:8px; color:#999; font-size:12px;">
@@ -154,62 +144,46 @@ const generateQuotationPDF = (data) => {
           <tr><td>3</td><td>Back or side access</td><td>The most common entry point for break-ins.</td></tr>
           <tr><td>4</td><td>Inside: living area / shop counter</td><td>Covers valuables, cash point, or main passage.</td></tr>
         </table>
-        <p style="font-size:11px; font-style:italic;">Final positions are agreed on site after a quick walk-through.</p>
 
-        <!-- PAGE 2 -->
         <div class="page-break"></div>
 
         <div class="section-title">INSTALLATION PROCESS</div>
         <div class="process-grid">
-          <div class="process-step"><strong>1</strong> SITE VISIT<br><span style="font-size:10px;">Agree camera positions and routes.</span></div>
-          <div class="process-step"><strong>2</strong> INSTALLATION<br><span style="font-size:10px;">Mount cameras, run cables, fit DVR.</span></div>
-          <div class="process-step"><strong>3</strong> SETUP<br><span style="font-size:10px;">Configure recording and motion alerts.</span></div>
+          <div class="process-step"><strong>1</strong> SITE VISIT<br><span style="font-size:10px;">Agree camera positions.</span></div>
+          <div class="process-step"><strong>2</strong> INSTALLATION<br><span style="font-size:10px;">Mount cameras, run cables.</span></div>
+          <div class="process-step"><strong>3</strong> SETUP<br><span style="font-size:10px;">Configure recording and alerts.</span></div>
           <div class="process-step"><strong>4</strong> HANDOVER<br><span style="font-size:10px;">Phone app setup and training.</span></div>
         </div>
 
         <div class="section-title">PRICE BREAKDOWN</div>
         <table>
           <tr><th>#</th><th>Description</th><th>Amount (KSh)</th></tr>
-          <tr><td>1</td><td><strong>Hikvision CCTV Kit</strong><br><span style="font-size:11px;">DVR, 4 cameras, hard drive, power supply, cable, connectors</span></td><td>${data.kitPrice.toLocaleString()}</td></tr>
-          <tr><td>2</td><td><strong>Installation materials</strong><br><span style="font-size:11px;">Cable clips, fixings, insulation tape</span></td><td>${data.materialsCost.toLocaleString()}</td></tr>
-          <tr><td>3</td><td><strong>Installation labour</strong><br><span style="font-size:11px;">Mounting cameras and DVR, cable routing, testing</span></td><td>${data.laborCost.toLocaleString()}</td></tr>
-          <tr><td>4</td><td><strong>Configuration and training</strong><br><span style="font-size:11px;">DVR setup, Hik-Connect app, client walkthrough</span></td><td>${data.setupCost.toLocaleString()}</td></tr>
+          <tr><td>1</td><td><strong>Hikvision CCTV Kit</strong><br><span style="font-size:11px;">DVR, 4 cameras, hard drive, power supply, cable, connectors</span></td><td>${kitPrice.toLocaleString()}</td></tr>
+          <tr><td>2</td><td><strong>Installation materials</strong><br><span style="font-size:11px;">Cable clips, fixings, insulation tape</span></td><td>${materialsCost.toLocaleString()}</td></tr>
+          <tr><td>3</td><td><strong>Installation labour</strong><br><span style="font-size:11px;">Mounting cameras and DVR, cable routing, testing</span></td><td>${laborCost.toLocaleString()}</td></tr>
+          <tr><td>4</td><td><strong>Configuration and training</strong><br><span style="font-size:11px;">DVR setup, Hik-Connect app, client walkthrough</span></td><td>${setupCost.toLocaleString()}</td></tr>
           <tr class="total-row"><td colspan="2" style="text-align:right;">TOTAL</td><td>${totalCost.toLocaleString()}</td></tr>
-        </table>
-
-        <div class="section-title">OPTIONAL UPGRADES (NOT INCLUDED)</div>
-        <table style="font-size:12px;">
-          <tr><td>1TB surveillance drive (about 2x recording time)</td><td style="text-align:right;">+ KSh 3,500</td></tr>
-          <tr><td>UPS / surge protector (protects against power cuts)</td><td style="text-align:right;">+ KSh 3,000</td></tr>
         </table>
 
         <div class="section-title">WARRANTY AND AFTER-SALES SUPPORT</div>
         <ul style="font-size:12px; padding-left:20px; color:#4b5563;">
           <li>12 months warranty on all equipment, 3 months on installation workmanship.</li>
           <li>Free phone support in the first month for app and playback questions.</li>
-          <li>Warranty excludes damage from power surges, lightning, water inside unsealed connections, or tampering.</li>
         </ul>
 
         <div class="section-title">TERMS AND CONDITIONS</div>
         <div class="terms">
           <ul>
-            <li><strong>Payment:</strong> 50% deposit to confirm, balance on completion. M-Pesa, bank, or cash: ${businessInfo.mpesa}</li>
+            <li><strong>Payment:</strong> 50% deposit to confirm, balance on completion. M-Pesa: ${businessInfo.mpesa}</li>
             <li>Prices include VAT. Quote valid for 14 days.</li>
             <li>Client provides a power socket near the DVR location.</li>
             <li>Installation takes about one day, subject to site access.</li>
-            <li>Please change the DVR password if you share access with others.</li>
           </ul>
         </div>
 
         <div class="sig-box">
-          <div>
-            <div class="sig-line"></div>
-            <span style="font-size:12px;">Accepted by (Client Signature)</span>
-          </div>
-          <div>
-            <div class="sig-line"></div>
-            <span style="font-size:12px;">Date</span>
-          </div>
+          <div><div class="sig-line"></div><span style="font-size:12px;">Accepted by (Client Signature)</span></div>
+          <div><div class="sig-line"></div><span style="font-size:12px;">Date</span></div>
         </div>
 
         <div class="footer">
@@ -217,9 +191,7 @@ const generateQuotationPDF = (data) => {
           <span>Generated by CableIQ</span>
         </div>
       </div>
-      <script>
-        window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 500); };
-      <\/script>
+      <script>window.onload = () => { setTimeout(() => { window.print(); window.close(); }, 500); };<\/script>
     </body>
     </html>
   `);
@@ -231,28 +203,24 @@ function App() {
   const [currentView, setCurrentView] = useState('welcome');
   const [rooms, setRooms] = useState(defaultRooms);
   const [selectedCable, setSelectedCable] = useState('rg59');
-  const [wastageFactor, setWastageFactor] = useState(15);
   const [devices, setDevices] = useState([]);
-  const [customItems, setCustomItems] = useState([]); // For DVR, HDD, PSU, etc.
+  const [customItems, setCustomItems] = useState([]); 
   
-  // Client & Business Info for Quotation
+  // Default Business Info now includes your phone number 0711645837
   const [clientInfo, setClientInfo] = useState({ name: '', phone: '', address: '' });
-  const [businessInfo, setBusinessInfo] = useState({ name: 'Ngari Tech Solutions', phone: '0712 345 678', email: 'info@ngaritech.co.ke', mpesa: 'Paybill 400200, Acc: 0110...' });
+  const [businessInfo, setBusinessInfo] = useState({ 
+    name: 'Ngari Tech Solutions', 
+    phone: '0711645837', 
+    email: 'info@ngaritech.co.ke', 
+    mpesa: 'Paybill 400200, Acc: 0110...' 
+  });
 
-  // Fixed costs for template
   const [kitPrice, setKitPrice] = useState(15999);
   const [materialsCost, setMaterialsCost] = useState(1000);
   const [laborCost, setLaborCost] = useState(3500);
   const [setupCost, setSetupCost] = useState(1000);
 
   const [showExportSuccess, setShowExportSuccess] = useState(false);
-  const [showLoadProjectModal, setShowLoadProjectModal] = useState(false);
-
-  // Save to localStorage
-  useEffect(() => {
-    localStorage.setItem('cableiq_devices', JSON.stringify(devices));
-    localStorage.setItem('cableiq_custom', JSON.stringify(customItems));
-  }, [devices, customItems]);
 
   useEffect(() => {
     if (darkMode) document.documentElement.classList.add('dark');
@@ -262,29 +230,19 @@ function App() {
   const formatKES = (amount) => `KSh ${Math.round(amount).toLocaleString()}`;
 
   const loadKenyanCCTVTemplate = () => {
-    // 1. Load 4 Cameras
-    const newDevices = [
+    setDevices([
       { id: 1, name: 'Camera 1 (Main Gate)', type: 'cctv', room: 'Main Entrance', cableLength: 15, poe: false },
       { id: 2, name: 'Camera 2 (Parking)', type: 'cctv', room: 'Parking / Compound', cableLength: 20, poe: false },
       { id: 3, name: 'Camera 3 (Backdoor)', type: 'cctv', room: 'Back / Side Access', cableLength: 25, poe: false },
       { id: 4, name: 'Camera 4 (Counter)', type: 'cctv', room: 'Inside Shop', cableLength: 10, poe: false },
-    ];
-    setDevices(newDevices);
-
-    // 2. Load Kit Extras
+    ]);
     setCustomItems([
       { id: 101, name: 'Hikvision 4-Channel DVR', description: 'White, Turbo HD', quantity: 1, price: 0 },
       { id: 102, name: '500GB Surveillance Hard Drive', description: 'Camera recording memory', quantity: 1, price: 0 },
       { id: 103, name: '4-Port 5A Power Supply', description: 'Centralized CCTV PSU', quantity: 1, price: 0 },
       { id: 104, name: 'BNC & DC Connectors', description: '12 pieces', quantity: 12, price: 0 },
     ]);
-
-    // 3. Reset Costs to match PDF
-    setKitPrice(15999);
-    setMaterialsCost(1000);
-    setLaborCost(3500);
-    setSetupCost(1000);
-
+    setKitPrice(15999); setMaterialsCost(1000); setLaborCost(3500); setSetupCost(1000);
     setSelectedCable('rg59');
     setCurrentView('planner');
   };
@@ -293,32 +251,16 @@ function App() {
   const calculateTotalCost = () => kitPrice + materialsCost + laborCost + setupCost;
 
   const addDevice = () => {
-    const newDevice = {
-      id: Date.now(),
-      name: `Camera ${devices.length + 1}`,
-      type: 'cctv',
-      room: rooms[0].name,
-      cableLength: 15,
-      poe: false
-    };
-    setDevices([...devices, newDevice]);
+    setDevices([...devices, { id: Date.now(), name: `Camera ${devices.length + 1}`, type: 'cctv', room: rooms[0].name, cableLength: 15, poe: false }]);
   };
 
   const removeDevice = (id) => setDevices(devices.filter(d => d.id !== id));
 
   const exportQuotation = () => {
     generateQuotationPDF({
-      clientInfo,
-      businessInfo,
-      devices,
-      customItems,
-      totalCost: calculateTotalCost(),
-      cableLength: calculateTotalCableLength(),
-      kitPrice,
-      materialsCost,
-      laborCost,
-      setupCost,
-      dateStr: new Date().toLocaleDateString('en-GB')
+      clientInfo, businessInfo, devices, customItems,
+      totalCost: calculateTotalCost(), cableLength: calculateTotalCableLength(),
+      kitPrice, materialsCost, laborCost, setupCost, dateStr: new Date().toLocaleDateString('en-GB')
     });
     setShowExportSuccess(true);
     setTimeout(() => setShowExportSuccess(false), 3000);
@@ -347,7 +289,7 @@ function App() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <button onClick={() => setCurrentView('welcome')} className={`px-4 py-2 rounded-xl transition-all ${darkMode ? 'bg-gray-800 text-gray-300' : 'bg-gray-100 text-gray-700'}`}>
+            <button onClick={() => setCurrentView('welcome')} className={`px-4 py-2 rounded-xl transition-all ${darkMode ? 'bg-gray-800 text-gray-300 hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
               <HomeIcon className="w-5 h-5" />
             </button>
             <button onClick={() => setDarkMode(!darkMode)} className={`p-2.5 rounded-xl ${darkMode ? 'bg-gray-800 text-yellow-400' : 'bg-gray-100 text-gray-600'}`}>
@@ -359,30 +301,59 @@ function App() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         
-        {/* Welcome View */}
+        {/* --- LANDING PAGE / MENU --- */}
         {currentView === 'welcome' && (
-          <div className="text-center py-12">
-            <h2 className={`text-4xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-              Kenyan CCTV Quotation Engine
+          <div className="text-center py-10">
+            <h2 className={`text-4xl md:text-5xl font-extrabold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+              What would you like to do?
             </h2>
-            <p className={`text-lg max-w-2xl mx-auto mb-8 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Generate professional, 2-page PDF quotations for Hikvision Kits instantly. Includes M-Pesa terms, installation breakdown, and local pricing.
+            <p className={`text-lg max-w-2xl mx-auto mb-12 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Choose an option below to start planning, generating quotations, or viewing materials.
             </p>
             
-            <div className="flex justify-center gap-4 flex-wrap">
-              <button onClick={loadKenyanCCTVTemplate} className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold py-4 px-8 rounded-xl transition-all shadow-xl text-lg flex items-center space-x-3">
-                <Sparkles className="w-5 h-5" />
-                <span>Load 4-Camera KSh 21,499 Template</span>
-              </button>
-              <button onClick={() => setCurrentView('planner')} className={`border font-semibold py-4 px-8 rounded-xl transition-all text-lg flex items-center space-x-3 ${darkMode ? 'border-gray-600 text-gray-300 hover:bg-gray-800' : 'border-gray-300 text-gray-700 hover:bg-gray-100'}`}>
-                <Plus className="w-5 h-5" />
-                <span>Start Blank Project</span>
-              </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+              
+              {/* Option 1: Kenyan CCTV Template */}
+              <div onClick={loadKenyanCCTVTemplate} className={`group cursor-pointer p-8 rounded-2xl border transition-all duration-300 hover:scale-105 hover:shadow-2xl ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-orange-500' : 'bg-white border-gray-200 hover:border-orange-500'}`}>
+                <div className="w-16 h-16 mx-auto bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:animate-pulse">
+                  <Camera className="w-8 h-8 text-white" />
+                </div>
+                <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>4-Camera CCTV Quotation</h3>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Load the ready-made KSh 21,499 Hikvision kit template and generate a PDF.</p>
+              </div>
+
+              {/* Option 2: Blank Planner */}
+              <div onClick={() => setCurrentView('planner')} className={`group cursor-pointer p-8 rounded-2xl border transition-all duration-300 hover:scale-105 hover:shadow-2xl ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-blue-500' : 'bg-white border-gray-200 hover:border-blue-500'}`}>
+                <div className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:animate-pulse">
+                  <Network className="w-8 h-8 text-white" />
+                </div>
+                <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Start Blank Project</h3>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Build a custom structured cabling plan from scratch for any building.</p>
+              </div>
+
+              {/* Option 3: Materials / BOM */}
+              <div onClick={() => setCurrentView('materials')} className={`group cursor-pointer p-8 rounded-2xl border transition-all duration-300 hover:scale-105 hover:shadow-2xl ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-green-500' : 'bg-white border-gray-200 hover:border-green-500'}`}>
+                <div className="w-16 h-16 mx-auto bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:animate-pulse">
+                  <FileSpreadsheet className="w-8 h-8 text-white" />
+                </div>
+                <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>View Materials (BOM)</h3>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Check the exact cables, faceplates, and connectors needed for your project.</p>
+              </div>
+
+              {/* Option 4: Network Preview */}
+              <div onClick={() => setCurrentView('preview')} className={`group cursor-pointer p-8 rounded-2xl border transition-all duration-300 hover:scale-105 hover:shadow-2xl ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-purple-500' : 'bg-white border-gray-200 hover:border-purple-500'}`}>
+                <div className="w-16 h-16 mx-auto bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:animate-pulse">
+                  <MonitorPlay className="w-8 h-8 text-white" />
+                </div>
+                <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Network Preview</h3>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Visualize the DVR, patch panel, and camera topology for your setup.</p>
+              </div>
+
             </div>
           </div>
         )}
 
-        {/* Planner View */}
+        {/* --- PLANNER VIEW --- */}
         {currentView === 'planner' && (
           <div className="space-y-6">
             
@@ -390,7 +361,7 @@ function App() {
             <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 <User className="w-5 h-5 text-blue-500" />
-                <span>Quotation Details</span>
+                <span>Quotation Details (Phone: 0711645837)</span>
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
@@ -402,7 +373,7 @@ function App() {
                 <div className="space-y-3">
                   <h4 className="text-sm font-semibold text-blue-500">Your Business Info (Prepared By)</h4>
                   <input type="text" placeholder="Business Name" value={businessInfo.name} onChange={e => setBusinessInfo({...businessInfo, name: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
-                  <input type="text" placeholder="Phone & Email" value={`${businessInfo.phone} | ${businessInfo.email}`} onChange={e => setBusinessInfo({...businessInfo, phone: e.target.value, email: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
+                  <input type="text" placeholder="Phone" value={businessInfo.phone} onChange={e => setBusinessInfo({...businessInfo, phone: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
                   <input type="text" placeholder="M-Pesa Till/Paybill" value={businessInfo.mpesa} onChange={e => setBusinessInfo({...businessInfo, mpesa: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
                 </div>
               </div>
@@ -459,14 +430,37 @@ function App() {
               </div>
             </div>
 
-            {/* Generate Button */}
-            <button onClick={exportQuotation} className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-4 rounded-xl shadow-xl flex items-center justify-center space-x-3 text-lg">
-              <Printer className="w-6 h-6" />
-              <span>Export Professional PDF Quotation</span>
-            </button>
+            <div className="flex space-x-4">
+              <button onClick={() => setCurrentView('welcome')} className={`px-6 py-4 rounded-xl font-bold flex items-center space-x-2 ${darkMode ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'}`}>
+                <ArrowRight className="w-5 h-5 rotate-180" /> <span>Back Home</span>
+              </button>
+              <button onClick={exportQuotation} className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-4 rounded-xl shadow-xl flex items-center justify-center space-x-3 text-lg">
+                <Printer className="w-6 h-6" /> <span>Export Professional PDF Quotation</span>
+              </button>
+            </div>
 
           </div>
         )}
+
+        {/* Fallback Views (Materials & Preview) to ensure buttons work */}
+        {currentView === 'materials' && (
+          <div className={`p-10 rounded-xl text-center border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+            <FileSpreadsheet className="w-16 h-16 text-green-500 mx-auto mb-4" />
+            <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Bill of Materials Ready</h2>
+            <p className={`mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Go to the Planner to enter details and generate the full PDF with the BOM included.</p>
+            <button onClick={() => setCurrentView('planner')} className="bg-blue-600 text-white px-6 py-2 rounded-lg">Go to Planner</button>
+          </div>
+        )}
+
+        {currentView === 'preview' && (
+          <div className={`p-10 rounded-xl text-center border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+            <MonitorPlay className="w-16 h-16 text-purple-500 mx-auto mb-4" />
+            <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Network Topology</h2>
+            <p className={`mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>The visual network diagram is available after setting up your cameras.</p>
+            <button onClick={() => setCurrentView('planner')} className="bg-blue-600 text-white px-6 py-2 rounded-lg">Go to Planner</button>
+          </div>
+        )}
+
       </div>
     </div>
   );
