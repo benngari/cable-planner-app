@@ -218,6 +218,11 @@ function App() {
   const brandData = PRICING.brands[brand];
   const cameraData = brandData.cameras[cameraType];
 
+  // Shared PDF block styles
+  const topologyBoxStyle = { backgroundColor: 'white', border: '2px solid #1e3a8a', padding: '10px 15px', borderRadius: '8px', textAlign: 'center', minWidth: '120px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' };
+  const topologyLineStyle = { height: '20px', width: '2px', backgroundColor: '#94a3b8', margin: '0 auto' };
+  const topologyLabelStyle = { fontSize: '11px', color: '#ea580c', fontWeight: 'bold', backgroundColor: '#fff', padding: '2px 6px', borderRadius: '4px', border: '1px solid #ea580c', margin: '4px 0', display: 'inline-block' };
+
   return (
     <div className={`min-h-screen transition-all duration-500 ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
       
@@ -653,27 +658,54 @@ function App() {
                     {/* CCTV SYSTEM TOPOLOGY DIAGRAM */}
                     <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>SYSTEM TOPOLOGY</div>
                     <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px', marginBottom: '20px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
-                        <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '15px 25px', borderRadius: '8px', textAlign: 'center', width: '200px' }}>
-                          <strong>{selectedDvr.name}</strong><br/>
-                          <span style={{ fontSize: '10px' }}>Main Recorder</span>
+                      
+                      {hasMonitor && (
+                        <>
+                          <div style={topologyBoxStyle}>
+                            <Monitor style={{ width: '24px', height: '24px', color: '#3b82f6', margin: '0 auto 5px auto' }} />
+                            <strong style={{ fontSize: '12px', display: 'block' }}>CCTV Monitor</strong>
+                            <span style={{ fontSize: '10px', color: '#64748b' }}>22" Display</span>
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px 0' }}>
+                            <div style={topologyLineStyle}></div>
+                            <span style={topologyLabelStyle}>HDMI / VGA Cable</span>
+                            <div style={topologyLineStyle}></div>
+                          </div>
+                        </>
+                      )}
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '15px' }}>
+                        <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '12px 20px', borderRadius: '8px', textAlign: 'center', minWidth: '150px' }}>
+                          <strong style={{ fontSize: '13px' }}>{selectedDvr.name}</strong><br/>
+                          <span style={{ fontSize: '10px', opacity: 0.8 }}>Main Recorder</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ width: '30px', height: '2px', backgroundColor: '#94a3b8' }}></div>
+                          <span style={{ fontSize: '10px', color: '#ea580c', fontWeight: 'bold' }}>Power Cable</span>
+                          <div style={{ width: '30px', height: '2px', backgroundColor: '#94a3b8' }}></div>
+                        </div>
+                        <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', padding: '12px', borderRadius: '8px', textAlign: 'center', minWidth: '120px' }}>
+                          <Zap style={{ width: '20px', height: '20px', color: '#eab308', margin: '0 auto 5px auto' }} />
+                          <strong style={{ fontSize: '12px', display: 'block' }}>Power Supply</strong>
+                          <span style={{ fontSize: '10px', color: '#64748b' }}>5A Centralized</span>
                         </div>
                       </div>
-                      <div style={{ height: '30px', width: '2px', backgroundColor: '#9ca3af', margin: '0 auto' }}></div>
-                      <div style={{ height: '2px', width: '80%', backgroundColor: '#9ca3af', margin: '0 auto 20px auto' }}></div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '15px' }}>
+                        <div style={topologyLineStyle}></div>
+                        <span style={topologyLabelStyle}>Video (RG59) & Power Cables</span>
+                        <div style={{ height: '2px', width: '80%', backgroundColor: '#94a3b8', margin: '10px auto' }}></div>
+                      </div>
                       
                       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '15px' }}>
                         {Array.from({ length: quantity }).map((_, i) => (
                           <div key={i} style={{ backgroundColor: 'white', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', width: '100px', textAlign: 'center' }}>
                             <Camera style={{ width: '20px', height: '20px', color: '#f97316', margin: '0 auto 5px auto' }} />
-                            <strong style={{ fontSize: '11px', display: 'block' }}>Camera {i + 1}</strong>
-                            <span style={{ fontSize: '9px', color: '#64748b' }}>Coaxial Cable</span>
+                            <strong style={{ fontSize: '11px', display: 'block' }}>Cam {i + 1}</strong>
+                            <span style={{ fontSize: '9px', color: '#64748b' }}>Outdoor</span>
                           </div>
                         ))}
                       </div>
-                      <p style={{ fontSize: '11px', color: '#64748b', marginTop: '20px', fontStyle: 'italic' }}>
-                        All cameras connect via RG59 coaxial cable for video, and 2-core power cable to the centralized 5A Power Supply.
-                      </p>
                     </div>
 
                     <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>PRICE BREAKDOWN</div>
@@ -726,18 +758,31 @@ function App() {
                     <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>NETWORK TOPOLOGY</div>
                     <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px', marginBottom: '20px', textAlign: 'center' }}>
                       
-                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '20px' }}>
-                        <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '15px 25px', borderRadius: '8px', textAlign: 'center', width: '200px' }}>
-                          <strong>Core Switch</strong><br/>
-                          <span style={{ fontSize: '10px' }}>Main Distribution</span>
-                        </div>
+                      <div style={topologyBoxStyle}>
+                        <Server style={{ width: '24px', height: '24px', color: '#3b82f6', margin: '0 auto 5px auto' }} />
+                        <strong style={{ fontSize: '12px', display: 'block' }}>Core Switch</strong>
+                        <span style={{ fontSize: '10px', color: '#64748b' }}>Main Distribution</span>
                       </div>
-                      <div style={{ height: '20px', width: '2px', backgroundColor: '#9ca3af', margin: '0 auto' }}></div>
-                      <div style={{ backgroundColor: '#0ea5e9', color: 'white', padding: '10px 25px', borderRadius: '8px', textAlign: 'center', display: 'inline-block', width: '200px', marginBottom: '20px' }}>
-                        <strong>{cabTotals.patchPanels}x Patch Panel</strong>
+                      
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px 0' }}>
+                        <div style={topologyLineStyle}></div>
+                        <span style={topologyLabelStyle}>Patch Cords</span>
+                        <div style={topologyLineStyle}></div>
                       </div>
-                      <div style={{ height: '20px', width: '2px', backgroundColor: '#9ca3af', margin: '0 auto' }}></div>
-                      <div style={{ height: '2px', width: '80%', backgroundColor: '#9ca3af', margin: '0 auto 20px auto' }}></div>
+
+                      <div style={{ ...topologyBoxStyle, borderColor: '#0ea5e9', backgroundColor: '#f0f9ff' }}>
+                        <Layers style={{ width: '24px', height: '24px', color: '#0ea5e9', margin: '0 auto 5px auto' }} />
+                        <strong style={{ fontSize: '12px', display: 'block' }}>{cabTotals.patchPanels}x Patch Panel</strong>
+                        <span style={{ fontSize: '10px', color: '#64748b' }}>24-Port Management</span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px 0' }}>
+                        <div style={topologyLineStyle}></div>
+                        <span style={{ ...topologyLabelStyle, color: '#3b82f6', borderColor: '#3b82f6' }}>
+                          {PRICING.cablingStandards[cabStandard].name} Cable (Solid Core)
+                        </span>
+                        <div style={{ height: '2px', width: '80%', backgroundColor: '#94a3b8', margin: '10px auto' }}></div>
+                      </div>
 
                       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '15px' }}>
                         {cabRooms.map(room => {
@@ -752,9 +797,6 @@ function App() {
                           );
                         })}
                       </div>
-                      <p style={{ fontSize: '11px', color: '#64748b', marginTop: '20px', fontStyle: 'italic' }}>
-                        Devices connect via {PRICING.cablingStandards[cabStandard].name} cable to faceplates, which route back to the Patch Panel and Core Switch.
-                      </p>
                     </div>
 
                     <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>BILL OF MATERIALS</div>
