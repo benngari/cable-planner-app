@@ -1,17 +1,44 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Camera, Wifi, Phone, Network, Cable, MapPin, Layers, Download, Trash2, FileText, Moon, Sun, CheckCircle, Server, Home as HomeIcon, Building, TreePine, ArrowRight, DollarSign, Gauge, Sparkles, Star, Zap, Printer, Eye, Save, FolderOpen, X, User, Briefcase, FileSpreadsheet, MonitorPlay
+  Plus, Camera, Wifi, Phone, Network, Cable, MapPin, Layers, Download, Trash2, FileText, Moon, Sun, CheckCircle, Server, Home as HomeIcon, Building, TreePine, ArrowRight, DollarSign, Gauge, Sparkles, Star, Zap, Printer, Eye, Save, FolderOpen, X, User, Briefcase, FileSpreadsheet, MonitorPlay, Monitor
 } from 'lucide-react';
 
 const USD_TO_KES = 130;
 
-const cableStandards = {
-  cat5e: { name: "Cat5e", speed: "Up to 1 Gbps", distance: "100m", price: 0.3 * USD_TO_KES, description: "Budget option", color: "from-yellow-500 to-orange-500", recommended: false },
-  cat6: { name: "Cat6", speed: "Up to 10 Gbps", distance: "55m", price: 0.5 * USD_TO_KES, description: "Recommended", color: "from-blue-500 to-cyan-500", recommended: true },
-  cat6a: { name: "Cat6A", speed: "Up to 10 Gbps", distance: "100m", price: 0.85 * USD_TO_KES, description: "Best performance", color: "from-green-500 to-emerald-500", recommended: false },
-  fiber: { name: "Fiber", speed: "Up to 100 Gbps", distance: "2000m", price: 2.5 * USD_TO_KES, description: "Backbone", color: "from-purple-500 to-pink-500", recommended: false },
-  rg59: { name: "RG59 Coaxial", speed: "Analog/HD-TVI", distance: "300m", price: 50, description: "CCTV Standard", color: "from-gray-500 to-slate-500", recommended: false }
+// Kenyan Market Pricing (Based on online research)
+const PRICING = {
+  brands: {
+    hikvision: {
+      name: 'Hikvision',
+      cameras: {
+        dome: { name: '2MP Dome Camera', price: 10200, image: 'https://imgbin.com/png/asNFEVrf/product-design-camera-lens-closed-circuit-television-png' },
+        bullet: { name: '2MP Bullet Camera', price: 7500, image: 'https://imgbin.com/png/asNFEVrf/product-design-camera-lens-closed-circuit-television-png' },
+        ptz: { name: '2MP PTZ Camera', price: 28500, image: 'https://imgbin.com/png/asNFEVrf/product-design-camera-lens-closed-circuit-television-png' }
+      },
+      dvr4: { name: '4-Channel DVR', price: 12000 },
+      dvr8: { name: '8-Channel DVR', price: 16600 }
+    },
+    dahua: {
+      name: 'Dahua',
+      cameras: {
+        dome: { name: '2MP Dome Camera', price: 3900, image: 'https://imgbin.com/png/asNFEVrf/product-design-camera-lens-closed-circuit-television-png' },
+        bullet: { name: '2MP Bullet Camera', price: 4550, image: 'https://imgbin.com/png/asNFEVrf/product-design-camera-lens-closed-circuit-television-png' },
+        ptz: { name: '4MP PTZ Camera', price: 28000, image: 'https://imgbin.com/png/asNFEVrf/product-design-camera-lens-closed-circuit-television-png' }
+      },
+      dvr4: { name: '4-Channel DVR', price: 4500 },
+      dvr8: { name: '8-Channel DVR', price: 8500 }
+    }
+  },
+  monitor: {
+    name: '22" CCTV Monitor',
+    price: 10000
+  },
+  hdd500: { name: '500GB Surveillance Hard Drive', price: 3500 },
+  hdd1tb: { name: '1TB Surveillance Hard Drive', price: 5500 },
+  psu: { name: 'Centralized Power Supply', price: 2000 },
+  cablePerMeter: { name: 'RG59 Coaxial Cable', price: 50 },
+  connectors: { name: 'BNC & DC Connectors (12 pcs)', price: 1500 }
 };
 
 const defaultRooms = [
@@ -20,14 +47,6 @@ const defaultRooms = [
   { id: 3, name: "Back / Side Access", icon: "TreePine" },
   { id: 4, name: "Inside Shop", icon: "Home" }
 ];
-
-const deviceTypes = {
-  cctv: { label: "CCTV Camera", baseCable: 15, icon: Camera, color: "from-red-500 to-rose-500", poe: true, category: "Security", price: 0, hasFaceplate: false },
-  data: { label: "Data Point", baseCable: 35, icon: Network, color: "from-blue-500 to-indigo-500", poe: false, category: "Networking", price: 2000, hasFaceplate: true },
-  ap: { label: "Access Point", baseCable: 40, icon: Wifi, color: "from-green-500 to-teal-500", poe: true, category: "Wireless", price: 8500, hasFaceplate: false },
-  voip: { label: "VoIP Phone", baseCable: 30, icon: Phone, color: "from-purple-500 to-violet-500", poe: true, category: "Communications", price: 6500, hasFaceplate: false },
-  custom: { label: "Custom Item", baseCable: 0, icon: Server, color: "from-gray-500 to-slate-500", poe: false, category: "Custom", price: 0, hasFaceplate: false }
-};
 
 const getRoomIcon = (iconName) => {
   switch(iconName) {
@@ -38,13 +57,17 @@ const getRoomIcon = (iconName) => {
   }
 };
 
-// Generate the beautiful PDF matching the Kenyan Quotation format
+// Generate PDF with Images
 const generateQuotationPDF = (data) => {
   const printWindow = window.open('', '_blank');
-  const { clientInfo, businessInfo, devices, customItems, totalCost, kitPrice, materialsCost, laborCost, setupCost, dateStr } = data;
+  const { 
+    clientInfo, businessInfo, brand, cameraType, quantity, hasMonitor, 
+    cableLength, totalCost, dateStr, selectedDvr 
+  } = data;
 
-  const cameras = devices.filter(d => d.type === 'cctv');
-  
+  const brandData = PRICING.brands[brand];
+  const cameraData = brandData.cameras[cameraType];
+
   printWindow.document.write(`
     <!DOCTYPE html>
     <html>
@@ -64,13 +87,14 @@ const generateQuotationPDF = (data) => {
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
         th { background-color: #f3f4f6; color: #1e3a8a; font-weight: bold; }
         .total-row td { font-weight: bold; font-size: 16px; color: #1e3a8a; border-top: 2px solid #1e3a8a; border-bottom: none; }
+        .product-grid { display: flex; justify-content: space-around; align-items: center; margin: 20px 0; padding: 20px; background: #f8fafc; border-radius: 10px; }
+        .product-item { text-align: center; width: 30%; }
+        .product-item img { max-width: 120px; height: auto; margin-bottom: 10px; border-radius: 8px; }
+        .product-item p { font-size: 12px; font-weight: bold; color: #1e3a8a; margin: 5px 0; }
+        .product-item span { font-size: 11px; color: #666; }
         .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .feature-card { background: #f8fafc; border-left: 4px solid #f97316; padding: 12px; border-radius: 4px; font-size: 12px; }
         .feature-card strong { display: block; color: #1e3a8a; margin-bottom: 4px; font-size: 13px; }
-        .camera-list { font-size: 13px; padding-left: 20px; }
-        .process-grid { display: flex; justify-content: space-between; margin-top: 20px; text-align: center; font-size: 12px; }
-        .process-step { flex: 1; background: #f8fafc; padding: 15px 10px; margin: 0 5px; border-radius: 8px; border-top: 3px solid #1e3a8a; }
-        .process-step strong { display: block; color: #f97316; font-size: 18px; margin-bottom: 5px; }
         .terms { font-size: 12px; color: #4b5563; margin-top: 30px; }
         .terms ul { padding-left: 20px; margin-top: 5px; }
         .terms li { margin-bottom: 5px; }
@@ -109,59 +133,60 @@ const generateQuotationPDF = (data) => {
         </div>
 
         <div class="section-title">YOUR SYSTEM: WHAT YOU GET</div>
-        <div style="display: flex; gap: 20px; align-items: flex-start;">
-          <div style="flex: 1;">
-            <h4 style="margin-top:0; color:#1e3a8a;">Hikvision 4-Channel 1080p Full HD Kit</h4>
-            <ul class="camera-list">
-              ${customItems.map(item => `<li>${item.quantity} x ${item.name} (${item.description})</li>`).join('')}
-              ${cameras.length > 0 ? `<li>${cameras.length} x Hikvision 2MP Cameras (Indoor/Outdoor)</li>` : ''}
-              <li>${data.cableLength}m RG59 Two-in-one Coaxial Cable</li>
-              <li>12 x BNC and DC Jack Connectors</li>
-            </ul>
+        
+        <div class="product-grid">
+          <div class="product-item">
+            <img src="${cameraData.image}" alt="Camera" onerror="this.style.display='none'">
+            <p>${quantity}x ${brandData.name} ${cameraData.name}</p>
+            <span>2MP 1080p • Night Vision • Weatherproof</span>
           </div>
-          <div style="width: 200px; text-align: center;">
-             <div style="background:#f3f4f6; height:150px; display:flex; align-items:center; justify-content:center; border:1px dashed #ccc; border-radius:8px; color:#999; font-size:12px;">
-               [ Insert Kit Photo Here ]
-             </div>
+          <div class="product-item">
+            <img src="${brand === 'hikvision' ? 'https://toppng.com/free-image/hik-camera-hikvision-cctv-camera-PNG-free-PNG-Images_176907' : cameraData.image}" alt="DVR" onerror="this.style.display='none'">
+            <p>1x ${brandData.name} ${selectedDvr.name}</p>
+            <span>H.265 Compression • Smartphone App</span>
           </div>
+          ${hasMonitor ? `
+          <div class="product-item">
+            <img src="https://www.pngall.com/cctv-camera-png/download/105818/" alt="Monitor" onerror="this.style.display='none'">
+            <p>1x ${PRICING.monitor.name}</p>
+            <span>Full HD • HDMI & VGA</span>
+          </div>
+          ` : ''}
+        </div>
+
+        <div style="font-size:13px; padding-left:20px; margin-bottom:20px;">
+          <p>• ${quantity}x ${brandData.name} ${cameraData.name}</p>
+          <p>• 1x ${brandData.name} ${selectedDvr.name}</p>
+          <p>• 1x ${PRICING.hdd500.name}</p>
+          <p>• 1x ${PRICING.psu.name}</p>
+          <p>• ${cableLength}m ${PRICING.cablePerMeter.name}</p>
+          <p>• 12x BNC & DC Connectors</p>
+          ${hasMonitor ? `<p>• 1x ${PRICING.monitor.name}</p>` : ''}
         </div>
 
         <div class="section-title">WHY THIS SYSTEM</div>
         <div class="features-grid">
           <div class="feature-card"><strong>CRYSTAL CLEAR</strong> Full HD 2MP video. Faces, number plates, and detail you can actually use.</div>
           <div class="feature-card"><strong>SEES IN THE DARK</strong> Infrared night vision for 24/7 cover, even with the lights off.</div>
-          <div class="feature-card"><strong>WATCH FROM ANYWHERE</strong> Live view and playback on your phone with the Hik-Connect app.</div>
+          <div class="feature-card"><strong>WATCH FROM ANYWHERE</strong> Live view and playback on your phone with the mobile app.</div>
           <div class="feature-card"><strong>MOTION ALERTS</strong> Instant phone notifications when movement is detected.</div>
           <div class="feature-card"><strong>BUILT FOR KENYAN WEATHER</strong> IP66 cameras handle rain, heat, and dust.</div>
           <div class="feature-card"><strong>EASY PLAYBACK</strong> Search and replay past footage straight from the recorder.</div>
         </div>
 
-        <div class="section-title">RECOMMENDED CAMERA POSITIONS</div>
-        <table style="font-size:12px;">
-          <tr><th>#</th><th>Position</th><th>Purpose</th></tr>
-          <tr><td>1</td><td>Main entrance / gate</td><td>Captures everyone coming in and out, face level.</td></tr>
-          <tr><td>2</td><td>Parking / compound</td><td>Covers vehicles and approach to the house/shop.</td></tr>
-          <tr><td>3</td><td>Back or side access</td><td>The most common entry point for break-ins.</td></tr>
-          <tr><td>4</td><td>Inside: living area / shop counter</td><td>Covers valuables, cash point, or main passage.</td></tr>
-        </table>
-
         <div class="page-break"></div>
-
-        <div class="section-title">INSTALLATION PROCESS</div>
-        <div class="process-grid">
-          <div class="process-step"><strong>1</strong> SITE VISIT<br><span style="font-size:10px;">Agree camera positions.</span></div>
-          <div class="process-step"><strong>2</strong> INSTALLATION<br><span style="font-size:10px;">Mount cameras, run cables.</span></div>
-          <div class="process-step"><strong>3</strong> SETUP<br><span style="font-size:10px;">Configure recording and alerts.</span></div>
-          <div class="process-step"><strong>4</strong> HANDOVER<br><span style="font-size:10px;">Phone app setup and training.</span></div>
-        </div>
 
         <div class="section-title">PRICE BREAKDOWN</div>
         <table>
           <tr><th>#</th><th>Description</th><th>Amount (KSh)</th></tr>
-          <tr><td>1</td><td><strong>Hikvision CCTV Kit</strong><br><span style="font-size:11px;">DVR, 4 cameras, hard drive, power supply, cable, connectors</span></td><td>${kitPrice.toLocaleString()}</td></tr>
-          <tr><td>2</td><td><strong>Installation materials</strong><br><span style="font-size:11px;">Cable clips, fixings, insulation tape</span></td><td>${materialsCost.toLocaleString()}</td></tr>
-          <tr><td>3</td><td><strong>Installation labour</strong><br><span style="font-size:11px;">Mounting cameras and DVR, cable routing, testing</span></td><td>${laborCost.toLocaleString()}</td></tr>
-          <tr><td>4</td><td><strong>Configuration and training</strong><br><span style="font-size:11px;">DVR setup, Hik-Connect app, client walkthrough</span></td><td>${setupCost.toLocaleString()}</td></tr>
+          <tr><td>1</td><td><strong>${brandData.name} ${cameraData.name}</strong> (${quantity} pcs @ ${cameraData.price.toLocaleString()})</td><td>${(cameraData.price * quantity).toLocaleString()}</td></tr>
+          <tr><td>2</td><td><strong>${brandData.name} ${selectedDvr.name}</strong></td><td>${selectedDvr.price.toLocaleString()}</td></tr>
+          <tr><td>3</td><td>${PRICING.hdd500.name}</td><td>${PRICING.hdd500.price.toLocaleString()}</td></tr>
+          <tr><td>4</td><td>${PRICING.psu.name}</td><td>${PRICING.psu.price.toLocaleString()}</td></tr>
+          <tr><td>5</td><td>${cableLength}m ${PRICING.cablePerMeter.name}</td><td>${(cableLength * PRICING.cablePerMeter.price).toLocaleString()}</td></tr>
+          <tr><td>6</td><td>${PRICING.connectors.name}</td><td>${PRICING.connectors.price.toLocaleString()}</td></tr>
+          ${hasMonitor ? `<tr><td>7</td><td>${PRICING.monitor.name}</td><td>${PRICING.monitor.price.toLocaleString()}</td></tr>` : ''}
+          <tr><td colspan="2" style="text-align:right;"><strong>Installation & Configuration</strong></td><td>4,500</td></tr>
           <tr class="total-row"><td colspan="2" style="text-align:right;">TOTAL</td><td>${totalCost.toLocaleString()}</td></tr>
         </table>
 
@@ -201,12 +226,15 @@ const generateQuotationPDF = (data) => {
 function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [currentView, setCurrentView] = useState('welcome');
-  const [rooms, setRooms] = useState(defaultRooms);
-  const [selectedCable, setSelectedCable] = useState('rg59');
-  const [devices, setDevices] = useState([]);
-  const [customItems, setCustomItems] = useState([]); 
   
-  // Default Business Info now includes your phone number 0711645837
+  // Configuration State
+  const [brand, setBrand] = useState('hikvision');
+  const [cameraType, setCameraType] = useState('bullet');
+  const [quantity, setQuantity] = useState(4);
+  const [hasMonitor, setHasMonitor] = useState(false);
+  const [cableLength, setCableLength] = useState(50);
+  
+  // Client & Business Info
   const [clientInfo, setClientInfo] = useState({ name: '', phone: '', address: '' });
   const [businessInfo, setBusinessInfo] = useState({ 
     name: 'Ngari Tech Solutions', 
@@ -214,11 +242,6 @@ function App() {
     email: 'info@ngaritech.co.ke', 
     mpesa: 'Paybill 400200, Acc: 0110...' 
   });
-
-  const [kitPrice, setKitPrice] = useState(15999);
-  const [materialsCost, setMaterialsCost] = useState(1000);
-  const [laborCost, setLaborCost] = useState(3500);
-  const [setupCost, setSetupCost] = useState(1000);
 
   const [showExportSuccess, setShowExportSuccess] = useState(false);
 
@@ -229,38 +252,30 @@ function App() {
 
   const formatKES = (amount) => `KSh ${Math.round(amount).toLocaleString()}`;
 
-  const loadKenyanCCTVTemplate = () => {
-    setDevices([
-      { id: 1, name: 'Camera 1 (Main Gate)', type: 'cctv', room: 'Main Entrance', cableLength: 15, poe: false },
-      { id: 2, name: 'Camera 2 (Parking)', type: 'cctv', room: 'Parking / Compound', cableLength: 20, poe: false },
-      { id: 3, name: 'Camera 3 (Backdoor)', type: 'cctv', room: 'Back / Side Access', cableLength: 25, poe: false },
-      { id: 4, name: 'Camera 4 (Counter)', type: 'cctv', room: 'Inside Shop', cableLength: 10, poe: false },
-    ]);
-    setCustomItems([
-      { id: 101, name: 'Hikvision 4-Channel DVR', description: 'White, Turbo HD', quantity: 1, price: 0 },
-      { id: 102, name: '500GB Surveillance Hard Drive', description: 'Camera recording memory', quantity: 1, price: 0 },
-      { id: 103, name: '4-Port 5A Power Supply', description: 'Centralized CCTV PSU', quantity: 1, price: 0 },
-      { id: 104, name: 'BNC & DC Connectors', description: '12 pieces', quantity: 12, price: 0 },
-    ]);
-    setKitPrice(15999); setMaterialsCost(1000); setLaborCost(3500); setSetupCost(1000);
-    setSelectedCable('rg59');
-    setCurrentView('planner');
+  // Dynamic Pricing Calculation
+  const calculateTotalCost = () => {
+    const brandData = PRICING.brands[brand];
+    const cameraData = brandData.cameras[cameraType];
+    const selectedDvr = quantity <= 4 ? brandData.dvr4 : brandData.dvr8;
+    
+    let total = (cameraData.price * quantity) 
+              + selectedDvr.price 
+              + PRICING.hdd500.price 
+              + PRICING.psu.price 
+              + (cableLength * PRICING.cablePerMeter.price) 
+              + PRICING.connectors.price 
+              + 4500; // Labor
+              
+    if (hasMonitor) total += PRICING.monitor.price;
+    return total;
   };
 
-  const calculateTotalCableLength = () => devices.reduce((sum, d) => sum + (d.cableLength || 15), 0);
-  const calculateTotalCost = () => kitPrice + materialsCost + laborCost + setupCost;
-
-  const addDevice = () => {
-    setDevices([...devices, { id: Date.now(), name: `Camera ${devices.length + 1}`, type: 'cctv', room: rooms[0].name, cableLength: 15, poe: false }]);
-  };
-
-  const removeDevice = (id) => setDevices(devices.filter(d => d.id !== id));
+  const selectedDvr = quantity <= 4 ? PRICING.brands[brand].dvr4 : PRICING.brands[brand].dvr8;
 
   const exportQuotation = () => {
     generateQuotationPDF({
-      clientInfo, businessInfo, devices, customItems,
-      totalCost: calculateTotalCost(), cableLength: calculateTotalCableLength(),
-      kitPrice, materialsCost, laborCost, setupCost, dateStr: new Date().toLocaleDateString('en-GB')
+      clientInfo, businessInfo, brand, cameraType, quantity, hasMonitor, 
+      cableLength, totalCost: calculateTotalCost(), dateStr: new Date().toLocaleDateString('en-GB'), selectedDvr
     });
     setShowExportSuccess(true);
     setTimeout(() => setShowExportSuccess(false), 3000);
@@ -313,40 +328,31 @@ function App() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               
-              {/* Option 1: Kenyan CCTV Template */}
-              <div onClick={loadKenyanCCTVTemplate} className={`group cursor-pointer p-8 rounded-2xl border transition-all duration-300 hover:scale-105 hover:shadow-2xl ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-orange-500' : 'bg-white border-gray-200 hover:border-orange-500'}`}>
+              {/* Option 1: CCTV Planner */}
+              <div onClick={() => setCurrentView('planner')} className={`group cursor-pointer p-8 rounded-2xl border transition-all duration-300 hover:scale-105 hover:shadow-2xl ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-orange-500' : 'bg-white border-gray-200 hover:border-orange-500'}`}>
                 <div className="w-16 h-16 mx-auto bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:animate-pulse">
                   <Camera className="w-8 h-8 text-white" />
                 </div>
-                <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>4-Camera CCTV Quotation</h3>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Load the ready-made KSh 21,499 Hikvision kit template and generate a PDF.</p>
+                <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>CCTV Quotation Builder</h3>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Choose brand, camera type, quantity, and generate a professional PDF quote.</p>
               </div>
 
-              {/* Option 2: Blank Planner */}
-              <div onClick={() => setCurrentView('planner')} className={`group cursor-pointer p-8 rounded-2xl border transition-all duration-300 hover:scale-105 hover:shadow-2xl ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-blue-500' : 'bg-white border-gray-200 hover:border-blue-500'}`}>
-                <div className="w-16 h-16 mx-auto bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:animate-pulse">
-                  <Network className="w-8 h-8 text-white" />
-                </div>
-                <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Start Blank Project</h3>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Build a custom structured cabling plan from scratch for any building.</p>
-              </div>
-
-              {/* Option 3: Materials / BOM */}
+              {/* Option 2: Materials */}
               <div onClick={() => setCurrentView('materials')} className={`group cursor-pointer p-8 rounded-2xl border transition-all duration-300 hover:scale-105 hover:shadow-2xl ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-green-500' : 'bg-white border-gray-200 hover:border-green-500'}`}>
                 <div className="w-16 h-16 mx-auto bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:animate-pulse">
                   <FileSpreadsheet className="w-8 h-8 text-white" />
                 </div>
-                <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>View Materials (BOM)</h3>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Check the exact cables, faceplates, and connectors needed for your project.</p>
+                <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>View Pricing Guide</h3>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>See current Kenyan market prices for Hikvision and Dahua equipment.</p>
               </div>
 
-              {/* Option 4: Network Preview */}
+              {/* Option 3: Preview */}
               <div onClick={() => setCurrentView('preview')} className={`group cursor-pointer p-8 rounded-2xl border transition-all duration-300 hover:scale-105 hover:shadow-2xl ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-purple-500' : 'bg-white border-gray-200 hover:border-purple-500'}`}>
                 <div className="w-16 h-16 mx-auto bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:animate-pulse">
                   <MonitorPlay className="w-8 h-8 text-white" />
                 </div>
                 <h3 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Network Preview</h3>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Visualize the DVR, patch panel, and camera topology for your setup.</p>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Visualize the DVR and camera topology for your setup.</p>
               </div>
 
             </div>
@@ -361,7 +367,7 @@ function App() {
             <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                 <User className="w-5 h-5 text-blue-500" />
-                <span>Quotation Details (Phone: 0711645837)</span>
+                <span>Quotation Details</span>
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
@@ -371,7 +377,7 @@ function App() {
                   <input type="text" placeholder="Location / Address" value={clientInfo.address} onChange={e => setClientInfo({...clientInfo, address: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
                 </div>
                 <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-blue-500">Your Business Info (Prepared By)</h4>
+                  <h4 className="text-sm font-semibold text-blue-500">Your Business Info</h4>
                   <input type="text" placeholder="Business Name" value={businessInfo.name} onChange={e => setBusinessInfo({...businessInfo, name: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
                   <input type="text" placeholder="Phone" value={businessInfo.phone} onChange={e => setBusinessInfo({...businessInfo, phone: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
                   <input type="text" placeholder="M-Pesa Till/Paybill" value={businessInfo.mpesa} onChange={e => setBusinessInfo({...businessInfo, mpesa: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
@@ -379,54 +385,74 @@ function App() {
               </div>
             </div>
 
-            {/* Cameras List */}
+            {/* Configuration Panel */}
             <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>CCTV Cameras & Cabling</h3>
-                <button onClick={addDevice} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-white flex items-center space-x-2">
-                  <Plus className="w-4 h-4" /> <span>Add Camera</span>
-                </button>
+              <h3 className={`text-lg font-bold mb-6 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <Settings className="w-5 h-5 text-blue-500" />
+                <span>System Configuration</span>
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {/* Brand */}
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-2">Brand</label>
+                  <select value={brand} onChange={e => setBrand(e.target.value)} className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
+                    <option value="hikvision">Hikvision (Premium)</option>
+                    <option value="dahua">Dahua (Value)</option>
+                  </select>
+                </div>
+
+                {/* Camera Type */}
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-2">Camera Design</label>
+                  <select value={cameraType} onChange={e => setCameraType(e.target.value)} className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
+                    <option value="bullet">Bullet (Outdoor Long Range)</option>
+                    <option value="dome">Dome (Indoor/Outdoor Vandal-proof)</option>
+                    <option value="ptz">PTZ (Pan-Tilt-Zoom)</option>
+                  </select>
+                </div>
+
+                {/* Quantity */}
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-2">Number of Cameras</label>
+                  <input type="number" min="1" max="16" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
+                </div>
+
+                {/* Cable Length */}
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-2">Cable Required (meters)</label>
+                  <input type="number" value={cableLength} onChange={e => setCableLength(Number(e.target.value))} className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-blue-500 outline-none ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`} />
+                </div>
               </div>
-              <div className="space-y-2">
-                {devices.map(device => (
-                  <div key={device.id} className={`flex items-center justify-between p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    <div className="flex items-center space-x-3">
-                      <Camera className="w-5 h-5 text-red-500" />
-                      <div>
-                        <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>{device.name}</p>
-                        <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{device.room} • {device.cableLength}m RG59 Cable</p>
-                      </div>
-                    </div>
-                    <button onClick={() => removeDevice(device.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+
+              {/* Monitor Toggle */}
+              <div className={`mt-6 p-4 rounded-xl flex items-center justify-between ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                <div className="flex items-center space-x-3">
+                  <Monitor className="w-6 h-6 text-blue-500" />
+                  <div>
+                    <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Add 22" CCTV Monitor</p>
+                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Perfect for viewing footage live at the shop/home</p>
                   </div>
-                ))}
+                </div>
+                <button onClick={() => setHasMonitor(!hasMonitor)} className={`px-6 py-2 rounded-lg font-bold transition-all ${hasMonitor ? 'bg-green-500 text-white' : darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-600'}`}>
+                  {hasMonitor ? 'Added ✓' : `+ ${formatKES(PRICING.monitor.price)}`}
+                </button>
               </div>
             </div>
 
-            {/* Price Breakdown Form */}
+            {/* Live Price Summary */}
             <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Quotation Costs (KSh)</h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="flex justify-between items-center">
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Kit Price</label>
-                  <input type="number" value={kitPrice} onChange={e => setKitPrice(Number(e.target.value))} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                  <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Live Quotation Summary</h3>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {quantity}x {PRICING.brands[brand].name} {PRICING.brands[brand].cameras[cameraType].name} + {selectedDvr.name} {hasMonitor ? '+ Monitor' : ''}
+                  </p>
                 </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Materials (Clips, Tape)</label>
-                  <input type="number" value={materialsCost} onChange={e => setMaterialsCost(Number(e.target.value))} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                <div className="text-right">
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Estimated Cost</p>
+                  <p className="text-3xl font-bold text-green-500">{formatKES(calculateTotalCost())}</p>
                 </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Labour</label>
-                  <input type="number" value={laborCost} onChange={e => setLaborCost(Number(e.target.value))} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Setup & Training</label>
-                  <input type="number" value={setupCost} onChange={e => setSetupCost(Number(e.target.value))} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                </div>
-              </div>
-              <div className={`mt-6 p-4 rounded-xl flex justify-between items-center ${darkMode ? 'bg-gray-900' : 'bg-gray-100'}`}>
-                <span className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Total Quotation</span>
-                <span className="text-2xl font-bold text-green-500">{formatKES(calculateTotalCost())}</span>
               </div>
             </div>
 
@@ -442,22 +468,66 @@ function App() {
           </div>
         )}
 
-        {/* Fallback Views (Materials & Preview) to ensure buttons work */}
+        {/* Pricing Guide View */}
         {currentView === 'materials' && (
-          <div className={`p-10 rounded-xl text-center border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-            <FileSpreadsheet className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Bill of Materials Ready</h2>
-            <p className={`mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Go to the Planner to enter details and generate the full PDF with the BOM included.</p>
-            <button onClick={() => setCurrentView('planner')} className="bg-blue-600 text-white px-6 py-2 rounded-lg">Go to Planner</button>
+          <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+            <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Kenyan Market Pricing Guide</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-100'}>
+                  <tr>
+                    <th className={`p-3 text-left ${darkMode ? 'text-white' : 'text-gray-900'}`}>Item</th>
+                    <th className={`p-3 text-left ${darkMode ? 'text-white' : 'text-gray-900'}`}>Hikvision</th>
+                    <th className={`p-3 text-left ${darkMode ? 'text-white' : 'text-gray-900'}`}>Dahua</th>
+                  </tr>
+                </thead>
+                <tbody className={`divide-y ${darkMode ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                  <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                    <td className="p-3">Dome Camera (2MP)</td>
+                    <td className="p-3">{formatKES(PRICING.brands.hikvision.cameras.dome.price)}</td>
+                    <td className="p-3">{formatKES(PRICING.brands.dahua.cameras.dome.price)}</td>
+                  </tr>
+                  <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                    <td className="p-3">Bullet Camera (2MP)</td>
+                    <td className="p-3">{formatKES(PRICING.brands.hikvision.cameras.bullet.price)}</td>
+                    <td className="p-3">{formatKES(PRICING.brands.dahua.cameras.bullet.price)}</td>
+                  </tr>
+                  <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                    <td className="p-3">4-Channel DVR</td>
+                    <td className="p-3">{formatKES(PRICING.brands.hikvision.dvr4.price)}</td>
+                    <td className="p-3">{formatKES(PRICING.brands.dahua.dvr4.price)}</td>
+                  </tr>
+                  <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                    <td className="p-3">22" Monitor</td>
+                    <td className="p-3" colSpan="2">{formatKES(PRICING.monitor.price)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-4 text-xs text-gray-500">* Prices are estimates based on Kenyan market rates and may vary by supplier.</p>
           </div>
         )}
 
+        {/* Preview View */}
         {currentView === 'preview' && (
           <div className={`p-10 rounded-xl text-center border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
             <MonitorPlay className="w-16 h-16 text-purple-500 mx-auto mb-4" />
             <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Network Topology</h2>
-            <p className={`mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>The visual network diagram is available after setting up your cameras.</p>
-            <button onClick={() => setCurrentView('planner')} className="bg-blue-600 text-white px-6 py-2 rounded-lg">Go to Planner</button>
+            <p className={`mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Your system will include {quantity} {cameraType} cameras connected to a {selectedDvr.name}.
+            </p>
+            <div className="flex justify-center gap-4 flex-wrap">
+              {Array.from({ length: quantity }).map((_, i) => (
+                <div key={i} className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                  <Camera className="w-6 h-6 text-blue-500 mx-auto" />
+                  <p className="text-xs mt-1">Cam {i + 1}</p>
+                </div>
+              ))}
+              <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                <Server className="w-6 h-6 text-green-500 mx-auto" />
+                <p className="text-xs mt-1">{selectedDvr.name}</p>
+              </div>
+            </div>
           </div>
         )}
 
