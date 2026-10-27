@@ -6,7 +6,7 @@ import {
   Trash2, FileText, Moon, Sun, CheckCircle, Server, Home as HomeIcon, 
   Building, TreePine, ArrowRight, DollarSign, Gauge, Sparkles, Star, 
   Zap, Printer, Eye, Save, FolderOpen, X, User, Briefcase, 
-  FileSpreadsheet, MonitorPlay, Monitor, Settings, Package, Activity
+  FileSpreadsheet, MonitorPlay, Monitor, Settings, Package, Activity, ShoppingCart
 } from 'lucide-react';
 
 const PRICING = {
@@ -64,16 +64,11 @@ const cabDeviceTypes = {
 
 function App() {
   const [darkMode, setDarkMode] = useState(true);
-  const [currentView, setCurrentView] = useState('welcome'); // welcome, cctv-planner, cabling-planner, report, preview
+  const [currentView, setCurrentView] = useState('welcome'); 
   const [activeProject, setActiveProject] = useState('cctv'); // 'cctv' or 'cabling'
   const [isExporting, setIsExporting] = useState(false);
 
-  // --- CCTV State ---
-  const [brand, setBrand] = useState('hikvision');
-  const [cameraType, setCameraType] = useState('bullet');
-  const [quantity, setQuantity] = useState(4);
-  const [hasMonitor, setHasMonitor] = useState(false);
-  const [cableLength, setCableLength] = useState(50);
+  // --- Shared Client & Business State ---
   const [clientInfo, setClientInfo] = useState({ name: '', phone: '', address: '' });
   const [businessInfo, setBusinessInfo] = useState({ 
     name: 'Ngari Tech Solutions', 
@@ -81,6 +76,19 @@ function App() {
     email: 'info@ngaritech.co.ke', 
     mpesa: 'Paybill 400200, Acc: 0110...' 
   });
+
+  // --- Custom Items State (Shared for both) ---
+  const [customItems, setCustomItems] = useState([]);
+  const [customItemName, setCustomItemName] = useState('');
+  const [customItemPrice, setCustomItemPrice] = useState('');
+  const [customItemQty, setCustomItemQty] = useState(1);
+
+  // --- CCTV State ---
+  const [brand, setBrand] = useState('hikvision');
+  const [cameraType, setCameraType] = useState('bullet');
+  const [quantity, setQuantity] = useState(4);
+  const [hasMonitor, setHasMonitor] = useState(false);
+  const [cableLength, setCableLength] = useState(50);
 
   // --- Cabling State ---
   const [cabRooms, setCabRooms] = useState(defaultCabRooms);
@@ -92,7 +100,7 @@ function App() {
   const [cabDeviceType, setCabDeviceType] = useState('data');
   const [cabDeviceRoom, setCabDeviceRoom] = useState('');
   const [cabCableLength, setCabCableLength] = useState('');
-  const [cabFaceplate, setCabFaceplate] = useState('single'); // 'single' or 'dual'
+  const [cabFaceplate, setCabFaceplate] = useState('single');
 
   useEffect(() => {
     if (darkMode) document.documentElement.classList.add('dark');
@@ -100,6 +108,24 @@ function App() {
   }, [darkMode]);
 
   const formatKES = (amount) => `KSh ${Math.round(amount).toLocaleString()}`;
+
+  // ======================= CUSTOM ITEMS LOGIC =======================
+  const addCustomItem = () => {
+    if (!customItemName || !customItemPrice) return alert("Please enter item name and price");
+    setCustomItems([...customItems, { 
+      id: Date.now(), 
+      name: customItemName, 
+      price: Number(customItemPrice), 
+      qty: Number(customItemQty) 
+    }]);
+    setCustomItemName('');
+    setCustomItemPrice('');
+    setCustomItemQty(1);
+  };
+
+  const removeCustomItem = (id) => setCustomItems(customItems.filter(i => i.id !== id));
+  
+  const getCustomItemsTotal = () => customItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
   // ======================= CCTV CALCULATIONS =======================
   const loadJumiaKit = () => {
@@ -120,7 +146,8 @@ function App() {
     if (hasMonitor) total += PRICING.monitor.price;
     return total;
   };
-  const calculateTotalCost = () => calculateHardwareCost() + PRICING.installationCost;
+  
+  const calculateCCTVTotal = () => calculateHardwareCost() + PRICING.installationCost + getCustomItemsTotal();
   const selectedDvr = quantity <= 4 ? PRICING.brands[brand].dvr4 : PRICING.brands[brand].dvr8;
 
   // ======================= CABLING CALCULATIONS =======================
@@ -159,7 +186,7 @@ function App() {
       totalLength += d.cableLength * ports;
     });
 
-    const totalWithWaste = totalLength * 1.15; // 15% wastage
+    const totalWithWaste = totalLength * 1.15;
     const cableBoxes = Math.ceil(totalWithWaste / 305) || 0;
     const keystones = totalPorts;
     const patchCords = totalPorts;
@@ -170,10 +197,13 @@ function App() {
     const cableCost = totalWithWaste * cablePrice;
     const hardwareCost = (keystones * 150) + (patchCords * 450) + (faceplates * 200) + (patchPanels * 4500);
     const laborCost = 4500;
+    
+    const customTotal = getCustomItemsTotal();
+    const totalCost = cableCost + hardwareCost + laborCost + customTotal;
 
     return {
       totalPorts, totalLength, totalWithWaste, cableBoxes, keystones, patchCords, faceplates, patchPanels,
-      cableCost, hardwareCost, laborCost, totalCost: cableCost + hardwareCost + laborCost
+      cableCost, hardwareCost, laborCost, customTotal, totalCost
     };
   };
   const cabTotals = getCabTotals();
@@ -341,15 +371,43 @@ function App() {
               </div>
             </div>
 
+            {/* CUSTOM ITEMS SECTION */}
+            <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+              <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                <ShoppingCart className="w-5 h-5 text-blue-500" /> <span>Additional Items Required</span>
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <input type="text" placeholder="Item Name (e.g., Extra Brackets)" value={customItemName} onChange={e => setCustomItemName(e.target.value)} className={`px-3 py-2 rounded-lg border md:col-span-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                <input type="number" placeholder="Qty" value={customItemQty} onChange={e => setCustomItemQty(Number(e.target.value))} className={`px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                <div className="flex space-x-2">
+                  <input type="number" placeholder="Price (KSh)" value={customItemPrice} onChange={e => setCustomItemPrice(e.target.value)} className={`flex-1 px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                  <button onClick={addCustomItem} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold">Add</button>
+                </div>
+              </div>
+              {customItems.length > 0 && (
+                <div className="space-y-2">
+                  {customItems.map(item => (
+                    <div key={item.id} className={`flex justify-between items-center p-2 rounded-lg text-sm ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                      <span>{item.qty}x {item.name}</span>
+                      <div className="flex items-center space-x-4">
+                        <span className="font-bold text-blue-500">{formatKES(item.price * item.qty)}</span>
+                        <button onClick={() => removeCustomItem(item.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
               <div className="flex justify-between items-center">
                 <div>
                   <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Total Quotation Summary</h3>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Hardware: {formatKES(calculateHardwareCost())} | Labor: {formatKES(PRICING.installationCost)}</p>
+                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Hardware: {formatKES(calculateHardwareCost())} | Labor: {formatKES(PRICING.installationCost)} {customItems.length > 0 ? `| Custom: ${formatKES(getCustomItemsTotal())}` : ''}</p>
                 </div>
                 <div className="text-right">
                   <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total</p>
-                  <p className="text-3xl font-bold text-green-500">{formatKES(calculateTotalCost())}</p>
+                  <p className="text-3xl font-bold text-green-500">{formatKES(calculateCCTVTotal())}</p>
                 </div>
               </div>
             </div>
@@ -449,6 +507,34 @@ function App() {
                             </p>
                           </div>
                           <button onClick={() => removeCabDevice(d.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* CUSTOM ITEMS SECTION */}
+                <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                  <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <ShoppingCart className="w-5 h-5 text-blue-500" /> <span>Additional Items Required</span>
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                    <input type="text" placeholder="Item Name" value={customItemName} onChange={e => setCustomItemName(e.target.value)} className={`px-3 py-2 rounded-lg border md:col-span-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                    <input type="number" placeholder="Qty" value={customItemQty} onChange={e => setCustomItemQty(Number(e.target.value))} className={`px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                    <div className="flex space-x-2">
+                      <input type="number" placeholder="Price (KSh)" value={customItemPrice} onChange={e => setCustomItemPrice(e.target.value)} className={`flex-1 px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                      <button onClick={addCustomItem} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold">Add</button>
+                    </div>
+                  </div>
+                  {customItems.length > 0 && (
+                    <div className="space-y-2">
+                      {customItems.map(item => (
+                        <div key={item.id} className={`flex justify-between items-center p-2 rounded-lg text-sm ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                          <span>{item.qty}x {item.name}</span>
+                          <div className="flex items-center space-x-4">
+                            <span className="font-bold text-blue-500">{formatKES(item.price * item.qty)}</span>
+                            <button onClick={() => removeCustomItem(item.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -592,9 +678,18 @@ function App() {
                         <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>5</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{cableLength}m {PRICING.cablePerMeter.name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(cableLength * PRICING.cablePerMeter.price).toLocaleString()}</td></tr>
                         <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>6</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.connectors.name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.connectors.price.toLocaleString()}</td></tr>
                         {hasMonitor && <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>7</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.monitor.name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.monitor.price.toLocaleString()}</td></tr>}
+                        
+                        {customItems.map((item, index) => (
+                          <tr key={item.id}>
+                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{hasMonitor ? 8 + index : 7 + index}</td>
+                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{item.qty}x {item.name}</td>
+                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(item.price * item.qty).toLocaleString()}</td>
+                          </tr>
+                        ))}
+
                         <tr><td colSpan="2" style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}><strong>Hardware Subtotal</strong></td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}><strong>{calculateHardwareCost().toLocaleString()}</strong></td></tr>
                         <tr><td colSpan="2" style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>Installation & Configuration</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.installationCost.toLocaleString()}</td></tr>
-                        <tr><td colSpan="2" style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold', fontSize: '16px', color: '#1e3a8a', borderTop: '2px solid #1e3a8a' }}>TOTAL</td><td style={{ padding: '10px', fontWeight: 'bold', fontSize: '16px', color: '#1e3a8a', borderTop: '2px solid #1e3a8a' }}>{calculateTotalCost().toLocaleString()}</td></tr>
+                        <tr><td colSpan="2" style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold', fontSize: '16px', color: '#1e3a8a', borderTop: '2px solid #1e3a8a' }}>TOTAL</td><td style={{ padding: '10px', fontWeight: 'bold', fontSize: '16px', color: '#1e3a8a', borderTop: '2px solid #1e3a8a' }}>{calculateCCTVTotal().toLocaleString()}</td></tr>
                       </tbody>
                     </table>
                   </>
@@ -628,7 +723,17 @@ function App() {
                         <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>Patch Cords (2m)</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{cabTotals.patchCords}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>pieces</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(cabTotals.patchCords * 450).toLocaleString()}</td></tr>
                         <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>Faceplates (2-port)</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{cabTotals.faceplates}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>pieces</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(cabTotals.faceplates * 200).toLocaleString()}</td></tr>
                         <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>Patch Panel (24-port)</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{cabTotals.patchPanels}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>units</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(cabTotals.patchPanels * 4500).toLocaleString()}</td></tr>
-                        <tr><td colSpan="3" style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}><strong>Hardware Subtotal</strong></td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}><strong>{(cabTotals.cableCost + cabTotals.hardwareCost).toLocaleString()}</strong></td></tr>
+                        
+                        {customItems.map(item => (
+                          <tr key={item.id}>
+                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{item.name}</td>
+                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{item.qty}</td>
+                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>units</td>
+                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(item.price * item.qty).toLocaleString()}</td>
+                          </tr>
+                        ))}
+
+                        <tr><td colSpan="3" style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}><strong>Hardware Subtotal</strong></td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}><strong>{(cabTotals.cableCost + cabTotals.hardwareCost + cabTotals.customTotal).toLocaleString()}</strong></td></tr>
                         <tr><td colSpan="3" style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>Installation Labor</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{cabTotals.laborCost.toLocaleString()}</td></tr>
                         <tr><td colSpan="3" style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold', fontSize: '16px', color: '#1e3a8a', borderTop: '2px solid #1e3a8a' }}>TOTAL</td><td style={{ padding: '10px', fontWeight: 'bold', fontSize: '16px', color: '#1e3a8a', borderTop: '2px solid #1e3a8a' }}>{cabTotals.totalCost.toLocaleString()}</td></tr>
                       </tbody>
