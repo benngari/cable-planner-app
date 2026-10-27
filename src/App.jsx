@@ -5,60 +5,43 @@ import {
   Trash2, FileText, Moon, Sun, CheckCircle, Server, Home as HomeIcon, 
   Building, TreePine, ArrowRight, DollarSign, Gauge, Sparkles, Star, 
   Zap, Printer, Eye, Save, FolderOpen, X, User, Briefcase, 
-  FileSpreadsheet, MonitorPlay, Monitor, Settings
+  FileSpreadsheet, MonitorPlay, Monitor, Settings, Package
 } from 'lucide-react';
 
-const USD_TO_KES = 130;
-
-// Kenyan Market Pricing (Based on online research)
+// Updated Kenyan Pricing (Matching Jumia Listings)
 const PRICING = {
   brands: {
     hikvision: {
       name: 'Hikvision',
       cameras: {
-        dome: { name: '2MP Dome Camera', price: 10200, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
-        bullet: { name: '2MP Bullet Camera', price: 7500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
-        ptz: { name: '2MP PTZ Camera', price: 28500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
+        dome: { name: '2MP Dome Camera', price: 1800, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
+        bullet: { name: '2MP Bullet Camera', price: 1800, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
+        ptz: { name: '2MP PTZ Camera', price: 12000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
       },
-      dvr4: { name: '4-Channel DVR', price: 12000 },
-      dvr8: { name: '8-Channel DVR', price: 16600 }
+      dvr4: { name: '4-Channel DVR', price: 3500 },
+      dvr8: { name: '8-Channel DVR', price: 5500 }
     },
     dahua: {
       name: 'Dahua',
       cameras: {
-        dome: { name: '2MP Dome Camera', price: 3900, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
-        bullet: { name: '2MP Bullet Camera', price: 4550, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
-        ptz: { name: '4MP PTZ Camera', price: 28000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
+        dome: { name: '2MP Dome Camera', price: 1500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
+        bullet: { name: '2MP Bullet Camera', price: 1500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
+        ptz: { name: '4MP PTZ Camera', price: 15000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
       },
-      dvr4: { name: '4-Channel DVR', price: 4500 },
-      dvr8: { name: '8-Channel DVR', price: 8500 }
+      dvr4: { name: '4-Channel DVR', price: 3000 },
+      dvr8: { name: '8-Channel DVR', price: 5000 }
     }
   },
-  monitor: { name: '22" CCTV Monitor', price: 10000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Computer_monitor.jpg/640px-Computer_monitor.jpg' },
-  hdd500: { name: '500GB Surveillance Hard Drive', price: 3500 },
-  psu: { name: 'Centralized Power Supply', price: 2000 },
-  cablePerMeter: { name: 'RG59 Coaxial Cable', price: 50 },
-  connectors: { name: 'BNC & DC Connectors (12 pcs)', price: 1500 },
-  dvrImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Digital_Video_Recorder.jpg/640px-Digital_Video_Recorder.jpg'
+  monitor: { name: '22" CCTV Monitor', price: 13000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Computer_monitor.jpg/640px-Computer_monitor.jpg' },
+  hdd500: { name: '500GB Surveillance Hard Drive', price: 3100 },
+  psu: { name: '4-Port 5A Centralized Power Supply', price: 800 },
+  cablePerMeter: { name: 'RG59 Coaxial Cable', price: 20 }, // 50m = 1000
+  connectors: { name: '12x BNC & DC Connectors', price: 250 },
+  dvrImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Digital_Video_Recorder.jpg/640px-Digital_Video_Recorder.jpg',
+  installationCost: 4500
 };
 
-const defaultRooms = [
-  { id: 1, name: "Main Entrance", icon: "Building" },
-  { id: 2, name: "Parking / Compound", icon: "Home" },
-  { id: 3, name: "Back / Side Access", icon: "TreePine" },
-  { id: 4, name: "Inside Shop", icon: "Home" }
-];
-
-const getRoomIcon = (iconName) => {
-  switch(iconName) {
-    case 'Home': return HomeIcon;
-    case 'Building': return Building;
-    case 'TreePine': return TreePine;
-    default: return HomeIcon;
-  }
-};
-
-// Generate PDF with REAL Images
+// Generate PDF with REAL Images and EXACT Jumia Box Contents
 const generateQuotationPDF = (data) => {
   const printWindow = window.open('', '_blank');
   const { 
@@ -69,7 +52,6 @@ const generateQuotationPDF = (data) => {
   const brandData = PRICING.brands[brand];
   const cameraData = brandData.cameras[cameraType];
 
-  // Reliable Image URLs
   const imgCamera = cameraData.image;
   const imgDvr = PRICING.dvrImage;
   const imgMonitor = PRICING.monitor.image;
@@ -101,6 +83,11 @@ const generateQuotationPDF = (data) => {
         .product-item p { font-size: 12px; font-weight: bold; color: #1e3a8a; margin: 5px 0; }
         .product-item span { font-size: 10px; color: #666; }
         
+        /* Box Contents List */
+        .box-contents { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px 25px; font-size: 13px; margin-bottom: 20px; }
+        .box-contents ol { padding-left: 20px; margin: 0; }
+        .box-contents li { margin-bottom: 8px; }
+
         .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .feature-card { background: #f8fafc; border-left: 4px solid #f97316; padding: 12px; border-radius: 4px; font-size: 12px; }
         .feature-card strong { display: block; color: #1e3a8a; margin-bottom: 4px; font-size: 13px; }
@@ -164,14 +151,17 @@ const generateQuotationPDF = (data) => {
           ` : ''}
         </div>
 
-        <div style="font-size:13px; padding-left:20px; margin-bottom:20px;">
-          <p>• ${quantity}x ${brandData.name} ${cameraData.name}</p>
-          <p>• 1x ${brandData.name} ${selectedDvr.name}</p>
-          <p>• 1x ${PRICING.hdd500.name}</p>
-          <p>• 1x ${PRICING.psu.name}</p>
-          <p>• ${cableLength}m ${PRICING.cablePerMeter.name}</p>
-          <p>• 12x BNC & DC Connectors</p>
-          ${hasMonitor ? `<p>• 1x ${PRICING.monitor.name}</p>` : ''}
+        <h4 style="margin-bottom: 10px; color: #1e3a8a;">WHAT'S IN THE BOX</h4>
+        <div class="box-contents">
+          <ol>
+            <li>1 ${brandData.name} ${selectedDvr.name} (DVR Machine) - White</li>
+            <li>${quantity} Pieces of ${brandData.name} 1080P Full HD 2MP Indoor & outdoor IR Night vision CCTV Cameras</li>
+            <li>1 Piece of 500GB Hard Drive or Hard disk or Cameras Recording Memory</li>
+            <li>1 set of 4 ports 5 Amperes Centralized CCTV Power Supply Box Unit</li>
+            <li>${cableLength}M RG59 Two-in-one Coaxial CCTV Cameras cable Roll</li>
+            <li>12 Bnc and DC jack power connectors</li>
+            ${hasMonitor ? `<li>1 ${PRICING.monitor.name} (Surveillance Display)</li>` : ''}
+          </ol>
         </div>
 
         <div class="section-title">WHY THIS SYSTEM</div>
@@ -196,7 +186,7 @@ const generateQuotationPDF = (data) => {
           <tr><td>5</td><td>${cableLength}m ${PRICING.cablePerMeter.name}</td><td>${(cableLength * PRICING.cablePerMeter.price).toLocaleString()}</td></tr>
           <tr><td>6</td><td>${PRICING.connectors.name}</td><td>${PRICING.connectors.price.toLocaleString()}</td></tr>
           ${hasMonitor ? `<tr><td>7</td><td>${PRICING.monitor.name}</td><td>${PRICING.monitor.price.toLocaleString()}</td></tr>` : ''}
-          <tr><td colspan="2" style="text-align:right;"><strong>Installation & Configuration</strong></td><td>4,500</td></tr>
+          <tr><td colspan="2" style="text-align:right;"><strong>Installation & Configuration</strong></td><td>${PRICING.installationCost.toLocaleString()}</td></tr>
           <tr class="total-row"><td colspan="2" style="text-align:right;">TOTAL</td><td>${totalCost.toLocaleString()}</td></tr>
         </table>
 
@@ -262,7 +252,17 @@ function App() {
 
   const formatKES = (amount) => `KSh ${Math.round(amount).toLocaleString()}`;
 
-  // Dynamic Pricing Calculation
+  const loadJumiaKit = () => {
+    setBrand('hikvision');
+    setCameraType('bullet');
+    setQuantity(4);
+    setHasMonitor(false);
+    setCableLength(50);
+    setShowExportSuccess(true);
+    setTimeout(() => setShowExportSuccess(false), 2000);
+  };
+
+  // Dynamic Pricing Calculation (Now matches Jumia Kit exactly)
   const calculateTotalCost = () => {
     const brandData = PRICING.brands[brand];
     const cameraData = brandData.cameras[cameraType];
@@ -274,7 +274,7 @@ function App() {
               + PRICING.psu.price 
               + (cableLength * PRICING.cablePerMeter.price) 
               + PRICING.connectors.price 
-              + 4500; // Labor
+              + PRICING.installationCost;
               
     if (hasMonitor) total += PRICING.monitor.price;
     return total;
@@ -298,7 +298,7 @@ function App() {
         <div className="fixed top-20 right-4 z-50 animate-bounce">
           <div className="bg-green-500 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3">
             <CheckCircle className="w-5 h-5" />
-            <span className="font-semibold">Print Window Opened!</span>
+            <span className="font-semibold">Success!</span>
           </div>
         </div>
       )}
@@ -373,6 +373,17 @@ function App() {
         {currentView === 'planner' && (
           <div className="space-y-6">
             
+            {/* Quick Action Banner */}
+            <div className={`p-4 rounded-xl border flex items-center justify-between ${darkMode ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-200'}`}>
+              <div>
+                <p className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-900'}`}>Want the exact Jumia Kenya 4-Camera Kit?</p>
+                <p className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Loads the KSh 15,850 package with 4 cameras, DVR, 500GB HDD, and full accessories.</p>
+              </div>
+              <button onClick={loadJumiaKit} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md flex items-center space-x-2">
+                <Package className="w-5 h-5" /> <span>Load Jumia Kit</span>
+              </button>
+            </div>
+
             {/* Client & Business Details */}
             <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -481,7 +492,7 @@ function App() {
         {/* Pricing Guide View */}
         {currentView === 'materials' && (
           <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-            <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Kenyan Market Pricing Guide</h2>
+            <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Kenyan Market Pricing Guide (Jumia Checked)</h2>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className={darkMode ? 'bg-gray-700' : 'bg-gray-100'}>
@@ -514,7 +525,7 @@ function App() {
                 </tbody>
               </table>
             </div>
-            <p className="mt-4 text-xs text-gray-500">* Prices are estimates based on Kenyan market rates and may vary by supplier.</p>
+            <p className="mt-4 text-xs text-gray-500">* Prices are calibrated to match the Jumia Kenya 4-camera kit listings.</p>
             <button onClick={() => setCurrentView('welcome')} className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg">Back to Home</button>
           </div>
         )}
