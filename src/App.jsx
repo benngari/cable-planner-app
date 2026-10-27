@@ -1,7 +1,11 @@
 // src/App.jsx
 import React, { useState, useEffect } from 'react';
 import { 
-  Plus, Camera, Wifi, Phone, Network, Cable, MapPin, Layers, Download, Trash2, FileText, Moon, Sun, CheckCircle, Server, Home as HomeIcon, Building, TreePine, ArrowRight, DollarSign, Gauge, Sparkles, Star, Zap, Printer, Eye, Save, FolderOpen, X, User, Briefcase, FileSpreadsheet, MonitorPlay, Monitor
+  Plus, Camera, Wifi, Phone, Network, Cable, MapPin, Layers, Download, 
+  Trash2, FileText, Moon, Sun, CheckCircle, Server, Home as HomeIcon, 
+  Building, TreePine, ArrowRight, DollarSign, Gauge, Sparkles, Star, 
+  Zap, Printer, Eye, Save, FolderOpen, X, User, Briefcase, 
+  FileSpreadsheet, MonitorPlay, Monitor, Settings
 } from 'lucide-react';
 
 const USD_TO_KES = 130;
@@ -12,9 +16,9 @@ const PRICING = {
     hikvision: {
       name: 'Hikvision',
       cameras: {
-        dome: { name: '2MP Dome Camera', price: 10200, image: 'https://imgbin.com/png/asNFEVrf/product-design-camera-lens-closed-circuit-television-png' },
-        bullet: { name: '2MP Bullet Camera', price: 7500, image: 'https://imgbin.com/png/asNFEVrf/product-design-camera-lens-closed-circuit-television-png' },
-        ptz: { name: '2MP PTZ Camera', price: 28500, image: 'https://imgbin.com/png/asNFEVrf/product-design-camera-lens-closed-circuit-television-png' }
+        dome: { name: '2MP Dome Camera', price: 10200, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
+        bullet: { name: '2MP Bullet Camera', price: 7500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
+        ptz: { name: '2MP PTZ Camera', price: 28500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
       },
       dvr4: { name: '4-Channel DVR', price: 12000 },
       dvr8: { name: '8-Channel DVR', price: 16600 }
@@ -22,23 +26,20 @@ const PRICING = {
     dahua: {
       name: 'Dahua',
       cameras: {
-        dome: { name: '2MP Dome Camera', price: 3900, image: 'https://imgbin.com/png/asNFEVrf/product-design-camera-lens-closed-circuit-television-png' },
-        bullet: { name: '2MP Bullet Camera', price: 4550, image: 'https://imgbin.com/png/asNFEVrf/product-design-camera-lens-closed-circuit-television-png' },
-        ptz: { name: '4MP PTZ Camera', price: 28000, image: 'https://imgbin.com/png/asNFEVrf/product-design-camera-lens-closed-circuit-television-png' }
+        dome: { name: '2MP Dome Camera', price: 3900, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
+        bullet: { name: '2MP Bullet Camera', price: 4550, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
+        ptz: { name: '4MP PTZ Camera', price: 28000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
       },
       dvr4: { name: '4-Channel DVR', price: 4500 },
       dvr8: { name: '8-Channel DVR', price: 8500 }
     }
   },
-  monitor: {
-    name: '22" CCTV Monitor',
-    price: 10000
-  },
+  monitor: { name: '22" CCTV Monitor', price: 10000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Computer_monitor.jpg/640px-Computer_monitor.jpg' },
   hdd500: { name: '500GB Surveillance Hard Drive', price: 3500 },
-  hdd1tb: { name: '1TB Surveillance Hard Drive', price: 5500 },
   psu: { name: 'Centralized Power Supply', price: 2000 },
   cablePerMeter: { name: 'RG59 Coaxial Cable', price: 50 },
-  connectors: { name: 'BNC & DC Connectors (12 pcs)', price: 1500 }
+  connectors: { name: 'BNC & DC Connectors (12 pcs)', price: 1500 },
+  dvrImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Digital_Video_Recorder.jpg/640px-Digital_Video_Recorder.jpg'
 };
 
 const defaultRooms = [
@@ -57,7 +58,7 @@ const getRoomIcon = (iconName) => {
   }
 };
 
-// Generate PDF with Images
+// Generate PDF with REAL Images
 const generateQuotationPDF = (data) => {
   const printWindow = window.open('', '_blank');
   const { 
@@ -67,6 +68,11 @@ const generateQuotationPDF = (data) => {
 
   const brandData = PRICING.brands[brand];
   const cameraData = brandData.cameras[cameraType];
+
+  // Reliable Image URLs
+  const imgCamera = cameraData.image;
+  const imgDvr = PRICING.dvrImage;
+  const imgMonitor = PRICING.monitor.image;
 
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -87,11 +93,14 @@ const generateQuotationPDF = (data) => {
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
         th { background-color: #f3f4f6; color: #1e3a8a; font-weight: bold; }
         .total-row td { font-weight: bold; font-size: 16px; color: #1e3a8a; border-top: 2px solid #1e3a8a; border-bottom: none; }
-        .product-grid { display: flex; justify-content: space-around; align-items: center; margin: 20px 0; padding: 20px; background: #f8fafc; border-radius: 10px; }
+        
+        /* Image Grid Styles */
+        .product-grid { display: flex; justify-content: space-around; align-items: center; margin: 20px 0; padding: 20px; background: #f8fafc; border-radius: 10px; border: 1px solid #e2e8f0; }
         .product-item { text-align: center; width: 30%; }
-        .product-item img { max-width: 120px; height: auto; margin-bottom: 10px; border-radius: 8px; }
+        .product-item img { width: 100%; max-width: 140px; height: 100px; object-fit: contain; margin-bottom: 10px; border-radius: 8px; background: white; padding: 5px; border: 1px solid #e5e7eb; }
         .product-item p { font-size: 12px; font-weight: bold; color: #1e3a8a; margin: 5px 0; }
-        .product-item span { font-size: 11px; color: #666; }
+        .product-item span { font-size: 10px; color: #666; }
+        
         .features-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
         .feature-card { background: #f8fafc; border-left: 4px solid #f97316; padding: 12px; border-radius: 4px; font-size: 12px; }
         .feature-card strong { display: block; color: #1e3a8a; margin-bottom: 4px; font-size: 13px; }
@@ -134,20 +143,21 @@ const generateQuotationPDF = (data) => {
 
         <div class="section-title">YOUR SYSTEM: WHAT YOU GET</div>
         
+        <!-- IMAGE GRID -->
         <div class="product-grid">
           <div class="product-item">
-            <img src="${cameraData.image}" alt="Camera" onerror="this.style.display='none'">
+            <img src="${imgCamera}" alt="Camera">
             <p>${quantity}x ${brandData.name} ${cameraData.name}</p>
-            <span>2MP 1080p • Night Vision • Weatherproof</span>
+            <span>2MP 1080p • Night Vision</span>
           </div>
           <div class="product-item">
-            <img src="${brand === 'hikvision' ? 'https://toppng.com/free-image/hik-camera-hikvision-cctv-camera-PNG-free-PNG-Images_176907' : cameraData.image}" alt="DVR" onerror="this.style.display='none'">
+            <img src="${imgDvr}" alt="DVR">
             <p>1x ${brandData.name} ${selectedDvr.name}</p>
-            <span>H.265 Compression • Smartphone App</span>
+            <span>H.265 • Smartphone App</span>
           </div>
           ${hasMonitor ? `
           <div class="product-item">
-            <img src="https://www.pngall.com/cctv-camera-png/download/105818/" alt="Monitor" onerror="this.style.display='none'">
+            <img src="${imgMonitor}" alt="Monitor">
             <p>1x ${PRICING.monitor.name}</p>
             <span>Full HD • HDMI & VGA</span>
           </div>
@@ -288,7 +298,7 @@ function App() {
         <div className="fixed top-20 right-4 z-50 animate-bounce">
           <div className="bg-green-500 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3">
             <CheckCircle className="w-5 h-5" />
-            <span className="font-semibold">Quotation PDF Generated!</span>
+            <span className="font-semibold">Print Window Opened!</span>
           </div>
         </div>
       )}
@@ -461,7 +471,7 @@ function App() {
                 <ArrowRight className="w-5 h-5 rotate-180" /> <span>Back Home</span>
               </button>
               <button onClick={exportQuotation} className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-4 rounded-xl shadow-xl flex items-center justify-center space-x-3 text-lg">
-                <Printer className="w-6 h-6" /> <span>Export Professional PDF Quotation</span>
+                <Printer className="w-6 h-6" /> <span>Print / Save as PDF</span>
               </button>
             </div>
 
@@ -505,6 +515,7 @@ function App() {
               </table>
             </div>
             <p className="mt-4 text-xs text-gray-500">* Prices are estimates based on Kenyan market rates and may vary by supplier.</p>
+            <button onClick={() => setCurrentView('welcome')} className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg">Back to Home</button>
           </div>
         )}
 
@@ -528,6 +539,7 @@ function App() {
                 <p className="text-xs mt-1">{selectedDvr.name}</p>
               </div>
             </div>
+            <button onClick={() => setCurrentView('welcome')} className="mt-8 px-6 py-2 bg-blue-600 text-white rounded-lg">Back to Home</button>
           </div>
         )}
 
