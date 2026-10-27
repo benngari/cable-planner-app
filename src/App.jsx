@@ -8,7 +8,7 @@ import {
   FileSpreadsheet, MonitorPlay, Monitor, Settings, Package
 } from 'lucide-react';
 
-// Updated Kenyan Pricing (Matching Jumia Listings)
+// Accurate Kenyan Pricing (Matching the Jumia Kenya Listing)
 const PRICING = {
   brands: {
     hikvision: {
@@ -46,7 +46,7 @@ const generateQuotationPDF = (data) => {
   const printWindow = window.open('', '_blank');
   const { 
     clientInfo, businessInfo, brand, cameraType, quantity, hasMonitor, 
-    cableLength, totalCost, dateStr, selectedDvr 
+    cableLength, totalHardwareCost, totalCost, dateStr, selectedDvr 
   } = data;
 
   const brandData = PRICING.brands[brand];
@@ -160,7 +160,7 @@ const generateQuotationPDF = (data) => {
             <li>1 set of 4 ports 5 Amperes Centralized CCTV Power Supply Box Unit</li>
             <li>${cableLength}M RG59 Two-in-one Coaxial CCTV Cameras cable Roll</li>
             <li>12 Bnc and DC jack power connectors</li>
-            ${hasMonitor ? `<li>1 ${PRICING.monitor.name} (Surveillance Display)</li>` : ''}
+            ${hasMonitor ? `<li><strong>1 ${PRICING.monitor.name} (Surveillance Display)</strong></li>` : ''}
           </ol>
         </div>
 
@@ -186,7 +186,8 @@ const generateQuotationPDF = (data) => {
           <tr><td>5</td><td>${cableLength}m ${PRICING.cablePerMeter.name}</td><td>${(cableLength * PRICING.cablePerMeter.price).toLocaleString()}</td></tr>
           <tr><td>6</td><td>${PRICING.connectors.name}</td><td>${PRICING.connectors.price.toLocaleString()}</td></tr>
           ${hasMonitor ? `<tr><td>7</td><td>${PRICING.monitor.name}</td><td>${PRICING.monitor.price.toLocaleString()}</td></tr>` : ''}
-          <tr><td colspan="2" style="text-align:right;"><strong>Installation & Configuration</strong></td><td>${PRICING.installationCost.toLocaleString()}</td></tr>
+          <tr><td colspan="2" style="text-align:right;"><strong>Hardware Subtotal</strong></td><td><strong>${totalHardwareCost.toLocaleString()}</strong></td></tr>
+          <tr><td colspan="2" style="text-align:right;">Installation & Configuration</td><td>${PRICING.installationCost.toLocaleString()}</td></tr>
           <tr class="total-row"><td colspan="2" style="text-align:right;">TOTAL</td><td>${totalCost.toLocaleString()}</td></tr>
         </table>
 
@@ -256,14 +257,14 @@ function App() {
     setBrand('hikvision');
     setCameraType('bullet');
     setQuantity(4);
-    setHasMonitor(false);
+    setHasMonitor(false); // Explicitly no monitor for the base Jumia kit
     setCableLength(50);
     setShowExportSuccess(true);
     setTimeout(() => setShowExportSuccess(false), 2000);
   };
 
-  // Dynamic Pricing Calculation (Now matches Jumia Kit exactly)
-  const calculateTotalCost = () => {
+  // Hardware Cost Calculation
+  const calculateHardwareCost = () => {
     const brandData = PRICING.brands[brand];
     const cameraData = brandData.cameras[cameraType];
     const selectedDvr = quantity <= 4 ? brandData.dvr4 : brandData.dvr8;
@@ -273,11 +274,15 @@ function App() {
               + PRICING.hdd500.price 
               + PRICING.psu.price 
               + (cableLength * PRICING.cablePerMeter.price) 
-              + PRICING.connectors.price 
-              + PRICING.installationCost;
+              + PRICING.connectors.price;
               
     if (hasMonitor) total += PRICING.monitor.price;
     return total;
+  };
+
+  // Total Cost = Hardware + Labor
+  const calculateTotalCost = () => {
+    return calculateHardwareCost() + PRICING.installationCost;
   };
 
   const selectedDvr = quantity <= 4 ? PRICING.brands[brand].dvr4 : PRICING.brands[brand].dvr8;
@@ -285,7 +290,11 @@ function App() {
   const exportQuotation = () => {
     generateQuotationPDF({
       clientInfo, businessInfo, brand, cameraType, quantity, hasMonitor, 
-      cableLength, totalCost: calculateTotalCost(), dateStr: new Date().toLocaleDateString('en-GB'), selectedDvr
+      cableLength, 
+      totalHardwareCost: calculateHardwareCost(),
+      totalCost: calculateTotalCost(), 
+      dateStr: new Date().toLocaleDateString('en-GB'), 
+      selectedDvr
     });
     setShowExportSuccess(true);
     setTimeout(() => setShowExportSuccess(false), 3000);
@@ -376,8 +385,8 @@ function App() {
             {/* Quick Action Banner */}
             <div className={`p-4 rounded-xl border flex items-center justify-between ${darkMode ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-200'}`}>
               <div>
-                <p className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-900'}`}>Want the exact Jumia Kenya 4-Camera Kit?</p>
-                <p className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Loads the KSh 15,850 package with 4 cameras, DVR, 500GB HDD, and full accessories.</p>
+                <p className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-900'}`}>Want the exact Jumia Kenya 4-Camera Kit? (Hardware only)</p>
+                <p className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Loads the KSh 15,850 package with 4 cameras, DVR, 500GB HDD, and full accessories. Monitor NOT included.</p>
               </div>
               <button onClick={loadJumiaKit} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md flex items-center space-x-2">
                 <Package className="w-5 h-5" /> <span>Load Jumia Kit</span>
@@ -469,6 +478,10 @@ function App() {
                   <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                     {quantity}x {PRICING.brands[brand].name} {PRICING.brands[brand].cameras[cameraType].name} + {selectedDvr.name} {hasMonitor ? '+ Monitor' : ''}
                   </p>
+                  <div className="mt-2 text-sm">
+                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Hardware Subtotal: {formatKES(calculateHardwareCost())}</p>
+                    <p className={darkMode ? 'text-gray-300' : 'text-gray-600'}>Installation: {formatKES(PRICING.installationCost)}</p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Estimated Cost</p>
@@ -520,12 +533,12 @@ function App() {
                   </tr>
                   <tr className={darkMode ? 'text-gray-300' : 'text-gray-700'}>
                     <td className="p-3">22" Monitor</td>
-                    <td className="p-3" colSpan="2">{formatKES(PRICING.monitor.price)}</td>
+                    <td className="p-3" colSpan="2">{formatKES(PRICING.monitor.price)} (Optional)</td>
                   </tr>
                 </tbody>
               </table>
             </div>
-            <p className="mt-4 text-xs text-gray-500">* Prices are calibrated to match the Jumia Kenya 4-camera kit listings.</p>
+            <p className="mt-4 text-xs text-gray-500">* Prices are calibrated to match the Jumia Kenya 4-camera kit listing. Monitor is an add-on.</p>
             <button onClick={() => setCurrentView('welcome')} className="mt-6 px-6 py-2 bg-blue-600 text-white rounded-lg">Back to Home</button>
           </div>
         )}
