@@ -7,20 +7,20 @@ import {
   Building, TreePine, ArrowRight, DollarSign, Gauge, Sparkles, Star, 
   Zap, Printer, Eye, Save, FolderOpen, X, User, Briefcase, 
   FileSpreadsheet, MonitorPlay, Monitor, Settings, Package, Activity, 
-  ShoppingCart, HardDrive, Smartphone, Cloud
+  ShoppingCart, HardDrive, Smartphone, Cloud, Calculator, MessageCircle, ClipboardCheck
 } from 'lucide-react';
 
-// Updated Pricing based on Jumia Kenya live listings
+// Accurate Pricing based on Kenyan Market / Jumia Listings
 const PRICING = {
   brands: {
     hikvision: {
       name: 'Hikvision',
       cameras: {
         dome: { name: '2MP Dome Camera', price: 1600, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
-        bullet: { name: '2MP Bullet Camera', price: 1700, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }, // Updated based on screenshot
+        bullet: { name: '2MP Bullet Camera', price: 1700, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
         ptz: { name: '2MP PTZ Camera', price: 12000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
       },
-      dvr4: { name: '4-Channel DVR', price: 5700 }, // Updated based on screenshot
+      dvr4: { name: '4-Channel DVR', price: 5700 },
       dvr8: { name: '8-Channel DVR', price: 8500 }
     },
     dahua: {
@@ -91,7 +91,19 @@ function App() {
   const [hasMonitor, setHasMonitor] = useState(false);
   const [cableLength, setCableLength] = useState(50);
   const [showItemizedPrice, setShowItemizedPrice] = useState(false); 
-  const [bundleDiscount, setBundleDiscount] = useState(0); 
+
+  // NEW: Feature 4 - Site Survey Checklist State
+  const [survey, setSurvey] = useState({
+    power: false,
+    cableRoute: false,
+    internet: false,
+    mounting: false,
+    clientApp: false
+  });
+
+  // NEW: Feature 6 - Storage Calculator State
+  const [calcHdd, setCalcHdd] = useState(500); // in GB
+  const [calcRes, setCalcRes] = useState(1080); // 1080 or 4MP
 
   // Cabling State
   const [cabRooms, setCabRooms] = useState(defaultCabRooms);
@@ -129,7 +141,7 @@ function App() {
   const removeCustomItem = (id) => setCustomItems(customItems.filter(i => i.id !== id));
   const getCustomItemsTotal = () => customItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-  // CCTV Calculations
+  // ======================= CCTV CALCULATIONS =======================
   const loadJumiaKit = () => {
     setBrand('hikvision');
     setCameraType('bullet');
@@ -138,13 +150,6 @@ function App() {
     setCableLength(50);
     setActiveProject('cctv');
     setShowItemizedPrice(true);
-    
-    // Calculate the difference to apply as a bundle discount
-    // Raw items: (4 * 1700) + 5700 + 3100 + 1500 + (50 * 20) + 250 = 18350
-    // Bundle Target: 15850
-    // Discount: 2500
-    const rawSum = (1700 * 4) + 5700 + 3100 + 1500 + (50 * 20) + 250; 
-    setBundleDiscount(rawSum - 15850); 
   };
 
   const calculateHardwareCost = () => {
@@ -153,15 +158,36 @@ function App() {
     const selectedDvr = quantity <= 4 ? brandData.dvr4 : brandData.dvr8;
     let total = (cameraData.price * quantity) + selectedDvr.price + PRICING.hdd500.price + PRICING.psu.price + (cableLength * PRICING.cablePerMeter.price) + PRICING.connectors.price;
     if (hasMonitor) total += PRICING.monitor.price;
-    
-    // Subtract bundle discount if applicable
-    return total - bundleDiscount;
+    return total;
   };
   
   const calculateCCTVTotal = () => calculateHardwareCost() + PRICING.installationCost + getCustomItemsTotal();
   const selectedDvr = quantity <= 4 ? PRICING.brands[brand].dvr4 : PRICING.brands[brand].dvr8;
 
-  // Cabling Calculations
+  // ======================= NEW FEATURES LOGIC =======================
+  
+  // Feature 5: WhatsApp Share
+  const handleWhatsAppShare = () => {
+    // Format phone number for Kenya (+254)
+    let phoneStr = clientInfo.phone.replace(/\D/g, ''); 
+    if (phoneStr.startsWith('0')) phoneStr = '254' + phoneStr.slice(1);
+    
+    const message = `*CCTV QUOTATION*\nFrom: ${businessInfo.name}\nClient: ${clientInfo.name || 'Valued Customer'}\n\n*System:* ${quantity}x ${PRICING.brands[brand].name} ${PRICING.brands[brand].cameras[cameraType].name} + ${selectedDvr.name}${hasMonitor ? ' + Monitor' : ''}\n\n*Total Cost:* ${formatKES(calculateCCTVTotal())}\n\nIncludes installation, configuration, and mobile app setup. Please find the official PDF quotation attached.\n\nContact us: ${businessInfo.phone}`;
+    
+    const encodedMsg = encodeURIComponent(message);
+    window.open(`https://wa.me/${phoneStr}?text=${encodedMsg}`, '_blank');
+  };
+
+  // Feature 6: Storage Calculator
+  // Estimates: 1080p uses ~15GB/day/cam, 4MP uses ~30GB/day/cam
+  const getRecordingDays = () => {
+    const gbPerCamPerDay = calcRes === 1080 ? 15 : 30;
+    const totalGbPerDay = gbPerCamPerDay * quantity;
+    return Math.floor(calcHdd / totalGbPerDay);
+  };
+
+
+  // ======================= CABLING CALCULATIONS =======================
   const addCabRoom = () => {
     if (!newCabRoom.trim()) return;
     setCabRooms([...cabRooms, { id: Date.now(), name: newCabRoom }]);
@@ -311,156 +337,170 @@ function App() {
           <div className="space-y-6">
             <div className={`p-4 rounded-xl border flex items-center justify-between ${darkMode ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-200'}`}>
               <div>
-                <p className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-900'}`}>Jumia Kenya 4-Camera Kit (Hardware only)</p>
-                <p className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Loads the KSh 15,850 package with a bundle discount.</p>
+                <p className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-900'}`}>Quick Load: Jumia Kenya 4-Camera Kit</p>
+                <p className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Populates standard 4-camera configuration.</p>
               </div>
               <button onClick={loadJumiaKit} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md flex items-center space-x-2">
-                <Package className="w-5 h-5" /> <span>Load Jumia Kit</span>
+                <Package className="w-5 h-5" /> <span>Load Kit</span>
               </button>
             </div>
 
-            <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                <User className="w-5 h-5 text-blue-500" /> <span>Quotation Details</span>
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-blue-500">Client Info</h4>
-                  <input type="text" placeholder="Client Name" value={clientInfo.name} onChange={e => setClientInfo({...clientInfo, name: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                  <input type="text" placeholder="Client Phone" value={clientInfo.phone} onChange={e => setClientInfo({...clientInfo, phone: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                  <input type="text" placeholder="Location / Address" value={clientInfo.address} onChange={e => setClientInfo({...clientInfo, address: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                </div>
-                <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-blue-500">Your Business Info</h4>
-                  <input type="text" placeholder="Business Name" value={businessInfo.name} onChange={e => setBusinessInfo({...businessInfo, name: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                  <input type="text" placeholder="Phone" value={businessInfo.phone} onChange={e => setBusinessInfo({...businessInfo, phone: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                  <input type="text" placeholder="M-Pesa Till/Paybill" value={businessInfo.mpesa} onChange={e => setBusinessInfo({...businessInfo, mpesa: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                </div>
-              </div>
-            </div>
-
-            <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h3 className={`text-lg font-bold mb-6 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                <Settings className="w-5 h-5 text-blue-500" /> <span>System Configuration</span>
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-2">Brand</label>
-                  <select value={brand} onChange={e => setBrand(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
-                    <option value="hikvision">Hikvision</option>
-                    <option value="dahua">Dahua</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-2">Camera Design</label>
-                  <select value={cameraType} onChange={e => setCameraType(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
-                    <option value="bullet">Bullet</option>
-                    <option value="dome">Dome</option>
-                    <option value="ptz">PTZ</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-2">Number of Cameras</label>
-                  <input type="number" min="1" max="16" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-2">Cable Required (meters)</label>
-                  <input type="number" value={cableLength} onChange={e => setCableLength(Number(e.target.value))} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                </div>
-              </div>
-              <div className={`mt-6 p-4 rounded-xl flex items-center justify-between ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                <div className="flex items-center space-x-3">
-                  <Monitor className="w-6 h-6 text-blue-500" />
-                  <div>
-                    <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Add 22" CCTV Monitor</p>
-                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Optional live viewing display</p>
-                  </div>
-                </div>
-                <button onClick={() => setHasMonitor(!hasMonitor)} className={`px-6 py-2 rounded-lg font-bold transition-all ${hasMonitor ? 'bg-green-500 text-white' : darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-600'}`}>
-                  {hasMonitor ? 'Added ✓' : `+ ${formatKES(PRICING.monitor.price)}`}
-                </button>
-              </div>
-            </div>
-
-            {/* ITEMIZED PRICE BREAKDOWN (Fixed Dark Mode Text) */}
-            {showItemizedPrice && (
-              <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-green-900' : 'bg-green-50 border-green-200'}`}>
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className={`text-lg font-bold flex items-center space-x-2 ${darkMode ? 'text-green-400' : 'text-green-800'}`}>
-                    <DollarSign className="w-5 h-5" /> <span>Jumia Kit Price Estimate</span>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column: Configuration */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                  <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <User className="w-5 h-5 text-blue-500" /> <span>Client & Quotation Details</span>
                   </h3>
-                  <button onClick={() => setShowItemizedPrice(false)} className={`${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}><X className="w-5 h-5" /></button>
-                </div>
-                <div className={`space-y-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  <div className="flex justify-between"><span>{quantity}x {brandData.name} Cameras (@{formatKES(cameraData.price)})</span> <span>{formatKES(cameraData.price * quantity)}</span></div>
-                  <div className="flex justify-between"><span>1x {selectedDvr.name}</span> <span>{formatKES(selectedDvr.price)}</span></div>
-                  <div className="flex justify-between"><span>1x {PRICING.hdd500.name}</span> <span>{formatKES(PRICING.hdd500.price)}</span></div>
-                  <div className="flex justify-between"><span>1x {PRICING.psu.name}</span> <span>{formatKES(PRICING.psu.price)}</span></div>
-                  <div className="flex justify-between"><span>{cableLength}m Coaxial Cable (@{formatKES(PRICING.cablePerMeter.price)}/m)</span> <span>{formatKES(cableLength * PRICING.cablePerMeter.price)}</span></div>
-                  <div className="flex justify-between"><span>1x {PRICING.connectors.name}</span> <span>{formatKES(PRICING.connectors.price)}</span></div>
-                  
-                  {bundleDiscount > 0 && (
-                    <div className={`flex justify-between font-bold pt-2 border-t mt-2 ${darkMode ? 'text-red-400 border-green-800' : 'text-red-600 border-green-300'}`}>
-                      <span>Jumia Bundle Discount</span> 
-                      <span>- {formatKES(bundleDiscount)}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-blue-500">Client Info</h4>
+                      <input type="text" placeholder="Client Name" value={clientInfo.name} onChange={e => setClientInfo({...clientInfo, name: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                      <input type="text" placeholder="Client Phone (For WhatsApp)" value={clientInfo.phone} onChange={e => setClientInfo({...clientInfo, phone: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                      <input type="text" placeholder="Location / Address" value={clientInfo.address} onChange={e => setClientInfo({...clientInfo, address: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
                     </div>
-                  )}
-
-                  <div className={`border-t mt-2 pt-2 font-bold flex justify-between text-base ${darkMode ? 'border-green-800 text-white' : 'border-green-300 text-gray-900'}`}>
-                    <span>Total Hardware Estimate:</span> 
-                    <span>{formatKES(calculateHardwareCost())}</span>
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-semibold text-blue-500">Your Business Info</h4>
+                      <input type="text" placeholder="Business Name" value={businessInfo.name} onChange={e => setBusinessInfo({...businessInfo, name: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                      <input type="text" placeholder="Phone" value={businessInfo.phone} onChange={e => setBusinessInfo({...businessInfo, phone: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                      <input type="text" placeholder="M-Pesa Till/Paybill" value={businessInfo.mpesa} onChange={e => setBusinessInfo({...businessInfo, mpesa: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
 
-            <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                <ShoppingCart className="w-5 h-5 text-blue-500" /> <span>Additional Items Required</span>
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                <input type="text" placeholder="Item Name (e.g., Extra Brackets)" value={customItemName} onChange={e => setCustomItemName(e.target.value)} className={`px-3 py-2 rounded-lg border md:col-span-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                <input type="number" placeholder="Qty" value={customItemQty} onChange={e => setCustomItemQty(Number(e.target.value))} className={`px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                <div className="flex space-x-2">
-                  <input type="number" placeholder="Price (KSh)" value={customItemPrice} onChange={e => setCustomItemPrice(e.target.value)} className={`flex-1 px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                  <button onClick={addCustomItem} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold">Add</button>
-                </div>
-              </div>
-              {customItems.length > 0 && (
-                <div className="space-y-2">
-                  {customItems.map(item => (
-                    <div key={item.id} className={`flex justify-between items-center p-2 rounded-lg text-sm ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                      <span>{item.qty}x {item.name}</span>
-                      <div className="flex items-center space-x-4">
-                        <span className="font-bold text-blue-500">{formatKES(item.price * item.qty)}</span>
-                        <button onClick={() => removeCustomItem(item.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                  <h3 className={`text-lg font-bold mb-6 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <Settings className="w-5 h-5 text-blue-500" /> <span>System Configuration</span>
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 block mb-2">Brand</label>
+                      <select value={brand} onChange={e => setBrand(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
+                        <option value="hikvision">Hikvision</option>
+                        <option value="dahua">Dahua</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 block mb-2">Camera Design</label>
+                      <select value={cameraType} onChange={e => setCameraType(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
+                        <option value="bullet">Bullet</option>
+                        <option value="dome">Dome</option>
+                        <option value="ptz">PTZ</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 block mb-2">Number of Cameras</label>
+                      <input type="number" min="1" max="16" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 block mb-2">Cable Required (meters)</label>
+                      <input type="number" value={cableLength} onChange={e => setCableLength(Number(e.target.value))} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                    </div>
+                  </div>
+                  <div className={`mt-6 p-4 rounded-xl flex items-center justify-between ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                    <div className="flex items-center space-x-3">
+                      <Monitor className="w-6 h-6 text-blue-500" />
+                      <div>
+                        <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Add 22" CCTV Monitor</p>
+                        <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Optional live viewing display</p>
                       </div>
                     </div>
-                  ))}
+                    <button onClick={() => setHasMonitor(!hasMonitor)} className={`px-6 py-2 rounded-lg font-bold transition-all ${hasMonitor ? 'bg-green-500 text-white' : darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-600'}`}>
+                      {hasMonitor ? 'Added ✓' : `+ ${formatKES(PRICING.monitor.price)}`}
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
 
-            <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Total Quotation Summary</h3>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Hardware: {formatKES(calculateHardwareCost())} | Labor: {formatKES(PRICING.installationCost)} {customItems.length > 0 ? `| Custom: ${formatKES(getCustomItemsTotal())}` : ''}</p>
-                </div>
-                <div className="text-right">
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total</p>
-                  <p className="text-3xl font-bold text-green-500">{formatKES(calculateCCTVTotal())}</p>
+                {/* Feature 4: Site Survey Checklist */}
+                <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                  <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <ClipboardCheck className="w-5 h-5 text-blue-500" /> <span>Site Survey Checklist</span>
+                  </h3>
+                  <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Tick these off during your site visit before buying materials.</p>
+                  <div className="space-y-3">
+                    {[
+                      { key: 'power', label: 'Power socket available near DVR location?' },
+                      { key: 'cableRoute', label: 'Cable route (roofing/walls) clear and accessible?' },
+                      { key: 'internet', label: 'Internet router available for remote viewing?' },
+                      { key: 'mounting', label: 'Mounting surfaces suitable for cameras?' },
+                      { key: 'clientApp', label: 'Client smartphone ready for app setup?' }
+                    ].map((item) => (
+                      <label key={item.key} className="flex items-center space-x-3 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={survey[item.key]} 
+                          onChange={() => setSurvey({...survey, [item.key]: !survey[item.key]})}
+                          className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 bg-gray-100 border-gray-300"
+                        />
+                        <span className={`text-sm ${survey[item.key] ? 'line-through text-gray-500' : (darkMode ? 'text-gray-300' : 'text-gray-700')}`}>{item.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex space-x-4">
-              <button onClick={() => setCurrentView('welcome')} className={`px-6 py-4 rounded-xl font-bold flex items-center space-x-2 ${darkMode ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-800'}`}>
-                <ArrowRight className="w-5 h-5 rotate-180" /> <span>Back</span>
-              </button>
-              <button onClick={() => setCurrentView('report')} className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold py-4 rounded-xl shadow-xl flex items-center justify-center space-x-3 text-lg">
-                <Eye className="w-6 h-6" /> <span>Preview & Export PDF Report</span>
-              </button>
+              {/* Right Column: Pricing & Tools */}
+              <div className="space-y-6">
+                
+                {/* Feature 6: Storage Calculator */}
+                <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                  <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <Calculator className="w-5 h-5 text-blue-500" /> <span>Storage Calculator</span>
+                  </h3>
+                  <p className={`text-xs mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Estimate how many days you can record before overwriting.</p>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 block mb-1">Hard Drive Size</label>
+                      <select value={calcHdd} onChange={e => setCalcHdd(Number(e.target.value))} className={`w-full px-3 py-2 rounded-lg border text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
+                        <option value={500}>500 GB</option>
+                        <option value={1000}>1 TB (1000 GB)</option>
+                        <option value={2000}>2 TB (2000 GB)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 block mb-1">Camera Resolution</label>
+                      <select value={calcRes} onChange={e => setCalcRes(Number(e.target.value))} className={`w-full px-3 py-2 rounded-lg border text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
+                        <option value={1080}>1080p (2MP)</option>
+                        <option value={4000}>4MP (Higher Detail)</option>
+                      </select>
+                    </div>
+                    
+                    <div className={`mt-4 p-3 rounded-lg text-center ${darkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
+                      <p className={`text-xs ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>Estimated Recording Time</p>
+                      <p className="text-2xl font-bold text-blue-500">{getRecordingDays()} Days</p>
+                      <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>for {quantity} cameras recording 24/7</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                  <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <DollarSign className="w-5 h-5 text-green-500" /> <span>Cost Summary</span>
+                  </h3>
+                  
+                  <div className={`space-y-2 text-sm mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <div className="flex justify-between"><span>Hardware Subtotal:</span> <span>{formatKES(calculateHardwareCost())}</span></div>
+                    <div className="flex justify-between"><span>Installation Labor:</span> <span>{formatKES(PRICING.installationCost)}</span></div>
+                    {customItems.length > 0 && <div className="flex justify-between"><span>Custom Items:</span> <span>{formatKES(getCustomItemsTotal())}</span></div>}
+                  </div>
+
+                  <div className={`border-t pt-4 mb-6 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Quotation</p>
+                    <p className="text-3xl font-bold text-green-500">{formatKES(calculateCCTVTotal())}</p>
+                  </div>
+
+                  {/* Feature 5: WhatsApp Share Button */}
+                  <button onClick={handleWhatsAppShare} className="w-full py-3 bg-[#25D366] hover:bg-[#20b858] text-white font-bold rounded-lg shadow-lg flex items-center justify-center space-x-2 transition-colors mb-3">
+                    <MessageCircle className="w-5 h-5" /> <span>Share via WhatsApp</span>
+                  </button>
+
+                  <button onClick={() => setCurrentView('report')} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg flex items-center justify-center space-x-2 transition-colors">
+                    <Eye className="w-5 h-5" /> <span>Preview PDF Quote</span>
+                  </button>
+                </div>
+
+              </div>
             </div>
           </div>
         )}
@@ -784,15 +824,6 @@ function App() {
                             <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(item.price * item.qty).toLocaleString()}</td>
                           </tr>
                         ))}
-
-                        {/* Bundle Discount Line in PDF */}
-                        {bundleDiscount > 0 && (
-                          <tr>
-                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>7</td>
-                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#dc2626' }}><strong>Jumia Bundle Discount</strong></td>
-                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#dc2626' }}>- {bundleDiscount.toLocaleString()}</td>
-                          </tr>
-                        )}
 
                         <tr><td colSpan="2" style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}><strong>Hardware Subtotal</strong></td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}><strong>{calculateHardwareCost().toLocaleString()}</strong></td></tr>
                         <tr><td colSpan="2" style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>Installation & Configuration</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.installationCost.toLocaleString()}</td></tr>
