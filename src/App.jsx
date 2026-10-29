@@ -65,7 +65,12 @@ const CATALOG = {
 };
 
 function App() {
-  const [darkMode, setDarkMode] = useState(true);
+  // Check local storage for saved theme, otherwise default to dark
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    return saved ? saved === 'dark' : true;
+  });
+  
   const [currentView, setCurrentView] = useState('welcome'); 
   const [activeProject, setActiveProject] = useState('cctv');
   const [isExporting, setIsExporting] = useState(false);
@@ -95,8 +100,13 @@ function App() {
   const [calcRes, setCalcRes] = useState(1080);
 
   useEffect(() => {
-    if (darkMode) document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
+    // Save to local storage and update HTML class
+    localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   }, [darkMode]);
 
   const formatKES = (amount) => `KSh ${Math.round(amount).toLocaleString()}`;
@@ -156,7 +166,7 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen transition-all duration-500 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen transition-colors duration-300 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
       
       <header className="sticky top-0 z-20 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
@@ -212,7 +222,7 @@ function App() {
                 <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                   <div className="flex-1">
                     <label className="text-sm text-blue-200 block mb-1">Client Premises</label>
-                    <select value={premisesType} onChange={e => setPremisesType(e.target.value)} className="w-full px-4 py-2 rounded-lg bg-blue-800 border-blue-700 text-white mb-3">
+                    <select value={premisesType} onChange={e => setPremisesType(e.target.value)} className="w-full px-4 py-2 rounded-lg bg-blue-800 border-blue-700 text-white mb-3 outline-none">
                       <option value="home">🏠 Home / Residential</option>
                       <option value="shop">🏪 Shop / Retail</option>
                       <option value="office">🏢 Office / Corporate</option>
@@ -234,19 +244,19 @@ function App() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">DVR</label>
-                    <select value={selectedDvr} onChange={e => setSelectedDvr(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white mb-3">
+                    <select value={selectedDvr} onChange={e => setSelectedDvr(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white mb-3 outline-none">
                       {Object.entries(CATALOG.dvrs).map(([k, v]) => <option key={k} value={k}>{v.name}</option>)}
                     </select>
                     <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Camera Type</label>
-                    <select value={selectedCamera} onChange={e => setSelectedCamera(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                    <select value={selectedCamera} onChange={e => setSelectedCamera(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white outline-none">
                       {Object.entries(CATALOG.cameras).map(([k, v]) => <option key={k} value={k}>{v.name}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Quantity</label>
-                    <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white mb-3" />
+                    <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white mb-3 outline-none" />
                     <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Storage</label>
-                    <select value={selectedStorage} onChange={e => setSelectedStorage(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                    <select value={selectedStorage} onChange={e => setSelectedStorage(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white outline-none">
                       {Object.entries(CATALOG.storage).map(([k, v]) => <option key={k} value={k}>{v.name}</option>)}
                     </select>
                   </div>
@@ -283,7 +293,7 @@ function App() {
 
               <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
                 <h3 className="text-lg font-bold mb-4 flex items-center space-x-2 text-gray-900 dark:text-white"><Calculator className="w-5 h-5 text-blue-500" /> <span>Storage Calculator</span></h3>
-                <select value={calcHdd} onChange={e => setCalcHdd(Number(e.target.value))} className="w-full px-3 py-2 rounded-lg border mb-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white">
+                <select value={calcHdd} onChange={e => setCalcHdd(Number(e.target.value))} className="w-full px-3 py-2 rounded-lg border mb-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white outline-none">
                   <option value={500}>500 GB</option>
                   <option value={1000}>1 TB</option>
                 </select>
