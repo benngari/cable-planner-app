@@ -6,7 +6,8 @@ import {
   Trash2, FileText, Moon, Sun, CheckCircle, Server, Home as HomeIcon, 
   Building, TreePine, ArrowRight, DollarSign, Gauge, Sparkles, Star, 
   Zap, Printer, Eye, Save, FolderOpen, X, User, Briefcase, 
-  FileSpreadsheet, MonitorPlay, Monitor, Settings, Package, Activity, ShoppingCart
+  FileSpreadsheet, MonitorPlay, Monitor, Settings, Package, Activity, 
+  ShoppingCart, HardDrive, Smartphone, Cloud
 } from 'lucide-react';
 
 const PRICING = {
@@ -88,6 +89,7 @@ function App() {
   const [quantity, setQuantity] = useState(4);
   const [hasMonitor, setHasMonitor] = useState(false);
   const [cableLength, setCableLength] = useState(50);
+  const [showItemizedPrice, setShowItemizedPrice] = useState(false); // New state for price breakdown
 
   // Cabling State
   const [cabRooms, setCabRooms] = useState(defaultCabRooms);
@@ -133,7 +135,7 @@ function App() {
     setHasMonitor(false);
     setCableLength(50);
     setActiveProject('cctv');
-    setCurrentView('cctv-planner');
+    setShowItemizedPrice(true); // Show the itemized breakdown automatically
   };
 
   const calculateHardwareCost = () => {
@@ -368,6 +370,30 @@ function App() {
                 </button>
               </div>
             </div>
+
+            {/* NEW: ITEMIZED PRICE BREAKDOWN */}
+            {showItemizedPrice && (
+              <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-green-900' : 'bg-green-50 border-green-200'}`}>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className={`text-lg font-bold flex items-center space-x-2 ${darkMode ? 'text-green-400' : 'text-green-800'}`}>
+                    <DollarSign className="w-5 h-5" /> <span>Jumia Kit Price Estimate</span>
+                  </h3>
+                  <button onClick={() => setShowItemizedPrice(false)} className="text-gray-500 hover:text-gray-700"><X className="w-5 h-5" /></button>
+                </div>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span>{quantity}x {brandData.name} Cameras (@{formatKES(cameraData.price)})</span> <span>{formatKES(cameraData.price * quantity)}</span></div>
+                  <div className="flex justify-between"><span>1x {selectedDvr.name}</span> <span>{formatKES(selectedDvr.price)}</span></div>
+                  <div className="flex justify-between"><span>1x {PRICING.hdd500.name}</span> <span>{formatKES(PRICING.hdd500.price)}</span></div>
+                  <div className="flex justify-between"><span>1x {PRICING.psu.name}</span> <span>{formatKES(PRICING.psu.price)}</span></div>
+                  <div className="flex justify-between"><span>{cableLength}m Coaxial Cable (@{formatKES(PRICING.cablePerMeter.price)}/m)</span> <span>{formatKES(cableLength * PRICING.cablePerMeter.price)}</span></div>
+                  <div className="flex justify-between"><span>1x {PRICING.connectors.name}</span> <span>{formatKES(PRICING.connectors.price)}</span></div>
+                  <div className="border-t border-green-300 dark:border-green-800 mt-2 pt-2 font-bold flex justify-between text-base">
+                    <span>Total Hardware Estimate:</span> 
+                    <span>{formatKES(calculateHardwareCost())}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
               <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -659,35 +685,41 @@ function App() {
                     <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>SYSTEM TOPOLOGY</div>
                     <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px', marginBottom: '20px', textAlign: 'center' }}>
                       
-                      {hasMonitor && (
-                        <>
-                          <div style={topologyBoxStyle}>
-                            <Monitor style={{ width: '24px', height: '24px', color: '#3b82f6', margin: '0 auto 5px auto' }} />
-                            <strong style={{ fontSize: '12px', display: 'block' }}>CCTV Monitor</strong>
-                            <span style={{ fontSize: '10px', color: '#64748b' }}>22" Display</span>
+                      {/* Top row: Phone App & Monitor */}
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', marginBottom: '20px' }}>
+                        <div style={{ textAlign: 'center' }}>
+                           <div style={{ ...topologyBoxStyle, borderColor: '#0ea5e9', backgroundColor: '#f0f9ff' }}>
+                              <Smartphone style={{ width: '20px', height: '20px', color: '#0ea5e9', margin: '0 auto 5px auto' }} />
+                              <strong style={{ fontSize: '11px' }}>Remote Viewing</strong>
+                           </div>
+                           <span style={{ fontSize: '10px', color: '#ea580c', fontWeight: 'bold' }}>Internet (Cloud)</span>
+                        </div>
+                        {hasMonitor && (
+                          <div style={{ textAlign: 'center' }}>
+                             <div style={{ ...topologyBoxStyle, borderColor: '#3b82f6' }}>
+                                <Monitor style={{ width: '20px', height: '20px', color: '#3b82f6', margin: '0 auto 5px auto' }} />
+                                <strong style={{ fontSize: '11px' }}>CCTV Monitor</strong>
+                             </div>
+                             <span style={{ fontSize: '10px', color: '#ea580c', fontWeight: 'bold' }}>HDMI / VGA Cable</span>
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px 0' }}>
-                            <div style={topologyLineStyle}></div>
-                            <span style={topologyLabelStyle}>HDMI / VGA Cable</span>
-                            <div style={topologyLineStyle}></div>
-                          </div>
-                        </>
-                      )}
+                        )}
+                      </div>
 
+                      {/* Middle: DVR, HDD, PSU */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '15px' }}>
+                        <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', textAlign: 'center', width: '100px' }}>
+                          <HardDrive style={{ width: '20px', height: '20px', color: '#64748b', margin: '0 auto 5px auto' }} />
+                          <strong style={{ fontSize: '10px', display: 'block' }}>500GB HDD</strong>
+                        </div>
+                        <div style={{ width: '20px', height: '2px', backgroundColor: '#94a3b8' }}></div>
                         <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '12px 20px', borderRadius: '8px', textAlign: 'center', minWidth: '150px' }}>
                           <strong style={{ fontSize: '13px' }}>{selectedDvr.name}</strong><br/>
                           <span style={{ fontSize: '10px', opacity: 0.8 }}>Main Recorder</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <div style={{ width: '30px', height: '2px', backgroundColor: '#94a3b8' }}></div>
-                          <span style={{ fontSize: '10px', color: '#ea580c', fontWeight: 'bold' }}>Power Cable</span>
-                          <div style={{ width: '30px', height: '2px', backgroundColor: '#94a3b8' }}></div>
-                        </div>
-                        <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', padding: '12px', borderRadius: '8px', textAlign: 'center', minWidth: '120px' }}>
+                        <div style={{ width: '20px', height: '2px', backgroundColor: '#94a3b8' }}></div>
+                        <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', textAlign: 'center', width: '100px' }}>
                           <Zap style={{ width: '20px', height: '20px', color: '#eab308', margin: '0 auto 5px auto' }} />
-                          <strong style={{ fontSize: '12px', display: 'block' }}>Power Supply</strong>
-                          <span style={{ fontSize: '10px', color: '#64748b' }}>5A Centralized</span>
+                          <strong style={{ fontSize: '10px', display: 'block' }}>5A Power Supply</strong>
                         </div>
                       </div>
 
@@ -876,42 +908,80 @@ function App() {
 
         {/* ======================= NETWORK PREVIEW (UI) ======================= */}
         {currentView === 'preview' && (
-          <div className={`p-10 rounded-xl text-center border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-            <MonitorPlay className="w-16 h-16 text-purple-500 mx-auto mb-4" />
-            <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>Network Topology Preview</h2>
-            <p className={`mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              This is a quick visual preview. The full detailed topology diagram is included in the exported PDF.
+          <div className={`p-10 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+            <h2 className={`text-2xl font-bold mb-2 text-center ${darkMode ? 'text-white' : 'text-gray-900'}`}>Interactive Network Topology</h2>
+            <p className={`mb-10 text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+              Visual overview of how your system connects.
             </p>
-            <div className="flex justify-center gap-4 flex-wrap">
-              {activeProject === 'cctv' ? (
-                <>
-                  {Array.from({ length: quantity }).map((_, i) => (
-                    <div key={i} className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                      <Camera className="w-6 h-6 text-blue-500 mx-auto" />
-                      <p className="text-xs mt-1">Cam {i + 1}</p>
-                    </div>
-                  ))}
-                  <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    <Server className="w-6 h-6 text-green-500 mx-auto" />
-                    <p className="text-xs mt-1">{selectedDvr.name}</p>
+            
+            <div className="flex flex-col items-center justify-center space-y-6">
+              
+              {/* Top Layer: Cloud / Remote */}
+              <div className="flex justify-center gap-8">
+                <div className={`flex flex-col items-center p-4 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                  <Cloud className="w-8 h-8 text-blue-400 mb-2" />
+                  <span className="text-sm font-bold">Remote Viewing</span>
+                  <span className="text-xs text-gray-500">Via Smartphone App</span>
+                </div>
+                {hasMonitor && (
+                  <div className={`flex flex-col items-center p-4 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                    <Monitor className="w-8 h-8 text-blue-400 mb-2" />
+                    <span className="text-sm font-bold">CCTV Monitor</span>
+                    <span className="text-xs text-gray-500">HDMI Cable</span>
                   </div>
-                </>
-              ) : (
-                <>
-                  {cabDevices.map(d => (
-                    <div key={d.id} className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                      {cabDeviceTypes[d.type].icon && React.createElement(cabDeviceTypes[d.type].icon, { className: "w-6 h-6 text-blue-500 mx-auto" })}
-                      <p className="text-xs mt-1">{d.name}</p>
-                    </div>
-                  ))}
-                  <div className={`p-3 rounded-lg ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    <Server className="w-6 h-6 text-green-500 mx-auto" />
-                    <p className="text-xs mt-1">Core Switch</p>
+                )}
+              </div>
+
+              {/* Connecting Lines */}
+              <div className="w-0.5 h-8 bg-gray-400 dark:bg-gray-600"></div>
+
+              {/* Middle Layer: Main DVR & PSU */}
+              <div className="flex items-center justify-center gap-6">
+                <div className={`flex flex-col items-center p-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}>
+                  <HardDrive className="w-6 h-6 text-gray-500 mb-1" />
+                  <span className="text-xs font-bold">500GB HDD</span>
+                </div>
+                
+                <div className="w-8 h-0.5 bg-gray-400 dark:bg-gray-600"></div>
+                
+                <div className="flex flex-col items-center p-5 rounded-xl bg-blue-900 text-white shadow-lg">
+                  <Server className="w-10 h-10 mb-2 text-orange-400" />
+                  <span className="text-lg font-bold">{selectedDvr.name}</span>
+                  <span className="text-xs opacity-80">Main Recorder</span>
+                </div>
+
+                <div className="w-8 h-0.5 bg-gray-400 dark:bg-gray-600"></div>
+
+                <div className={`flex flex-col items-center p-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}>
+                  <Zap className="w-6 h-6 text-yellow-500 mb-1" />
+                  <span className="text-xs font-bold">Power Supply</span>
+                </div>
+              </div>
+
+              {/* Connecting Lines */}
+              <div className="flex flex-col items-center">
+                <div className="w-0.5 h-6 bg-gray-400 dark:bg-gray-600"></div>
+                <span className="text-xs font-bold text-orange-500 bg-white dark:bg-gray-800 px-2 py-1 rounded border border-orange-500">Video (RG59) & Power Cables</span>
+                <div className="w-0.5 h-6 bg-gray-400 dark:bg-gray-600"></div>
+                <div className="h-0.5 w-3/4 bg-gray-400 dark:bg-gray-600"></div>
+              </div>
+
+              {/* Bottom Layer: Cameras */}
+              <div className="flex flex-wrap justify-center gap-4 mt-2">
+                {Array.from({ length: quantity }).map((_, i) => (
+                  <div key={i} className={`flex flex-col items-center p-3 rounded-xl border w-24 ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}>
+                    <Camera className="w-6 h-6 text-orange-500 mb-1" />
+                    <span className="text-xs font-bold">Camera {i + 1}</span>
                   </div>
-                </>
-              )}
+                ))}
+              </div>
             </div>
-            <button onClick={() => setCurrentView('welcome')} className="mt-8 px-6 py-2 bg-blue-600 text-white rounded-lg">Back to Home</button>
+
+            <div className="flex justify-center mt-12">
+              <button onClick={() => setCurrentView('welcome')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition-all">
+                Back to Menu
+              </button>
+            </div>
           </div>
         )}
 
