@@ -7,40 +7,45 @@ import {
   Building, TreePine, ArrowRight, DollarSign, Gauge, Sparkles, Star, 
   Zap, Printer, Eye, Save, FolderOpen, X, User, Briefcase, 
   FileSpreadsheet, MonitorPlay, Monitor, Settings, Package, Activity, 
-  ShoppingCart, HardDrive, Smartphone, Cloud, Calculator, MessageCircle, ClipboardCheck
+  ShoppingCart, HardDrive, Smartphone, Cloud, Calculator, MessageCircle, ClipboardCheck, Shield, Cpu
 } from 'lucide-react';
 
-// Accurate Pricing based on Kenyan Market / Jumia Listings
-const PRICING = {
-  brands: {
-    hikvision: {
-      name: 'Hikvision',
-      cameras: {
-        dome: { name: '2MP Dome Camera', price: 1600, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
-        bullet: { name: '2MP Bullet Camera', price: 1700, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
-        ptz: { name: '2MP PTZ Camera', price: 12000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
-      },
-      dvr4: { name: '4-Channel DVR', price: 5700 },
-      dvr8: { name: '8-Channel DVR', price: 8500 }
-    },
-    dahua: {
-      name: 'Dahua',
-      cameras: {
-        dome: { name: '2MP Dome Camera', price: 1500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
-        bullet: { name: '2MP Bullet Camera', price: 1500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
-        ptz: { name: '4MP PTZ Camera', price: 15000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
-      },
-      dvr4: { name: '4-Channel DVR', price: 4500 },
-      dvr8: { name: '8-Channel DVR', price: 7000 }
-    }
+// Expanded Catalog with Options
+const CATALOG = {
+  dvrs: {
+    hik4: { name: 'Hikvision 4-Channel DVR', price: 5700 },
+    hik8: { name: 'Hikvision 8-Channel DVR', price: 8500 },
+    dahua4: { name: 'Dahua 4-Channel DVR', price: 4500 },
+    dahua8: { name: 'Dahua 8-Channel DVR', price: 7000 }
   },
-  monitor: { name: '22" CCTV Monitor', price: 13000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Computer_monitor.jpg/640px-Computer_monitor.jpg' },
-  hdd500: { name: '500GB Surveillance Hard Drive', price: 3100 },
-  psu: { name: '4-Port 5A Centralized Power Supply', price: 1500 },
-  cablePerMeter: { name: 'RG59 Coaxial Cable', price: 20 },
-  connectors: { name: '12x BNC & DC Connectors', price: 250 },
+  cameras: {
+    hikBullet: { name: 'Hikvision 2MP Bullet', price: 1700, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
+    hikDome: { name: 'Hikvision 2MP Dome', price: 1600, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
+    hikPTZ: { name: 'Hikvision 2MP PTZ', price: 12000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
+    dahuaBullet: { name: 'Dahua 2MP Bullet', price: 1500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
+  },
+  storage: {
+    none: { name: 'No Hard Drive', price: 0 },
+    hdd500: { name: '500GB Surveillance HDD', price: 3100 },
+    hdd1tb: { name: '1TB Surveillance HDD', price: 5500 },
+    hdd2tb: { name: '2TB Surveillance HDD', price: 9800 }
+  },
+  accessories: {
+    psu: { name: '4-Port 5A Centralized Power Supply', price: 1500 },
+    cablePerMeter: { name: 'RG59 Coaxial Cable (per meter)', price: 20 },
+    connectors: { name: '12x BNC & DC Connectors', price: 250 }
+  },
+  monitors: {
+    none: { name: 'No Monitor', price: 0 },
+    m22: { name: '22" CCTV Monitor', price: 13000 },
+    m32: { name: '32" Smart TV/Monitor', price: 18500 }
+  },
+  labor: {
+    diy: { name: 'Supply Only (No Installation)', price: 0 },
+    basic: { name: 'Basic Installation (1 day)', price: 4500 },
+    complex: { name: 'Complex Installation (multi-day)', price: 8500 }
+  },
   dvrImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Digital_Video_Recorder.jpg/640px-Digital_Video_Recorder.jpg',
-  installationCost: 4500,
   
   cablingStandards: {
     cat5e: { name: 'Cat5e', price: 39, speed: '1 Gbps' },
@@ -84,32 +89,31 @@ function App() {
   const [customItemPrice, setCustomItemPrice] = useState('');
   const [customItemQty, setCustomItemQty] = useState(1);
 
-  // CCTV State
-  const [brand, setBrand] = useState('hikvision');
-  const [cameraType, setCameraType] = useState('bullet');
+  // ======================= NEW CONFIGURATOR STATE =======================
   const [quantity, setQuantity] = useState(4);
-  const [hasMonitor, setHasMonitor] = useState(false);
+  const [selectedDvr, setSelectedDvr] = useState('hik4');
+  const [selectedCamera, setSelectedCamera] = useState('hikBullet');
+  const [selectedStorage, setSelectedStorage] = useState('hdd500');
+  const [selectedMonitor, setSelectedMonitor] = useState('none');
+  const [selectedLabor, setSelectedLabor] = useState('basic');
   const [cableLength, setCableLength] = useState(50);
-  const [showItemizedPrice, setShowItemizedPrice] = useState(false); 
+  
+  // Custom bundle override
+  const [customBundlePrice, setCustomBundlePrice] = useState('');
 
-  // NEW: Feature 4 - Site Survey Checklist State
+  // Site Survey Checklist
   const [survey, setSurvey] = useState({
-    power: false,
-    cableRoute: false,
-    internet: false,
-    mounting: false,
-    clientApp: false
+    power: false, cableRoute: false, internet: false, mounting: false, clientApp: false
   });
 
-  // NEW: Feature 6 - Storage Calculator State
-  const [calcHdd, setCalcHdd] = useState(500); // in GB
-  const [calcRes, setCalcRes] = useState(1080); // 1080 or 4MP
+  // Storage Calculator
+  const [calcHdd, setCalcHdd] = useState(500);
+  const [calcRes, setCalcRes] = useState(1080);
 
   // Cabling State
   const [cabRooms, setCabRooms] = useState(defaultCabRooms);
   const [cabDevices, setCabDevices] = useState([]);
   const [cabStandard, setCabStandard] = useState('cat6');
-  
   const [newCabRoom, setNewCabRoom] = useState('');
   const [cabDeviceName, setCabDeviceName] = useState('');
   const [cabDeviceType, setCabDeviceType] = useState('data');
@@ -141,45 +145,54 @@ function App() {
   const removeCustomItem = (id) => setCustomItems(customItems.filter(i => i.id !== id));
   const getCustomItemsTotal = () => customItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
-  // ======================= CCTV CALCULATIONS =======================
-  const loadJumiaKit = () => {
-    setBrand('hikvision');
-    setCameraType('bullet');
+  // ======================= CONFIGURATOR CALCULATIONS =======================
+  const loadStandardJumiaKit = () => {
     setQuantity(4);
-    setHasMonitor(false);
+    setSelectedDvr('hik4');
+    setSelectedCamera('hikBullet');
+    setSelectedStorage('hdd500');
+    setSelectedMonitor('none');
+    setSelectedLabor('basic');
     setCableLength(50);
-    setActiveProject('cctv');
-    setShowItemizedPrice(true);
+    setCustomBundlePrice('15500'); // The actual Jumia price
   };
 
   const calculateHardwareCost = () => {
-    const brandData = PRICING.brands[brand];
-    const cameraData = brandData.cameras[cameraType];
-    const selectedDvr = quantity <= 4 ? brandData.dvr4 : brandData.dvr8;
-    let total = (cameraData.price * quantity) + selectedDvr.price + PRICING.hdd500.price + PRICING.psu.price + (cableLength * PRICING.cablePerMeter.price) + PRICING.connectors.price;
-    if (hasMonitor) total += PRICING.monitor.price;
-    return total;
-  };
-  
-  const calculateCCTVTotal = () => calculateHardwareCost() + PRICING.installationCost + getCustomItemsTotal();
-  const selectedDvr = quantity <= 4 ? PRICING.brands[brand].dvr4 : PRICING.brands[brand].dvr8;
+    const camPrice = CATALOG.cameras[selectedCamera].price * quantity;
+    const dvrPrice = CATALOG.dvrs[selectedDvr].price;
+    const storagePrice = CATALOG.storage[selectedStorage].price;
+    const monitorPrice = CATALOG.monitors[selectedMonitor].price;
+    const psuPrice = CATALOG.accessories.psu.price;
+    const cablePrice = cableLength * CATALOG.accessories.cablePerMeter.price;
+    const connPrice = CATALOG.accessories.connectors.price;
 
-  // ======================= NEW FEATURES LOGIC =======================
-  
-  // Feature 5: WhatsApp Share
+    const rawTotal = camPrice + dvrPrice + storagePrice + monitorPrice + psuPrice + cablePrice + connPrice;
+    
+    // If user entered a custom bundle price, calculate the discount
+    let discount = 0;
+    if (customBundlePrice && Number(customBundlePrice) > 0) {
+      discount = rawTotal - Number(customBundlePrice);
+    }
+
+    return { rawTotal, discount, finalHardware: rawTotal - discount };
+  };
+
+  const hardwareCosts = calculateHardwareCost();
+  const laborCost = CATALOG.labor[selectedLabor].price;
+  const calculateCCTVTotal = () => hardwareCosts.finalHardware + laborCost + getCustomItemsTotal();
+
+  // WhatsApp Share
   const handleWhatsAppShare = () => {
-    // Format phone number for Kenya (+254)
     let phoneStr = clientInfo.phone.replace(/\D/g, ''); 
     if (phoneStr.startsWith('0')) phoneStr = '254' + phoneStr.slice(1);
     
-    const message = `*CCTV QUOTATION*\nFrom: ${businessInfo.name}\nClient: ${clientInfo.name || 'Valued Customer'}\n\n*System:* ${quantity}x ${PRICING.brands[brand].name} ${PRICING.brands[brand].cameras[cameraType].name} + ${selectedDvr.name}${hasMonitor ? ' + Monitor' : ''}\n\n*Total Cost:* ${formatKES(calculateCCTVTotal())}\n\nIncludes installation, configuration, and mobile app setup. Please find the official PDF quotation attached.\n\nContact us: ${businessInfo.phone}`;
+    const message = `*CCTV QUOTATION*\nFrom: ${businessInfo.name}\nClient: ${clientInfo.name || 'Valued Customer'}\n\n*System:* ${quantity}x ${CATALOG.cameras[selectedCamera].name} + ${CATALOG.dvrs[selectedDvr].name}${selectedStorage !== 'none' ? ' + HDD' : ''}${selectedMonitor !== 'none' ? ' + Monitor' : ''}\n\n*Total Cost:* ${formatKES(calculateCCTVTotal())}\n\nIncludes installation and mobile app setup. Please find the official PDF quotation attached.\n\nContact us: ${businessInfo.phone}`;
     
     const encodedMsg = encodeURIComponent(message);
     window.open(`https://wa.me/${phoneStr}?text=${encodedMsg}`, '_blank');
   };
 
-  // Feature 6: Storage Calculator
-  // Estimates: 1080p uses ~15GB/day/cam, 4MP uses ~30GB/day/cam
+  // Storage Calculator
   const getRecordingDays = () => {
     const gbPerCamPerDay = calcRes === 1080 ? 15 : 30;
     const totalGbPerDay = gbPerCamPerDay * quantity;
@@ -227,7 +240,7 @@ function App() {
     const faceplates = Math.ceil(totalPorts / 2) || 0;
     const patchPanels = Math.ceil(totalPorts / 24) || 0;
 
-    const cablePrice = PRICING.cablingStandards[cabStandard].price;
+    const cablePrice = CATALOG.cablingStandards[cabStandard].price;
     const cableCost = totalWithWaste * cablePrice;
     const hardwareCost = (keystones * 150) + (patchCords * 450) + (faceplates * 200) + (patchPanels * 4500);
     const laborCost = 4500;
@@ -253,9 +266,6 @@ function App() {
     };
     html2pdf().set(opt).from(element).save().then(() => setIsExporting(false));
   };
-
-  const brandData = PRICING.brands[brand];
-  const cameraData = brandData.cameras[cameraType];
 
   // Shared PDF block styles
   const topologyBoxStyle = { backgroundColor: 'white', border: '2px solid #1e3a8a', padding: '10px 15px', borderRadius: '8px', textAlign: 'center', minWidth: '120px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' };
@@ -300,8 +310,8 @@ function App() {
                 <div className="w-14 h-14 mx-auto bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mb-4 shadow-lg">
                   <Camera className="w-7 h-7 text-white" />
                 </div>
-                <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>CCTV Quotation</h3>
-                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Build Hikvision/Dahua kits and generate PDF quotes.</p>
+                <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>CCTV Configurator</h3>
+                <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Select exact hardware and build a custom kit.</p>
               </div>
 
               <div onClick={() => { setActiveProject('cabling'); setCurrentView('cabling-planner'); }} className={`group cursor-pointer p-6 rounded-2xl border transition-all duration-300 hover:scale-105 ${darkMode ? 'bg-gray-800 border-gray-700 hover:border-blue-500' : 'bg-white border-gray-200 hover:border-blue-500'}`}>
@@ -332,98 +342,108 @@ function App() {
           </div>
         )}
 
-        {/* ======================= CCTV PLANNER ======================= */}
+        {/* ======================= CCTV CONFIGURATOR ======================= */}
         {currentView === 'cctv-planner' && (
           <div className="space-y-6">
-            <div className={`p-4 rounded-xl border flex items-center justify-between ${darkMode ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-200'}`}>
+            <div className={`p-4 rounded-xl border flex flex-wrap items-center justify-between gap-3 ${darkMode ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-200'}`}>
               <div>
-                <p className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-900'}`}>Quick Load: Jumia Kenya 4-Camera Kit</p>
-                <p className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Populates standard 4-camera configuration.</p>
+                <p className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-900'}`}>Quick Presets</p>
+                <p className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Instantly configure standard setups.</p>
               </div>
-              <button onClick={loadJumiaKit} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md flex items-center space-x-2">
-                <Package className="w-5 h-5" /> <span>Load Kit</span>
-              </button>
+              <div className="flex gap-2">
+                <button onClick={loadStandardJumiaKit} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-lg shadow-md flex items-center space-x-2">
+                  <Package className="w-4 h-4" /> <span>Jumia 4-Cam Kit (KSh 15.5k)</span>
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column: Configuration */}
+              
+              {/* LEFT: Hardware Configurator */}
               <div className="lg:col-span-2 space-y-6">
+                
+                {/* DVR & Camera Selection */}
                 <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                   <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    <User className="w-5 h-5 text-blue-500" /> <span>Client & Quotation Details</span>
+                    <Cpu className="w-5 h-5 text-blue-500" /> <span>1. Select Hardware</span>
                   </h3>
+                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-blue-500">Client Info</h4>
-                      <input type="text" placeholder="Client Name" value={clientInfo.name} onChange={e => setClientInfo({...clientInfo, name: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                      <input type="text" placeholder="Client Phone (For WhatsApp)" value={clientInfo.phone} onChange={e => setClientInfo({...clientInfo, phone: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                      <input type="text" placeholder="Location / Address" value={clientInfo.address} onChange={e => setClientInfo({...clientInfo, address: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 block mb-2">DVR Recorder</label>
+                      <select value={selectedDvr} onChange={e => setSelectedDvr(e.target.value)} className={`w-full px-4 py-3 rounded-xl border mb-4 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
+                        {Object.entries(CATALOG.dvrs).map(([k, v]) => (
+                          <option key={k} value={k}>{v.name} - {formatKES(v.price)}</option>
+                        ))}
+                      </select>
+
+                      <label className="text-sm font-medium text-gray-500 block mb-2">Camera Model</label>
+                      <select value={selectedCamera} onChange={e => setSelectedCamera(e.target.value)} className={`w-full px-4 py-3 rounded-xl border mb-4 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
+                        {Object.entries(CATALOG.cameras).map(([k, v]) => (
+                          <option key={k} value={k}>{v.name} - {formatKES(v.price)}</option>
+                        ))}
+                      </select>
                     </div>
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-blue-500">Your Business Info</h4>
-                      <input type="text" placeholder="Business Name" value={businessInfo.name} onChange={e => setBusinessInfo({...businessInfo, name: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                      <input type="text" placeholder="Phone" value={businessInfo.phone} onChange={e => setBusinessInfo({...businessInfo, phone: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                      <input type="text" placeholder="M-Pesa Till/Paybill" value={businessInfo.mpesa} onChange={e => setBusinessInfo({...businessInfo, mpesa: e.target.value})} className={`w-full px-3 py-2 rounded-lg border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 block mb-2">Number of Cameras</label>
+                      <input type="number" min="1" max="16" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className={`w-full px-4 py-3 rounded-xl border mb-4 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
+                      
+                      <label className="text-sm font-medium text-gray-500 block mb-2">Hard Drive (Storage)</label>
+                      <select value={selectedStorage} onChange={e => setSelectedStorage(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
+                        {Object.entries(CATALOG.storage).map(([k, v]) => (
+                          <option key={k} value={k}>{v.name} {v.price > 0 ? `- ${formatKES(v.price)}` : ''}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
                 </div>
 
+                {/* Add-ons & Labor */}
                 <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                  <h3 className={`text-lg font-bold mb-6 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    <Settings className="w-5 h-5 text-blue-500" /> <span>System Configuration</span>
+                  <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <Settings className="w-5 h-5 text-blue-500" /> <span>2. Add-ons & Installation</span>
                   </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="text-sm font-medium text-gray-500 block mb-2">Brand</label>
-                      <select value={brand} onChange={e => setBrand(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
-                        <option value="hikvision">Hikvision</option>
-                        <option value="dahua">Dahua</option>
+                      <label className="text-sm font-medium text-gray-500 block mb-2">Monitor</label>
+                      <select value={selectedMonitor} onChange={e => setSelectedMonitor(e.target.value)} className={`w-full px-4 py-3 rounded-xl border mb-4 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
+                        {Object.entries(CATALOG.monitors).map(([k, v]) => (
+                          <option key={k} value={k}>{v.name} {v.price > 0 ? `- ${formatKES(v.price)}` : ''}</option>
+                        ))}
                       </select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500 block mb-2">Camera Design</label>
-                      <select value={cameraType} onChange={e => setCameraType(e.target.value)} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
-                        <option value="bullet">Bullet</option>
-                        <option value="dome">Dome</option>
-                        <option value="ptz">PTZ</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-gray-500 block mb-2">Number of Cameras</label>
-                      <input type="number" min="1" max="16" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
-                    </div>
-                    <div>
+
                       <label className="text-sm font-medium text-gray-500 block mb-2">Cable Required (meters)</label>
                       <input type="number" value={cableLength} onChange={e => setCableLength(Number(e.target.value))} className={`w-full px-4 py-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`} />
                     </div>
-                  </div>
-                  <div className={`mt-6 p-4 rounded-xl flex items-center justify-between ${darkMode ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    <div className="flex items-center space-x-3">
-                      <Monitor className="w-6 h-6 text-blue-500" />
-                      <div>
-                        <p className={`font-medium ${darkMode ? 'text-white' : 'text-gray-900'}`}>Add 22" CCTV Monitor</p>
-                        <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Optional live viewing display</p>
-                      </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 block mb-2">Installation Level</label>
+                      <select value={selectedLabor} onChange={e => setSelectedLabor(e.target.value)} className={`w-full px-4 py-3 rounded-xl border mb-4 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
+                        {Object.entries(CATALOG.labor).map(([k, v]) => (
+                          <option key={k} value={k}>{v.name} {v.price > 0 ? `- ${formatKES(v.price)}` : ''}</option>
+                        ))}
+                      </select>
+                      
+                      <label className="text-sm font-medium text-orange-500 block mb-2">Custom Bundle Price Override (Optional)</label>
+                      <input type="number" placeholder="e.g. 15500" value={customBundlePrice} onChange={e => setCustomBundlePrice(e.target.value)} className={`w-full px-4 py-3 rounded-xl border focus:ring-2 focus:ring-orange-500 ${darkMode ? 'bg-gray-700 border-orange-900 text-white placeholder-gray-500' : 'bg-white border-orange-300'}`} />
+                      <p className="text-xs text-gray-500 mt-1">Matches supplier discounts.</p>
                     </div>
-                    <button onClick={() => setHasMonitor(!hasMonitor)} className={`px-6 py-2 rounded-lg font-bold transition-all ${hasMonitor ? 'bg-green-500 text-white' : darkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-600'}`}>
-                      {hasMonitor ? 'Added ✓' : `+ ${formatKES(PRICING.monitor.price)}`}
-                    </button>
                   </div>
                 </div>
 
-                {/* Feature 4: Site Survey Checklist */}
+                {/* Site Survey Checklist */}
                 <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                   <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     <ClipboardCheck className="w-5 h-5 text-blue-500" /> <span>Site Survey Checklist</span>
                   </h3>
-                  <p className={`text-sm mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Tick these off during your site visit before buying materials.</p>
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {[
-                      { key: 'power', label: 'Power socket available near DVR location?' },
-                      { key: 'cableRoute', label: 'Cable route (roofing/walls) clear and accessible?' },
-                      { key: 'internet', label: 'Internet router available for remote viewing?' },
-                      { key: 'mounting', label: 'Mounting surfaces suitable for cameras?' },
-                      { key: 'clientApp', label: 'Client smartphone ready for app setup?' }
+                      { key: 'power', label: 'Power socket near DVR?' },
+                      { key: 'cableRoute', label: 'Cable route clear?' },
+                      { key: 'internet', label: 'Internet router available?' },
+                      { key: 'mounting', label: 'Mounting surfaces suitable?' },
+                      { key: 'clientApp', label: 'Client phone ready for app?' }
                     ].map((item) => (
                       <label key={item.key} className="flex items-center space-x-3 cursor-pointer">
                         <input 
@@ -437,25 +457,61 @@ function App() {
                     ))}
                   </div>
                 </div>
+
               </div>
 
-              {/* Right Column: Pricing & Tools */}
+              {/* RIGHT: Summary & Tools */}
               <div className="space-y-6">
                 
-                {/* Feature 6: Storage Calculator */}
+                {/* Cost Summary */}
+                <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                  <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                    <DollarSign className="w-5 h-5 text-green-500" /> <span>Quotation Summary</span>
+                  </h3>
+                  
+                  <div className={`space-y-2 text-sm mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <div className="flex justify-between"><span>Cameras ({quantity}x):</span> <span>{formatKES(CATALOG.cameras[selectedCamera].price * quantity)}</span></div>
+                    <div className="flex justify-between"><span>DVR:</span> <span>{formatKES(CATALOG.dvrs[selectedDvr].price)}</span></div>
+                    <div className="flex justify-between"><span>Storage:</span> <span>{formatKES(CATALOG.storage[selectedStorage].price)}</span></div>
+                    <div className="flex justify-between"><span>Accessories & Cable:</span> <span>{formatKES(1500 + (cableLength * 20) + 250)}</span></div>
+                    {selectedMonitor !== 'none' && <div className="flex justify-between"><span>Monitor:</span> <span>{formatKES(CATALOG.monitors[selectedMonitor].price)}</span></div>}
+                    
+                    {hardwareCosts.discount > 0 && (
+                      <div className="flex justify-between text-red-500 font-bold">
+                        <span>Bundle Discount:</span> <span>- {formatKES(hardwareCosts.discount)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold mt-2 pt-2 border-t border-gray-700"><span>Hardware Subtotal:</span> <span>{formatKES(hardwareCosts.finalHardware)}</span></div>
+                    <div className="flex justify-between"><span>Installation:</span> <span>{formatKES(laborCost)}</span></div>
+                  </div>
+
+                  <div className={`border-t pt-4 mb-6 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Quotation</p>
+                    <p className="text-3xl font-bold text-green-500">{formatKES(calculateCCTVTotal())}</p>
+                  </div>
+
+                  <button onClick={handleWhatsAppShare} className="w-full py-3 bg-[#25D366] hover:bg-[#20b858] text-white font-bold rounded-lg shadow-lg flex items-center justify-center space-x-2 transition-colors mb-3">
+                    <MessageCircle className="w-5 h-5" /> <span>Share via WhatsApp</span>
+                  </button>
+
+                  <button onClick={() => setCurrentView('report')} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg flex items-center justify-center space-x-2 transition-colors">
+                    <Eye className="w-5 h-5" /> <span>Preview PDF Quote</span>
+                  </button>
+                </div>
+
+                {/* Storage Calculator */}
                 <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
                   <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                     <Calculator className="w-5 h-5 text-blue-500" /> <span>Storage Calculator</span>
                   </h3>
-                  <p className={`text-xs mb-4 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Estimate how many days you can record before overwriting.</p>
                   
                   <div className="space-y-3">
                     <div>
                       <label className="text-xs font-medium text-gray-500 block mb-1">Hard Drive Size</label>
                       <select value={calcHdd} onChange={e => setCalcHdd(Number(e.target.value))} className={`w-full px-3 py-2 rounded-lg border text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
                         <option value={500}>500 GB</option>
-                        <option value={1000}>1 TB (1000 GB)</option>
-                        <option value={2000}>2 TB (2000 GB)</option>
+                        <option value={1000}>1 TB</option>
+                        <option value={2000}>2 TB</option>
                       </select>
                     </div>
                     <div>
@@ -465,39 +521,12 @@ function App() {
                         <option value={4000}>4MP (Higher Detail)</option>
                       </select>
                     </div>
-                    
                     <div className={`mt-4 p-3 rounded-lg text-center ${darkMode ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
                       <p className={`text-xs ${darkMode ? 'text-blue-300' : 'text-blue-600'}`}>Estimated Recording Time</p>
                       <p className="text-2xl font-bold text-blue-500">{getRecordingDays()} Days</p>
-                      <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>for {quantity} cameras recording 24/7</p>
+                      <p className={`text-xs mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>for {quantity} cameras</p>
                     </div>
                   </div>
-                </div>
-
-                <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                  <h3 className={`text-lg font-bold mb-4 flex items-center space-x-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                    <DollarSign className="w-5 h-5 text-green-500" /> <span>Cost Summary</span>
-                  </h3>
-                  
-                  <div className={`space-y-2 text-sm mb-4 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    <div className="flex justify-between"><span>Hardware Subtotal:</span> <span>{formatKES(calculateHardwareCost())}</span></div>
-                    <div className="flex justify-between"><span>Installation Labor:</span> <span>{formatKES(PRICING.installationCost)}</span></div>
-                    {customItems.length > 0 && <div className="flex justify-between"><span>Custom Items:</span> <span>{formatKES(getCustomItemsTotal())}</span></div>}
-                  </div>
-
-                  <div className={`border-t pt-4 mb-6 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-                    <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Total Quotation</p>
-                    <p className="text-3xl font-bold text-green-500">{formatKES(calculateCCTVTotal())}</p>
-                  </div>
-
-                  {/* Feature 5: WhatsApp Share Button */}
-                  <button onClick={handleWhatsAppShare} className="w-full py-3 bg-[#25D366] hover:bg-[#20b858] text-white font-bold rounded-lg shadow-lg flex items-center justify-center space-x-2 transition-colors mb-3">
-                    <MessageCircle className="w-5 h-5" /> <span>Share via WhatsApp</span>
-                  </button>
-
-                  <button onClick={() => setCurrentView('report')} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg flex items-center justify-center space-x-2 transition-colors">
-                    <Eye className="w-5 h-5" /> <span>Preview PDF Quote</span>
-                  </button>
                 </div>
 
               </div>
@@ -522,7 +551,7 @@ function App() {
                     <Settings className="w-5 h-5 text-blue-500" /> <span>Cable Standard</span>
                   </h3>
                   <select value={cabStandard} onChange={e => setCabStandard(e.target.value)} className={`w-full px-4 py-3 rounded-xl border mb-4 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
-                    {Object.entries(PRICING.cablingStandards).map(([key, val]) => (
+                    {Object.entries(CATALOG.cablingStandards).map(([key, val]) => (
                       <option key={key} value={key}>{val.name} - {formatKES(val.price)}/m ({val.speed})</option>
                     ))}
                   </select>
@@ -668,11 +697,7 @@ function App() {
 
             <div className="overflow-x-auto pb-10 bg-gray-200 dark:bg-gray-800 p-4 rounded-xl flex justify-center">
               
-              <div 
-                id="pdf-report-container" 
-                className="bg-white text-gray-900 shadow-2xl"
-                style={{ width: '800px', padding: '40px', fontFamily: 'Arial, sans-serif' }}
-              >
+              <div id="pdf-report-container" className="bg-white text-gray-900 shadow-2xl" style={{ width: '800px', padding: '40px', fontFamily: 'Arial, sans-serif' }}>
                 {/* COMMON HEADER */}
                 <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '30px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', marginBottom: '30px' }}>
                   <div>
@@ -709,20 +734,20 @@ function App() {
                     
                     <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', margin: '20px 0', padding: '20px', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                       <div style={{ textAlign: 'center', width: '30%' }}>
-                        <img src={cameraData.image} alt="Camera" style={{ width: '100%', maxWidth: '140px', height: '100px', objectFit: 'contain', marginBottom: '10px', borderRadius: '8px', backgroundColor: 'white', padding: '5px', border: '1px solid #e5e7eb' }} crossOrigin="anonymous" />
-                        <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e3a8a', margin: '5px 0' }}>{quantity}x {brandData.name} {cameraData.name}</p>
+                        <img src={CATALOG.cameras[selectedCamera].image} alt="Camera" style={{ width: '100%', maxWidth: '140px', height: '100px', objectFit: 'contain', marginBottom: '10px', borderRadius: '8px', backgroundColor: 'white', padding: '5px', border: '1px solid #e5e7eb' }} crossOrigin="anonymous" />
+                        <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e3a8a', margin: '5px 0' }}>{quantity}x {CATALOG.cameras[selectedCamera].name}</p>
                         <span style={{ fontSize: '10px', color: '#666' }}>2MP 1080p • Night Vision</span>
                       </div>
                       <div style={{ textAlign: 'center', width: '30%' }}>
-                        <img src={PRICING.dvrImage} alt="DVR" style={{ width: '100%', maxWidth: '140px', height: '100px', objectFit: 'contain', marginBottom: '10px', borderRadius: '8px', backgroundColor: 'white', padding: '5px', border: '1px solid #e5e7eb' }} crossOrigin="anonymous" />
-                        <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e3a8a', margin: '5px 0' }}>1x {brandData.name} {selectedDvr.name}</p>
+                        <img src={CATALOG.dvrImage} alt="DVR" style={{ width: '100%', maxWidth: '140px', height: '100px', objectFit: 'contain', marginBottom: '10px', borderRadius: '8px', backgroundColor: 'white', padding: '5px', border: '1px solid #e5e7eb' }} crossOrigin="anonymous" />
+                        <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e3a8a', margin: '5px 0' }}>1x {CATALOG.dvrs[selectedDvr].name}</p>
                         <span style={{ fontSize: '10px', color: '#666' }}>H.265 • Smartphone App</span>
                       </div>
-                      {hasMonitor && (
+                      {selectedMonitor !== 'none' && (
                         <div style={{ textAlign: 'center', width: '30%' }}>
-                          <img src={PRICING.monitor.image} alt="Monitor" style={{ width: '100%', maxWidth: '140px', height: '100px', objectFit: 'contain', marginBottom: '10px', borderRadius: '8px', backgroundColor: 'white', padding: '5px', border: '1px solid #e5e7eb' }} crossOrigin="anonymous" />
-                          <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e3a8a', margin: '5px 0' }}>1x {PRICING.monitor.name}</p>
-                          <span style={{ fontSize: '10px', color: '#666' }}>Full HD • HDMI & VGA</span>
+                          <Monitor style={{ width: '40px', height: '40px', color: '#3b82f6', margin: '30px auto' }} />
+                          <p style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e3a8a', margin: '5px 0' }}>1x {CATALOG.monitors[selectedMonitor].name}</p>
+                          <span style={{ fontSize: '10px', color: '#666' }}>Live Viewing Display</span>
                         </div>
                       )}
                     </div>
@@ -730,165 +755,56 @@ function App() {
                     <h4 style={{ marginBottom: '10px', color: '#1e3a8a' }}>WHAT'S IN THE BOX</h4>
                     <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '15px 25px', fontSize: '13px', marginBottom: '20px' }}>
                       <ol style={{ paddingLeft: '20px', margin: 0 }}>
-                        <li style={{ marginBottom: '8px' }}>1 {brandData.name} {selectedDvr.name} (DVR Machine) - White</li>
-                        <li style={{ marginBottom: '8px' }}>{quantity} Pieces of {brandData.name} 1080P Full HD 2MP Indoor & outdoor IR Night vision CCTV Cameras</li>
-                        <li style={{ marginBottom: '8px' }}>1 Piece of 500GB Hard Drive or Hard disk or Cameras Recording Memory</li>
-                        <li style={{ marginBottom: '8px' }}>1 set of 4 ports 5 Amperes Centralized CCTV Power Supply Box Unit</li>
-                        <li style={{ marginBottom: '8px' }}>{cableLength}M RG59 Two-in-one Coaxial CCTV Cameras cable Roll</li>
+                        <li style={{ marginBottom: '8px' }}>1 {CATALOG.dvrs[selectedDvr].name} (DVR Machine)</li>
+                        <li style={{ marginBottom: '8px' }}>{quantity} Pieces of {CATALOG.cameras[selectedCamera].name} Cameras</li>
+                        {selectedStorage !== 'none' && <li style={{ marginBottom: '8px' }}>1 {CATALOG.storage[selectedStorage].name}</li>}
+                        <li style={{ marginBottom: '8px' }}>1 Centralized CCTV Power Supply Box Unit</li>
+                        <li style={{ marginBottom: '8px' }}>{cableLength}M RG59 Coaxial Cable Roll</li>
                         <li style={{ marginBottom: '8px' }}>12 Bnc and DC jack power connectors</li>
-                        {hasMonitor && <li style={{ marginBottom: '8px' }}><strong>1 {PRICING.monitor.name} (Surveillance Display)</strong></li>}
+                        {selectedMonitor !== 'none' && <li style={{ marginBottom: '8px' }}><strong>1 {CATALOG.monitors[selectedMonitor].name}</strong></li>}
                       </ol>
                     </div>
 
-                    {/* CCTV SYSTEM TOPOLOGY DIAGRAM */}
-                    <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>SYSTEM TOPOLOGY</div>
-                    <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px', marginBottom: '20px', textAlign: 'center' }}>
-                      
-                      {/* Top row: Phone App & Monitor */}
-                      <div style={{ display: 'flex', justifyContent: 'center', gap: '40px', marginBottom: '20px' }}>
-                        <div style={{ textAlign: 'center' }}>
-                           <div style={{ ...topologyBoxStyle, borderColor: '#0ea5e9', backgroundColor: '#f0f9ff' }}>
-                              <Smartphone style={{ width: '20px', height: '20px', color: '#0ea5e9', margin: '0 auto 5px auto' }} />
-                              <strong style={{ fontSize: '11px' }}>Remote Viewing</strong>
-                           </div>
-                           <span style={{ fontSize: '10px', color: '#ea580c', fontWeight: 'bold' }}>Internet (Cloud)</span>
-                        </div>
-                        {hasMonitor && (
-                          <div style={{ textAlign: 'center' }}>
-                             <div style={{ ...topologyBoxStyle, borderColor: '#3b82f6' }}>
-                                <Monitor style={{ width: '20px', height: '20px', color: '#3b82f6', margin: '0 auto 5px auto' }} />
-                                <strong style={{ fontSize: '11px' }}>CCTV Monitor</strong>
-                             </div>
-                             <span style={{ fontSize: '10px', color: '#ea580c', fontWeight: 'bold' }}>HDMI / VGA Cable</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Middle: DVR, HDD, PSU */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '20px', marginBottom: '15px' }}>
-                        <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', textAlign: 'center', width: '100px' }}>
-                          <HardDrive style={{ width: '20px', height: '20px', color: '#64748b', margin: '0 auto 5px auto' }} />
-                          <strong style={{ fontSize: '10px', display: 'block' }}>500GB HDD</strong>
-                        </div>
-                        <div style={{ width: '20px', height: '2px', backgroundColor: '#94a3b8' }}></div>
-                        <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '12px 20px', borderRadius: '8px', textAlign: 'center', minWidth: '150px' }}>
-                          <strong style={{ fontSize: '13px' }}>{selectedDvr.name}</strong><br/>
-                          <span style={{ fontSize: '10px', opacity: 0.8 }}>Main Recorder</span>
-                        </div>
-                        <div style={{ width: '20px', height: '2px', backgroundColor: '#94a3b8' }}></div>
-                        <div style={{ backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', textAlign: 'center', width: '100px' }}>
-                          <Zap style={{ width: '20px', height: '20px', color: '#eab308', margin: '0 auto 5px auto' }} />
-                          <strong style={{ fontSize: '10px', display: 'block' }}>5A Power Supply</strong>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '15px' }}>
-                        <div style={topologyLineStyle}></div>
-                        <span style={topologyLabelStyle}>Video (RG59) & Power Cables</span>
-                        <div style={{ height: '2px', width: '80%', backgroundColor: '#94a3b8', margin: '10px auto' }}></div>
-                      </div>
-                      
-                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '15px' }}>
-                        {Array.from({ length: quantity }).map((_, i) => (
-                          <div key={i} style={{ backgroundColor: 'white', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', width: '100px', textAlign: 'center' }}>
-                            <Camera style={{ width: '20px', height: '20px', color: '#f97316', margin: '0 auto 5px auto' }} />
-                            <strong style={{ fontSize: '11px', display: 'block' }}>Cam {i + 1}</strong>
-                            <span style={{ fontSize: '9px', color: '#64748b' }}>Outdoor</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
+                    {/* PRICE BREAKDOWN TABLE */}
                     <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>PRICE BREAKDOWN</div>
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '13px' }}>
                       <thead>
                         <tr>
-                          <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f3f4f6', color: '#1e3a8a' }}>#</th>
                           <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f3f4f6', color: '#1e3a8a' }}>Description</th>
-                          <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f3f4f6', color: '#1e3a8a' }}>Amount (KSh)</th>
+                          <th style={{ padding: '10px', textAlign: 'right', borderBottom: '1px solid #e5e7eb', backgroundColor: '#f3f4f6', color: '#1e3a8a' }}>Amount (KSh)</th>
                         </tr>
                       </thead>
                       <tbody>
-                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>1</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}><strong>{brandData.name} {cameraData.name}</strong> ({quantity} pcs @ {cameraData.price.toLocaleString()})</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(cameraData.price * quantity).toLocaleString()}</td></tr>
-                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>2</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}><strong>{brandData.name} {selectedDvr.name}</strong></td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{selectedDvr.price.toLocaleString()}</td></tr>
-                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>3</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.hdd500.name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.hdd500.price.toLocaleString()}</td></tr>
-                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>4</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.psu.name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.psu.price.toLocaleString()}</td></tr>
-                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>5</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{cableLength}m {PRICING.cablePerMeter.name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(cableLength * PRICING.cablePerMeter.price).toLocaleString()}</td></tr>
-                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>6</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.connectors.name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.connectors.price.toLocaleString()}</td></tr>
-                        {hasMonitor && <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>7</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.monitor.name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.monitor.price.toLocaleString()}</td></tr>}
+                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{quantity}x {CATALOG.cameras[selectedCamera].name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>{(CATALOG.cameras[selectedCamera].price * quantity).toLocaleString()}</td></tr>
+                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>1x {CATALOG.dvrs[selectedDvr].name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>{CATALOG.dvrs[selectedDvr].price.toLocaleString()}</td></tr>
+                        {selectedStorage !== 'none' && <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>1x {CATALOG.storage[selectedStorage].name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>{CATALOG.storage[selectedStorage].price.toLocaleString()}</td></tr>}
+                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>1x Power Supply & Accessories</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>{(1500 + 250).toLocaleString()}</td></tr>
+                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{cableLength}m Coaxial Cable</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>{(cableLength * 20).toLocaleString()}</td></tr>
+                        {selectedMonitor !== 'none' && <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>1x {CATALOG.monitors[selectedMonitor].name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>{CATALOG.monitors[selectedMonitor].price.toLocaleString()}</td></tr>}
                         
-                        {customItems.map((item, index) => (
-                          <tr key={item.id}>
-                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{hasMonitor ? 8 + index : 7 + index}</td>
-                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{item.qty}x {item.name}</td>
-                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(item.price * item.qty).toLocaleString()}</td>
-                          </tr>
-                        ))}
+                        {hardwareCosts.discount > 0 && (
+                          <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#dc2626' }}><strong>Bundle Discount</strong></td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#dc2626', textAlign: 'right' }}>- {hardwareCosts.discount.toLocaleString()}</td></tr>
+                        )}
 
-                        <tr><td colSpan="2" style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}><strong>Hardware Subtotal</strong></td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}><strong>{calculateHardwareCost().toLocaleString()}</strong></td></tr>
-                        <tr><td colSpan="2" style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>Installation & Configuration</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.installationCost.toLocaleString()}</td></tr>
-                        <tr><td colSpan="2" style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold', fontSize: '16px', color: '#1e3a8a', borderTop: '2px solid #1e3a8a' }}>TOTAL</td><td style={{ padding: '10px', fontWeight: 'bold', fontSize: '16px', color: '#1e3a8a', borderTop: '2px solid #1e3a8a' }}>{calculateCCTVTotal().toLocaleString()}</td></tr>
+                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}><strong>Hardware Subtotal</strong></td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}><strong>{hardwareCosts.finalHardware.toLocaleString()}</strong></td></tr>
+                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>{CATALOG.labor[selectedLabor].name}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>{laborCost.toLocaleString()}</td></tr>
+                        <tr><td style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold', fontSize: '16px', color: '#1e3a8a', borderTop: '2px solid #1e3a8a' }}>TOTAL</td><td style={{ padding: '10px', fontWeight: 'bold', fontSize: '16px', color: '#1e3a8a', borderTop: '2px solid #1e3a8a', textAlign: 'right' }}>{calculateCCTVTotal().toLocaleString()}</td></tr>
                       </tbody>
                     </table>
                   </>
                 )}
 
-                {/* ======================= CABLING REPORT ======================= */}
+                {/* ... CABLING REPORT CODE REMAINS SAME ... */}
                 {activeProject === 'cabling' && (
                   <>
                     <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>NETWORK & CABLE SUMMARY</div>
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '13px' }}>
                       <tbody>
-                        <tr><td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb', width: '50%' }}><strong>Cable Standard</strong></td><td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.cablingStandards[cabStandard].name} ({PRICING.cablingStandards[cabStandard].speed})</td></tr>
+                        <tr><td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb', width: '50%' }}><strong>Cable Standard</strong></td><td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb' }}>{CATALOG.cablingStandards[cabStandard].name} ({CATALOG.cablingStandards[cabStandard].speed})</td></tr>
                         <tr><td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb' }}><strong>Total Ports (Drops)</strong></td><td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb' }}>{cabTotals.totalPorts} Ports</td></tr>
                         <tr><td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb' }}><strong>Total Cable Length (inc 15% slack)</strong></td><td style={{ padding: '8px', borderBottom: '1px solid #e5e7eb' }}>{Math.round(cabTotals.totalWithWaste)} meters</td></tr>
                       </tbody>
                     </table>
-
-                    {/* CABLING TOPOLOGY DIAGRAM */}
-                    <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>NETWORK TOPOLOGY</div>
-                    <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '20px', marginBottom: '20px', textAlign: 'center' }}>
-                      
-                      <div style={topologyBoxStyle}>
-                        <Server style={{ width: '24px', height: '24px', color: '#3b82f6', margin: '0 auto 5px auto' }} />
-                        <strong style={{ fontSize: '12px', display: 'block' }}>Core Switch</strong>
-                        <span style={{ fontSize: '10px', color: '#64748b' }}>Main Distribution</span>
-                      </div>
-                      
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px 0' }}>
-                        <div style={topologyLineStyle}></div>
-                        <span style={topologyLabelStyle}>Patch Cords</span>
-                        <div style={topologyLineStyle}></div>
-                      </div>
-
-                      <div style={{ ...topologyBoxStyle, borderColor: '#0ea5e9', backgroundColor: '#f0f9ff' }}>
-                        <Layers style={{ width: '24px', height: '24px', color: '#0ea5e9', margin: '0 auto 5px auto' }} />
-                        <strong style={{ fontSize: '12px', display: 'block' }}>{cabTotals.patchPanels}x Patch Panel</strong>
-                        <span style={{ fontSize: '10px', color: '#64748b' }}>24-Port Management</span>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '10px 0' }}>
-                        <div style={topologyLineStyle}></div>
-                        <span style={{ ...topologyLabelStyle, color: '#3b82f6', borderColor: '#3b82f6' }}>
-                          {PRICING.cablingStandards[cabStandard].name} Cable (Solid Core)
-                        </span>
-                        <div style={{ height: '2px', width: '80%', backgroundColor: '#94a3b8', margin: '10px auto' }}></div>
-                      </div>
-
-                      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '15px' }}>
-                        {cabRooms.map(room => {
-                          const devCount = cabDevices.filter(d => d.room === room.name).length;
-                          if (devCount === 0) return null;
-                          return (
-                            <div key={room.id} style={{ backgroundColor: 'white', border: '1px solid #cbd5e1', padding: '10px', borderRadius: '8px', width: '120px', textAlign: 'center' }}>
-                              <MapPin style={{ width: '20px', height: '20px', color: '#10b981', margin: '0 auto 5px auto' }} />
-                              <strong style={{ fontSize: '11px', display: 'block' }}>{room.name}</strong>
-                              <span style={{ fontSize: '9px', color: '#64748b' }}>{devCount} devices</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
 
                     <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>BILL OF MATERIALS</div>
                     <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', fontSize: '13px' }}>
@@ -901,7 +817,7 @@ function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.cablingStandards[cabStandard].name} Cable Box (305m)</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{cabTotals.cableBoxes}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>boxes</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{Math.round(cabTotals.cableCost).toLocaleString()}</td></tr>
+                        <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{CATALOG.cablingStandards[cabStandard].name} Cable Box (305m)</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{cabTotals.cableBoxes}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>boxes</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{Math.round(cabTotals.cableCost).toLocaleString()}</td></tr>
                         <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>Keystone Jacks (Cat6)</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{cabTotals.keystones}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>pieces</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(cabTotals.keystones * 150).toLocaleString()}</td></tr>
                         <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>Patch Cords (2m)</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{cabTotals.patchCords}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>pieces</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(cabTotals.patchCords * 450).toLocaleString()}</td></tr>
                         <tr><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>Faceplates (2-port)</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{cabTotals.faceplates}</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>pieces</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(cabTotals.faceplates * 200).toLocaleString()}</td></tr>
@@ -921,20 +837,6 @@ function App() {
                         <tr><td colSpan="3" style={{ padding: '10px', textAlign: 'right', fontWeight: 'bold', fontSize: '16px', color: '#1e3a8a', borderTop: '2px solid #1e3a8a' }}>TOTAL</td><td style={{ padding: '10px', fontWeight: 'bold', fontSize: '16px', color: '#1e3a8a', borderTop: '2px solid #1e3a8a' }}>{cabTotals.totalCost.toLocaleString()}</td></tr>
                       </tbody>
                     </table>
-
-                    <div style={{ color: '#1e3a8a', textTransform: 'uppercase', fontSize: '16px', borderBottom: '2px solid #e5e7eb', paddingBottom: '8px', marginTop: '30px', marginBottom: '15px', fontWeight: 'bold' }}>DEVICE LOCATIONS</div>
-                    {cabRooms.map(room => {
-                      const devs = cabDevices.filter(d => d.room === room.name);
-                      if (devs.length === 0) return null;
-                      return (
-                        <div key={room.id} style={{ marginBottom: '15px' }}>
-                          <p style={{ margin: '0 0 5px 0', fontWeight: 'bold', fontSize: '13px', color: '#1e3a8a' }}>{room.name}</p>
-                          <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '12px' }}>
-                            {devs.map(d => <li key={d.id}>{d.name} ({cabDeviceTypes[d.type].label}) - {d.cableLength}m {d.type === 'data' ? `[${d.faceplate === 'dual' ? 'Dual Port' : 'Single Port'}]` : ''}</li>)}
-                          </ul>
-                        </div>
-                      );
-                    })}
                   </>
                 )}
 
@@ -944,106 +846,18 @@ function App() {
                   <ul style={{ paddingLeft: '20px', marginTop: '5px' }}>
                     <li style={{ marginBottom: '5px' }}><strong>Payment:</strong> 50% deposit to confirm, balance on completion. M-Pesa: {businessInfo.mpesa}</li>
                     <li style={{ marginBottom: '5px' }}>Prices include VAT. Quote valid for 14 days.</li>
-                    <li style={{ marginBottom: '5px' }}>Client provides a power socket near the equipment location.</li>
                     <li style={{ marginBottom: '5px' }}>12 months warranty on all equipment, 3 months on workmanship.</li>
                   </ul>
                 </div>
-
-                {/* SIGNATURES */}
+                
                 <div style={{ marginTop: '40px', display: 'flex', justifyContent: 'space-between' }}>
-                  <div style={{ width: '45%' }}>
-                    <div style={{ borderBottom: '1px solid #333', paddingBottom: '5px', marginBottom: '5px', height: '30px' }}></div>
-                    <span style={{ fontSize: '12px' }}>Accepted by (Client Signature)</span>
-                  </div>
-                  <div style={{ width: '45%' }}>
-                    <div style={{ borderBottom: '1px solid #333', paddingBottom: '5px', marginBottom: '5px', height: '30px' }}></div>
-                    <span style={{ fontSize: '12px' }}>Date</span>
-                  </div>
+                  <div style={{ width: '45%' }}><div style={{ borderBottom: '1px solid #333', height: '30px', marginBottom: '5px' }}></div><span style={{ fontSize: '12px' }}>Client Signature</span></div>
+                  <div style={{ width: '45%' }}><div style={{ borderBottom: '1px solid #333', height: '30px', marginBottom: '5px' }}></div><span style={{ fontSize: '12px' }}>Date</span></div>
                 </div>
               </div>
             </div>
           </div>
         )}
-
-        {/* ======================= NETWORK PREVIEW (UI) ======================= */}
-        {currentView === 'preview' && (
-          <div className={`p-10 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-            <h2 className={`text-2xl font-bold mb-2 text-center ${darkMode ? 'text-white' : 'text-gray-900'}`}>Interactive Network Topology</h2>
-            <p className={`mb-10 text-center ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Visual overview of how your system connects.
-            </p>
-            
-            <div className="flex flex-col items-center justify-center space-y-6">
-              
-              {/* Top Layer: Cloud / Remote */}
-              <div className="flex justify-center gap-8">
-                <div className={`flex flex-col items-center p-4 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-                  <Cloud className="w-8 h-8 text-blue-400 mb-2" />
-                  <span className="text-sm font-bold">Remote Viewing</span>
-                  <span className="text-xs text-gray-500">Via Smartphone App</span>
-                </div>
-                {hasMonitor && (
-                  <div className={`flex flex-col items-center p-4 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
-                    <Monitor className="w-8 h-8 text-blue-400 mb-2" />
-                    <span className="text-sm font-bold">CCTV Monitor</span>
-                    <span className="text-xs text-gray-500">HDMI Cable</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Connecting Lines */}
-              <div className="w-0.5 h-8 bg-gray-400 dark:bg-gray-600"></div>
-
-              {/* Middle Layer: Main DVR & PSU */}
-              <div className="flex items-center justify-center gap-6">
-                <div className={`flex flex-col items-center p-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}>
-                  <HardDrive className="w-6 h-6 text-gray-500 mb-1" />
-                  <span className="text-xs font-bold">500GB HDD</span>
-                </div>
-                
-                <div className="w-8 h-0.5 bg-gray-400 dark:bg-gray-600"></div>
-                
-                <div className="flex flex-col items-center p-5 rounded-xl bg-blue-900 text-white shadow-lg">
-                  <Server className="w-10 h-10 mb-2 text-orange-400" />
-                  <span className="text-lg font-bold">{selectedDvr.name}</span>
-                  <span className="text-xs opacity-80">Main Recorder</span>
-                </div>
-
-                <div className="w-8 h-0.5 bg-gray-400 dark:bg-gray-600"></div>
-
-                <div className={`flex flex-col items-center p-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}>
-                  <Zap className="w-6 h-6 text-yellow-500 mb-1" />
-                  <span className="text-xs font-bold">Power Supply</span>
-                </div>
-              </div>
-
-              {/* Connecting Lines */}
-              <div className="flex flex-col items-center">
-                <div className="w-0.5 h-6 bg-gray-400 dark:bg-gray-600"></div>
-                <span className="text-xs font-bold text-orange-500 bg-white dark:bg-gray-800 px-2 py-1 rounded border border-orange-500">Video (RG59) & Power Cables</span>
-                <div className="w-0.5 h-6 bg-gray-400 dark:bg-gray-600"></div>
-                <div className="h-0.5 w-3/4 bg-gray-400 dark:bg-gray-600"></div>
-              </div>
-
-              {/* Bottom Layer: Cameras */}
-              <div className="flex flex-wrap justify-center gap-4 mt-2">
-                {Array.from({ length: quantity }).map((_, i) => (
-                  <div key={i} className={`flex flex-col items-center p-3 rounded-xl border w-24 ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}>
-                    <Camera className="w-6 h-6 text-orange-500 mb-1" />
-                    <span className="text-xs font-bold">Camera {i + 1}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-center mt-12">
-              <button onClick={() => setCurrentView('welcome')} className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg transition-all">
-                Back to Menu
-              </button>
-            </div>
-          </div>
-        )}
-
       </div>
     </div>
   );
