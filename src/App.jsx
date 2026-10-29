@@ -46,7 +46,7 @@ const CATALOG = {
 };
 
 function App() {
-  // 1. Default to LIGHT mode initially so you can see it working
+  // Default to LIGHT mode
   const [darkMode, setDarkMode] = useState(false);
   const [currentView, setCurrentView] = useState('welcome'); 
   
@@ -54,10 +54,6 @@ function App() {
   const [businessInfo, setBusinessInfo] = useState({ name: 'Ngari Tech Solutions', phone: '0711645837', email: 'info@ngaritech.co.ke', mpesa: 'Paybill 400200' });
 
   const [customItems, setCustomItems] = useState([]);
-  const [customItemName, setCustomItemName] = useState('');
-  const [customItemPrice, setCustomItemPrice] = useState('');
-  const [customItemQty, setCustomItemQty] = useState(1);
-
   const [premisesType, setPremisesType] = useState('home');
   const [quantity, setQuantity] = useState(4);
   const [selectedDvr, setSelectedDvr] = useState('hik4');
@@ -66,36 +62,14 @@ function App() {
   const [selectedMonitor, setSelectedMonitor] = useState('none');
   const [selectedLabor, setSelectedLabor] = useState('basic');
   const [cableLength, setCableLength] = useState(50);
-  const [customBundlePrice, setCustomBundlePrice] = useState('');
-
-  const [survey, setSurvey] = useState({ power: false, cableRoute: false, internet: false, mounting: false });
-  const [calcHdd, setCalcHdd] = useState(500);
-
-  // 2. This Effect toggles the 'dark' class on the HTML tag
-  useEffect(() => {
-    if (darkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [darkMode]);
 
   const formatKES = (amount) => `KSh ${Math.round(amount).toLocaleString()}`;
-
-  const addCustomItem = () => {
-    if (!customItemName || !customItemPrice) return alert("Enter item name and price");
-    setCustomItems([...customItems, { id: Date.now(), name: customItemName, price: Number(customItemPrice), qty: Number(customItemQty) }]);
-    setCustomItemName(''); setCustomItemPrice(''); setCustomItemQty(1);
-  };
-  const removeCustomItem = (id) => setCustomItems(customItems.filter(i => i.id !== id));
-  const getCustomItemsTotal = () => customItems.reduce((sum, item) => sum + (item.price * item.qty), 0);
 
   const getRecommendation = () => {
     switch(premisesType) {
       case 'home': return { qty: 4, cam: 'hikBullet', dvr: 'hik4', monitor: 'm22', desc: 'Standard 4-camera setup for gate and compound.' };
       case 'shop': return { qty: 4, cam: 'hikDome', dvr: 'hik4', monitor: 'm22', desc: 'Discreet dome cameras for shop counters.' };
       case 'warehouse': return { qty: 8, cam: 'hikPTZ', dvr: 'hik8', monitor: 'none', desc: 'PTZ cameras for large warehouse spaces.' };
-      case 'office': return { qty: 6, cam: 'hikDome', dvr: 'hik8', monitor: 'none', desc: 'Blends into office ceilings.' };
       default: return null;
     }
   };
@@ -116,46 +90,38 @@ function App() {
     const psuPrice = CATALOG.accessories.psu.price;
     const cablePrice = cableLength * CATALOG.accessories.cablePerMeter.price;
     const connPrice = CATALOG.accessories.connectors.price;
-
-    const rawTotal = camPrice + dvrPrice + storagePrice + monitorPrice + psuPrice + cablePrice + connPrice;
-    let discount = customBundlePrice ? rawTotal - Number(customBundlePrice) : 0;
-    if (discount < 0) discount = 0;
-
-    return { rawTotal, discount, finalHardware: rawTotal - discount };
+    return camPrice + dvrPrice + storagePrice + monitorPrice + psuPrice + cablePrice + connPrice;
   };
 
-  const hardwareCosts = calculateHardwareCost();
-  const laborCost = CATALOG.labor[selectedLabor].price;
-  const calculateCCTVTotal = () => hardwareCosts.finalHardware + laborCost + getCustomItemsTotal();
-
-  const getRecordingDays = () => Math.floor(calcHdd / (15 * quantity));
+  const calculateCCTVTotal = () => calculateHardwareCost() + CATALOG.labor[selectedLabor].price;
 
   const handleDownloadPDF = () => {
     const element = document.getElementById('pdf-report-container');
-    html2pdf().set({ margin: 0.5, filename: `Quote_${clientInfo.name}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(element).save();
+    html2pdf().set({ margin: 0.5, filename: `Quote.pdf`, html2canvas: { scale: 2, useCORS: true } }).from(element).save();
   };
 
+  // DYNAMIC CLASSES BASED ON STATE
+  const bgMain = darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900';
+  const bgCard = darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+  const bgInput = darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-300 text-gray-900';
+  const textMuted = darkMode ? 'text-gray-400' : 'text-gray-500';
+
   return (
-    // The root div has the background colors
-    <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
+    <div className={`min-h-screen transition-colors duration-300 ${bgMain}`}>
       
-      <header className="sticky top-0 z-20 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+      <header className={`sticky top-0 z-20 border-b ${bgCard}`}>
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div onClick={() => setCurrentView('welcome')} className="flex items-center space-x-3 cursor-pointer">
             <div className="bg-blue-600 p-2.5 rounded-xl"><Cable className="w-6 h-6 text-white" /></div>
             <div>
-              <h1 className="text-2xl font-bold text-blue-600 dark:text-blue-500">CableIQ</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Kenyan CCTV Planner</p>
+              <h1 className="text-2xl font-bold text-blue-600">CableIQ</h1>
+              <p className={`text-xs ${textMuted}`}>Kenyan CCTV Planner</p>
             </div>
           </div>
           <div className="flex space-x-2">
-            <button onClick={() => setCurrentView('welcome')} className="px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700"><HomeIcon className="w-5 h-5" /></button>
-            {/* THE TOGGLE BUTTON */}
-            <button 
-              onClick={() => setDarkMode(!darkMode)} 
-              className="p-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-            >
-              {darkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-600" />}
+            <button onClick={() => setCurrentView('welcome')} className={`px-4 py-2 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}><HomeIcon className="w-5 h-5" /></button>
+            <button onClick={() => setDarkMode(!darkMode)} className={`p-2.5 rounded-xl ${darkMode ? 'bg-gray-700 text-yellow-400' : 'bg-gray-200 text-gray-600'}`}>
+              {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
           </div>
         </div>
@@ -165,77 +131,74 @@ function App() {
         
         {/* WELCOME */}
         {currentView === 'welcome' && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-            <div onClick={() => setCurrentView('cctv-planner')} className="cursor-pointer p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-orange-500 shadow-sm transition-all">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+            <div onClick={() => setCurrentView('cctv-planner')} className={`cursor-pointer p-6 rounded-2xl border ${bgCard} hover:border-orange-500 shadow-sm transition-all`}>
               <Camera className="w-8 h-8 text-orange-500 mb-4" />
               <h3 className="text-lg font-bold">CCTV Configurator</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Build custom kits with recommendations.</p>
+              <p className={`text-sm ${textMuted}`}>Build custom kits with recommendations.</p>
             </div>
-            <div onClick={() => setCurrentView('report')} className="cursor-pointer p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-green-500 shadow-sm transition-all">
+            <div onClick={() => setCurrentView('report')} className={`cursor-pointer p-6 rounded-2xl border ${bgCard} hover:border-green-500 shadow-sm transition-all`}>
               <FileSpreadsheet className="w-8 h-8 text-green-500 mb-4" />
               <h3 className="text-lg font-bold">Export PDF Quote</h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Preview and download client quotations.</p>
+              <p className={`text-sm ${textMuted}`}>Preview and download client quotations.</p>
             </div>
           </div>
         )}
 
         {/* CCTV CONFIGURATOR */}
         {currentView === 'cctv-planner' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
-              
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* LEFT COLUMN */}
+            <div className="space-y-6">
               {/* SMART RECOMMENDATION */}
               <div className="p-6 rounded-xl bg-gradient-to-r from-blue-900 to-indigo-900 text-white shadow-xl">
                 <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Lightbulb className="w-5 h-5 text-yellow-400" /> <span>Smart Recommendation</span></h3>
-                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-                  <div className="flex-1">
-                    <select value={premisesType} onChange={e => setPremisesType(e.target.value)} className="w-full px-4 py-2 rounded-lg bg-blue-800 border-blue-700 text-white mb-3 outline-none">
-                      <option value="home">🏠 Home / Residential</option>
-                      <option value="shop">🏪 Shop / Retail</option>
-                      <option value="warehouse">🏭 Warehouse</option>
-                    </select>
-                    {recommendation && <p className="text-sm text-blue-100 italic">"{recommendation.desc}"</p>}
-                  </div>
-                  <button onClick={applyRecommendation} className="px-6 py-3 bg-white text-blue-900 font-bold rounded-lg hover:bg-gray-100">Apply</button>
-                </div>
+                <select value={premisesType} onChange={e => setPremisesType(e.target.value)} className="w-full px-4 py-2 rounded-lg bg-blue-800 border-blue-700 text-white mb-3 outline-none">
+                  <option value="home">🏠 Home / Residential</option>
+                  <option value="shop">🏪 Shop / Retail</option>
+                  <option value="warehouse">🏭 Warehouse</option>
+                </select>
+                {recommendation && <p className="text-sm text-blue-100 italic mb-4">"{recommendation.desc}"</p>}
+                <button onClick={applyRecommendation} className="w-full py-2 bg-white text-blue-900 font-bold rounded-lg hover:bg-gray-100">Apply Recommendation</button>
               </div>
 
               {/* HARDWARE */}
-              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className={`p-6 rounded-xl border ${bgCard}`}>
                 <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Cpu className="w-5 h-5 text-blue-500" /> <span>Hardware Details</span></h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-3">
                   <div>
-                    <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">DVR</label>
-                    <select value={selectedDvr} onChange={e => setSelectedDvr(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 mb-3 outline-none">
+                    <label className={`text-sm block mb-1 ${textMuted}`}>DVR</label>
+                    <select value={selectedDvr} onChange={e => setSelectedDvr(e.target.value)} className={`w-full px-3 py-2 rounded-lg border ${bgInput} outline-none`}>
                       {Object.entries(CATALOG.dvrs).map(([k, v]) => <option key={k} value={k}>{v.name}</option>)}
                     </select>
-                    <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Camera Type</label>
-                    <select value={selectedCamera} onChange={e => setSelectedCamera(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 outline-none">
+                  </div>
+                  <div>
+                    <label className={`text-sm block mb-1 ${textMuted}`}>Camera Type</label>
+                    <select value={selectedCamera} onChange={e => setSelectedCamera(e.target.value)} className={`w-full px-3 py-2 rounded-lg border ${bgInput} outline-none`}>
                       {Object.entries(CATALOG.cameras).map(([k, v]) => <option key={k} value={k}>{v.name}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Quantity</label>
-                    <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 mb-3 outline-none" />
-                    <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Storage</label>
-                    <select value={selectedStorage} onChange={e => setSelectedStorage(e.target.value)} className="w-full px-3 py-2 rounded-lg border bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 outline-none">
-                      {Object.entries(CATALOG.storage).map(([k, v]) => <option key={k} value={k}>{v.name}</option>)}
-                    </select>
+                    <label className={`text-sm block mb-1 ${textMuted}`}>Quantity</label>
+                    <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className={`w-full px-3 py-2 rounded-lg border ${bgInput} outline-none`} />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* SUMMARY */}
+            {/* RIGHT COLUMN */}
             <div className="space-y-6">
-              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className={`p-6 rounded-xl border ${bgCard}`}>
                 <h3 className="text-lg font-bold mb-4">Cost Summary</h3>
-                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                  <div className="flex justify-between"><span>Hardware:</span> <span>{formatKES(hardwareCosts.rawTotal)}</span></div>
-                  <div className="flex justify-between"><span>Labor:</span> <span>{formatKES(laborCost)}</span></div>
-                  <div className="flex justify-between font-bold text-lg border-t border-gray-200 dark:border-gray-700 pt-2 mt-2"><span>Total:</span> <span className="text-green-500">{formatKES(calculateCCTVTotal())}</span></div>
+                <div className={`space-y-2 text-sm ${textMuted}`}>
+                  <div className="flex justify-between"><span>Hardware:</span> <span className="text-gray-900 dark:text-white font-medium">{formatKES(calculateHardwareCost())}</span></div>
+                  <div className="flex justify-between"><span>Labor:</span> <span className="text-gray-900 dark:text-white font-medium">{formatKES(CATALOG.labor[selectedLabor].price)}</span></div>
+                  <div className={`flex justify-between font-bold text-lg border-t pt-2 mt-2 ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+                    <span>Total:</span> <span className="text-green-500">{formatKES(calculateCCTVTotal())}</span>
+                  </div>
                 </div>
-                <button onClick={() => setCurrentView('report')} className="w-full mt-4 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Preview PDF</button>
+                <button onClick={() => setCurrentView('report')} className="w-full mt-6 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Preview PDF</button>
               </div>
             </div>
           </div>
@@ -245,10 +208,10 @@ function App() {
         {currentView === 'report' && (
           <div className="space-y-6">
             <div className="flex justify-between">
-              <button onClick={() => setCurrentView('cctv-planner')} className="px-4 py-2 bg-gray-200 dark:bg-gray-800 font-bold rounded-lg">← Back</button>
+              <button onClick={() => setCurrentView('cctv-planner')} className={`px-4 py-2 font-bold rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>← Back</button>
               <button onClick={handleDownloadPDF} className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg">Download PDF</button>
             </div>
-            <div className="flex justify-center bg-gray-200 dark:bg-gray-800 p-4 rounded-xl overflow-x-auto">
+            <div className={`flex justify-center p-4 rounded-xl overflow-x-auto ${darkMode ? 'bg-gray-800' : 'bg-gray-200'}`}>
               {/* Force light mode for PDF */}
               <div id="pdf-report-container" className="bg-white text-gray-900 p-10 shadow-2xl" style={{ width: '800px' }}>
                 <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '30px', borderRadius: '10px' }}>
