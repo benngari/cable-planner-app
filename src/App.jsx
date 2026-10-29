@@ -64,13 +64,6 @@ const CATALOG = {
   }
 };
 
-const cabDeviceTypes = {
-  data: { label: "Data Point", icon: Network },
-  ap: { label: "Access Point", icon: Wifi },
-  voip: { label: "VoIP Phone", icon: Phone },
-  cctv: { label: "IP Camera", icon: Camera }
-};
-
 function App() {
   const [darkMode, setDarkMode] = useState(true);
   const [currentView, setCurrentView] = useState('welcome'); 
@@ -101,15 +94,6 @@ function App() {
   const [survey, setSurvey] = useState({ power: false, cableRoute: false, internet: false, mounting: false, clientApp: false });
   const [calcHdd, setCalcHdd] = useState(500);
   const [calcRes, setCalcRes] = useState(1080);
-
-  const [cabRooms, setCabRooms] = useState([{ id: 1, name: "Main Office" }]);
-  const [cabDevices, setCabDevices] = useState([]);
-  const [cabStandard, setCabStandard] = useState('cat6');
-  const [newCabRoom, setNewCabRoom] = useState('');
-  const [cabDeviceName, setCabDeviceName] = useState('');
-  const [cabDeviceType, setCabDeviceType] = useState('data');
-  const [cabDeviceRoom, setCabDeviceRoom] = useState('');
-  const [cabCableLength, setCabCableLength] = useState('');
 
   useEffect(() => {
     if (darkMode) document.documentElement.classList.add('dark');
@@ -174,26 +158,6 @@ function App() {
 
   const getRecordingDays = () => Math.floor(calcHdd / ((calcRes === 1080 ? 15 : 30) * quantity));
 
-  // Cabling
-  const addCabRoom = () => {
-    if (!newCabRoom.trim()) return;
-    setCabRooms([...cabRooms, { id: Date.now(), name: newCabRoom }]);
-    setNewCabRoom('');
-  };
-  const addCabDevice = () => {
-    if (!cabDeviceName || !cabDeviceRoom) return alert("Enter name and room");
-    setCabDevices([...cabDevices, { id: Date.now(), name: cabDeviceName, type: cabDeviceType, room: cabDeviceRoom, cableLength: Number(cabCableLength) || 35 }]);
-    setCabDeviceName(''); setCabCableLength('');
-  };
-  const getCabTotals = () => {
-    let ports = cabDevices.length;
-    let length = cabDevices.reduce((sum, d) => sum + d.cableLength, 0) * 1.15;
-    const cableCost = length * CATALOG.cablingStandards[cabStandard].price;
-    const hardwareCost = (ports * 150) + (ports * 450) + (Math.ceil(ports/2) * 200) + (Math.ceil(ports/24) * 4500);
-    return { ports, length, total: cableCost + hardwareCost + laborCost + getCustomItemsTotal() };
-  };
-  const cabTotals = getCabTotals();
-
   const handleDownloadPDF = () => {
     setIsExporting(true);
     const element = document.getElementById('pdf-report-container');
@@ -204,18 +168,21 @@ function App() {
 
   return (
     <div className={`min-h-screen transition-all duration-500 ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+      
       <header className={`sticky top-0 z-20 border-b ${darkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div onClick={() => setCurrentView('welcome')} className="flex items-center space-x-3 cursor-pointer">
             <div className="bg-blue-600 p-2.5 rounded-xl"><Cable className="w-6 h-6 text-white" /></div>
             <div>
               <h1 className="text-2xl font-bold text-blue-600">CableIQ</h1>
-              <p className="text-xs text-gray-500">Kenyan CCTV Planner</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Kenyan CCTV Planner</p>
             </div>
           </div>
           <div className="flex space-x-2">
-            <button onClick={() => setCurrentView('welcome')} className="px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-xl"><HomeIcon className="w-5 h-5" /></button>
-            <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl">{darkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}</button>
+            <button onClick={() => setCurrentView('welcome')} className="px-4 py-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-xl"><HomeIcon className="w-5 h-5" /></button>
+            <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 bg-gray-100 dark:bg-gray-800 rounded-xl text-gray-800 dark:text-gray-200">
+              {darkMode ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5" />}
+            </button>
           </div>
         </div>
       </header>
@@ -225,20 +192,20 @@ function App() {
         {/* WELCOME */}
         {currentView === 'welcome' && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
-            <div onClick={() => setCurrentView('cctv-planner')} className="cursor-pointer p-6 rounded-2xl bg-white dark:bg-gray-800 border hover:border-orange-500 transition-all">
+            <div onClick={() => setCurrentView('cctv-planner')} className="cursor-pointer p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-orange-500 transition-all">
               <Camera className="w-8 h-8 text-orange-500 mb-4" />
-              <h3 className="text-lg font-bold">CCTV Configurator</h3>
-              <p className="text-sm text-gray-500">Build custom kits with AI recommendations.</p>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">CCTV Configurator</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Build custom kits with AI recommendations.</p>
             </div>
-            <div onClick={() => setCurrentView('cabling-planner')} className="cursor-pointer p-6 rounded-2xl bg-white dark:bg-gray-800 border hover:border-blue-500 transition-all">
+            <div onClick={() => setCurrentView('cabling-planner')} className="cursor-pointer p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-all">
               <Network className="w-8 h-8 text-blue-500 mb-4" />
-              <h3 className="text-lg font-bold">Cabling Planner</h3>
-              <p className="text-sm text-gray-500">Plan data drops and cabling infrastructure.</p>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Cabling Planner</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Plan data drops and cabling infrastructure.</p>
             </div>
-            <div onClick={() => setCurrentView('report')} className="cursor-pointer p-6 rounded-2xl bg-white dark:bg-gray-800 border hover:border-green-500 transition-all">
+            <div onClick={() => setCurrentView('report')} className="cursor-pointer p-6 rounded-2xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-green-500 transition-all">
               <FileSpreadsheet className="w-8 h-8 text-green-500 mb-4" />
-              <h3 className="text-lg font-bold">Export PDF Quote</h3>
-              <p className="text-sm text-gray-500">Preview and download client quotations.</p>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Export PDF Quote</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Preview and download client quotations.</p>
             </div>
           </div>
         )}
@@ -273,24 +240,24 @@ function App() {
               </div>
 
               {/* HARDWARE SELECTION */}
-              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border">
-                <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Cpu className="w-5 h-5 text-blue-500" /> <span>Hardware Details</span></h3>
+              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-bold mb-4 flex items-center space-x-2 text-gray-900 dark:text-white"><Cpu className="w-5 h-5 text-blue-500" /> <span>Hardware Details</span></h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-gray-500 block mb-1">DVR</label>
-                    <select value={selectedDvr} onChange={e => setSelectedDvr(e.target.value)} className="w-full px-3 py-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 mb-3">
+                    <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">DVR</label>
+                    <select value={selectedDvr} onChange={e => setSelectedDvr(e.target.value)} className="w-full px-3 py-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-3">
                       {Object.entries(CATALOG.dvrs).map(([k, v]) => <option key={k} value={k}>{v.name}</option>)}
                     </select>
-                    <label className="text-sm text-gray-500 block mb-1">Camera Type</label>
-                    <select value={selectedCamera} onChange={e => setSelectedCamera(e.target.value)} className="w-full px-3 py-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600">
+                    <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Camera Type</label>
+                    <select value={selectedCamera} onChange={e => setSelectedCamera(e.target.value)} className="w-full px-3 py-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                       {Object.entries(CATALOG.cameras).map(([k, v]) => <option key={k} value={k}>{v.name}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-sm text-gray-500 block mb-1">Quantity</label>
-                    <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-full px-3 py-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 mb-3" />
-                    <label className="text-sm text-gray-500 block mb-1">Storage</label>
-                    <select value={selectedStorage} onChange={e => setSelectedStorage(e.target.value)} className="w-full px-3 py-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600">
+                    <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Quantity</label>
+                    <input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className="w-full px-3 py-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-3" />
+                    <label className="text-sm text-gray-500 dark:text-gray-400 block mb-1">Storage</label>
+                    <select value={selectedStorage} onChange={e => setSelectedStorage(e.target.value)} className="w-full px-3 py-2 rounded-lg border dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                       {Object.entries(CATALOG.storage).map(([k, v]) => <option key={k} value={k}>{v.name}</option>)}
                     </select>
                   </div>
@@ -298,12 +265,12 @@ function App() {
               </div>
 
               {/* SITE SURVEY */}
-              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border">
-                <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><ClipboardCheck className="w-5 h-5 text-blue-500" /> <span>Site Survey</span></h3>
+              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-bold mb-4 flex items-center space-x-2 text-gray-900 dark:text-white"><ClipboardCheck className="w-5 h-5 text-blue-500" /> <span>Site Survey</span></h3>
                 <div className="grid grid-cols-2 gap-2">
                   {['power', 'cableRoute', 'internet', 'mounting'].map(k => (
-                    <label key={k} className="flex items-center space-x-2 text-sm">
-                      <input type="checkbox" checked={survey[k]} onChange={() => setSurvey({...survey, [k]: !survey[k]})} className="rounded text-blue-600" />
+                    <label key={k} className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
+                      <input type="checkbox" checked={survey[k]} onChange={() => setSurvey({...survey, [k]: !survey[k]})} className="rounded text-blue-600 bg-gray-100 border-gray-300 dark:bg-gray-700 dark:border-gray-600" />
                       <span className="capitalize">{k.replace(/([A-Z])/g, ' $1')}</span>
                     </label>
                   ))}
@@ -313,21 +280,21 @@ function App() {
 
             {/* RIGHT COLUMN - SUMMARY */}
             <div className="space-y-6">
-              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border">
-                <h3 className="text-lg font-bold mb-4">Cost Summary</h3>
+              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Cost Summary</h3>
                 <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                   <div className="flex justify-between"><span>Hardware:</span> <span>{formatKES(hardwareCosts.rawTotal)}</span></div>
                   {hardwareCosts.discount > 0 && <div className="flex justify-between text-red-500"><span>Discount:</span> <span>-{formatKES(hardwareCosts.discount)}</span></div>}
                   <div className="flex justify-between"><span>Labor:</span> <span>{formatKES(laborCost)}</span></div>
-                  <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2"><span>Total:</span> <span className="text-green-500">{formatKES(calculateCCTVTotal())}</span></div>
+                  <div className="flex justify-between font-bold text-lg border-t border-gray-200 dark:border-gray-700 pt-2 mt-2"><span>Total:</span> <span className="text-green-500">{formatKES(calculateCCTVTotal())}</span></div>
                 </div>
                 <button onClick={() => setCurrentView('report')} className="w-full mt-4 py-3 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700">Preview PDF</button>
-                <button onClick={() => setCurrentView('preview')} className="w-full mt-2 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white font-bold rounded-lg hover:bg-gray-300">View Topology</button>
+                <button onClick={() => setCurrentView('preview')} className="w-full mt-2 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">View Topology</button>
               </div>
 
-              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border">
-                <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Calculator className="w-5 h-5 text-blue-500" /> <span>Storage Calculator</span></h3>
-                <select value={calcHdd} onChange={e => setCalcHdd(Number(e.target.value))} className="w-full px-3 py-2 rounded-lg border mb-2 dark:bg-gray-700">
+              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-bold mb-4 flex items-center space-x-2 text-gray-900 dark:text-white"><Calculator className="w-5 h-5 text-blue-500" /> <span>Storage Calculator</span></h3>
+                <select value={calcHdd} onChange={e => setCalcHdd(Number(e.target.value))} className="w-full px-3 py-2 rounded-lg border mb-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                   <option value={500}>500 GB</option>
                   <option value={1000}>1 TB</option>
                 </select>
@@ -340,11 +307,11 @@ function App() {
           </div>
         )}
 
-        {/* CABLING PLANNER */}
+        {/* CABLING PLANNER (Placeholder for now) */}
         {currentView === 'cabling-planner' && (
-          <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border text-center">
-            <h2 className="text-xl font-bold mb-4">Cabling Planner</h2>
-            <p className="text-gray-500 mb-6">Feature available in full version. (Use CCTV Configurator for now).</p>
+          <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-center">
+            <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Cabling Planner</h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">Feature available in full version. (Use CCTV Configurator for now).</p>
             <button onClick={() => setCurrentView('welcome')} className="px-6 py-2 bg-blue-600 text-white rounded-lg">Back Home</button>
           </div>
         )}
@@ -353,10 +320,11 @@ function App() {
         {currentView === 'report' && (
           <div className="space-y-6">
             <div className="flex justify-between">
-              <button onClick={() => setCurrentView('cctv-planner')} className="px-4 py-2 bg-gray-200 dark:bg-gray-800 rounded-lg">← Back</button>
+              <button onClick={() => setCurrentView('cctv-planner')} className="px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white rounded-lg">← Back</button>
               <button onClick={handleDownloadPDF} className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg">Download PDF</button>
             </div>
             <div className="flex justify-center bg-gray-200 dark:bg-gray-800 p-4 rounded-xl overflow-x-auto">
+              {/* PDF Container is explicitly styled light for printing */}
               <div id="pdf-report-container" className="bg-white text-gray-900 shadow-2xl p-10" style={{ width: '800px' }}>
                 <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '30px', borderRadius: '10px', marginBottom: '30px' }}>
                   <h1 style={{ margin: 0, color: '#f97316' }}>QUOTATION</h1>
@@ -374,11 +342,11 @@ function App() {
           </div>
         )}
 
-        {/* ======================= NETWORK PREVIEW (FIXED) ======================= */}
+        {/* NETWORK PREVIEW */}
         {currentView === 'preview' && (
-          <div className={`p-10 rounded-xl border ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className="p-10 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <div className="flex justify-between items-center mb-10">
-              <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>Interactive Network Topology</h2>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Interactive Network Topology</h2>
               <button onClick={() => setCurrentView('cctv-planner')} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold">← Back to Configurator</button>
             </div>
             
@@ -386,16 +354,16 @@ function App() {
               
               {/* Top Layer: Cloud / Remote */}
               <div className="flex justify-center gap-8">
-                <div className={`flex flex-col items-center p-4 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                <div className="flex flex-col items-center p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
                   <Cloud className="w-8 h-8 text-blue-400 mb-2" />
-                  <span className="text-sm font-bold">Remote Viewing</span>
-                  <span className="text-xs text-gray-500">Via Smartphone App</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white">Remote Viewing</span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">Via Smartphone App</span>
                 </div>
                 {selectedMonitor !== 'none' && (
-                  <div className={`flex flex-col items-center p-4 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'}`}>
+                  <div className="flex flex-col items-center p-4 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
                     <Monitor className="w-8 h-8 text-blue-400 mb-2" />
-                    <span className="text-sm font-bold">{CATALOG.monitors[selectedMonitor].name}</span>
-                    <span className="text-xs text-gray-500">HDMI Cable</span>
+                    <span className="text-sm font-bold text-gray-900 dark:text-white">{CATALOG.monitors[selectedMonitor].name}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">HDMI Cable</span>
                   </div>
                 )}
               </div>
@@ -404,9 +372,9 @@ function App() {
 
               {/* Middle Layer: Main DVR & PSU */}
               <div className="flex items-center justify-center gap-6">
-                <div className={`flex flex-col items-center p-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}>
+                <div className="flex flex-col items-center p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700">
                   <HardDrive className="w-6 h-6 text-gray-500 mb-1" />
-                  <span className="text-xs font-bold">{CATALOG.storage[selectedStorage].name}</span>
+                  <span className="text-xs font-bold text-gray-900 dark:text-white">{CATALOG.storage[selectedStorage].name}</span>
                 </div>
                 
                 <div className="w-8 h-0.5 bg-gray-400 dark:bg-gray-600"></div>
@@ -419,9 +387,9 @@ function App() {
 
                 <div className="w-8 h-0.5 bg-gray-400 dark:bg-gray-600"></div>
 
-                <div className={`flex flex-col items-center p-3 rounded-xl border ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}>
+                <div className="flex flex-col items-center p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700">
                   <Zap className="w-6 h-6 text-yellow-500 mb-1" />
-                  <span className="text-xs font-bold">Power Supply</span>
+                  <span className="text-xs font-bold text-gray-900 dark:text-white">Power Supply</span>
                 </div>
               </div>
 
@@ -435,9 +403,9 @@ function App() {
               {/* Bottom Layer: Cameras */}
               <div className="flex flex-wrap justify-center gap-4 mt-2">
                 {Array.from({ length: quantity }).map((_, i) => (
-                  <div key={i} className={`flex flex-col items-center p-3 rounded-xl border w-24 ${darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'}`}>
+                  <div key={i} className="flex flex-col items-center p-3 rounded-xl border border-gray-200 dark:border-gray-600 w-24 bg-white dark:bg-gray-700">
                     <Camera className="w-6 h-6 text-orange-500 mb-1" />
-                    <span className="text-xs font-bold">Cam {i + 1}</span>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">Cam {i + 1}</span>
                   </div>
                 ))}
               </div>
