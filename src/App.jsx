@@ -65,10 +65,10 @@ const CATALOG = {
 };
 
 function App() {
-  // Check local storage for saved theme, otherwise default to dark
+  // 1. Initialize dark mode state by checking local storage
   const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    return saved ? saved === 'dark' : true;
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme ? savedTheme === 'dark' : true; // Default to dark if nothing saved
   });
   
   const [currentView, setCurrentView] = useState('welcome'); 
@@ -99,8 +99,8 @@ function App() {
   const [calcHdd, setCalcHdd] = useState(500);
   const [calcRes, setCalcRes] = useState(1080);
 
+  // 2. Effect to apply the 'dark' class to the <html> tag and save to local storage
   useEffect(() => {
-    // Save to local storage and update HTML class
     localStorage.setItem('theme', darkMode ? 'dark' : 'light');
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -166,9 +166,10 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen transition-colors duration-300 bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+    // The entire app wrapper now relies on dark: classes
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors duration-300">
       
-      <header className="sticky top-0 z-20 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+      <header className="sticky top-0 z-20 border-b bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div onClick={() => setCurrentView('welcome')} className="flex items-center space-x-3 cursor-pointer">
             <div className="bg-blue-600 p-2.5 rounded-xl"><Cable className="w-6 h-6 text-white" /></div>
@@ -239,7 +240,7 @@ function App() {
               </div>
 
               {/* HARDWARE SELECTION */}
-              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-300">
                 <h3 className="text-lg font-bold mb-4 flex items-center space-x-2 text-gray-900 dark:text-white"><Cpu className="w-5 h-5 text-blue-500" /> <span>Hardware Details</span></h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -264,7 +265,7 @@ function App() {
               </div>
 
               {/* SITE SURVEY */}
-              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-300">
                 <h3 className="text-lg font-bold mb-4 flex items-center space-x-2 text-gray-900 dark:text-white"><ClipboardCheck className="w-5 h-5 text-blue-500" /> <span>Site Survey</span></h3>
                 <div className="grid grid-cols-2 gap-2">
                   {['power', 'cableRoute', 'internet', 'mounting'].map(k => (
@@ -279,7 +280,7 @@ function App() {
 
             {/* RIGHT COLUMN - SUMMARY */}
             <div className="space-y-6">
-              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-300">
                 <h3 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">Cost Summary</h3>
                 <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                   <div className="flex justify-between"><span>Hardware:</span> <span>{formatKES(hardwareCosts.rawTotal)}</span></div>
@@ -291,7 +292,7 @@ function App() {
                 <button onClick={() => setCurrentView('preview')} className="w-full mt-2 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors">View Topology</button>
               </div>
 
-              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm">
+              <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-300">
                 <h3 className="text-lg font-bold mb-4 flex items-center space-x-2 text-gray-900 dark:text-white"><Calculator className="w-5 h-5 text-blue-500" /> <span>Storage Calculator</span></h3>
                 <select value={calcHdd} onChange={e => setCalcHdd(Number(e.target.value))} className="w-full px-3 py-2 rounded-lg border mb-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white outline-none">
                   <option value={500}>500 GB</option>
@@ -306,9 +307,9 @@ function App() {
           </div>
         )}
 
-        {/* CABLING PLANNER (Placeholder for now) */}
+        {/* CABLING PLANNER (Placeholder) */}
         {currentView === 'cabling-planner' && (
-          <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm text-center">
+          <div className="p-6 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm text-center transition-colors duration-300">
             <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Cabling Planner</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-6">Feature available in full version. (Use CCTV Configurator for now).</p>
             <button onClick={() => setCurrentView('welcome')} className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">Back Home</button>
@@ -322,7 +323,7 @@ function App() {
               <button onClick={() => setCurrentView('cctv-planner')} className="px-4 py-2 bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-white font-bold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-700 transition-colors">← Back</button>
               <button onClick={handleDownloadPDF} className="px-6 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors">Download PDF</button>
             </div>
-            <div className="flex justify-center bg-gray-200 dark:bg-gray-800 p-4 rounded-xl overflow-x-auto">
+            <div className="flex justify-center bg-gray-200 dark:bg-gray-800 p-4 rounded-xl overflow-x-auto transition-colors duration-300">
               {/* PDF Container is explicitly forced to light theme for printing */}
               <div id="pdf-report-container" className="bg-white text-gray-900 shadow-2xl p-10" style={{ width: '800px' }}>
                 <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '30px', borderRadius: '10px', marginBottom: '30px' }}>
@@ -343,7 +344,7 @@ function App() {
 
         {/* NETWORK PREVIEW */}
         {currentView === 'preview' && (
-          <div className="p-10 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm">
+          <div className="p-10 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm transition-colors duration-300">
             <div className="flex justify-between items-center mb-10">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Interactive Network Topology</h2>
               <button onClick={() => setCurrentView('cctv-planner')} className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold hover:bg-blue-700 transition-colors">← Back to Configurator</button>
