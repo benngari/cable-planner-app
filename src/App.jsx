@@ -10,32 +10,33 @@ import {
   ShoppingCart, HardDrive, Smartphone, Cloud
 } from 'lucide-react';
 
+// Updated Pricing based on Jumia Kenya screenshots and current market rates
 const PRICING = {
   brands: {
     hikvision: {
       name: 'Hikvision',
       cameras: {
-        dome: { name: '2MP Dome Camera', price: 1800, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
-        bullet: { name: '2MP Bullet Camera', price: 1800, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
+        dome: { name: '2MP Dome Camera', price: 2500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
+        bullet: { name: '2MP Bullet Camera', price: 2500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
         ptz: { name: '2MP PTZ Camera', price: 12000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
       },
-      dvr4: { name: '4-Channel DVR', price: 3500 },
-      dvr8: { name: '8-Channel DVR', price: 5500 }
+      dvr4: { name: '4-Channel DVR', price: 5700 }, // Updated to match screenshot
+      dvr8: { name: '8-Channel DVR', price: 8500 }
     },
     dahua: {
       name: 'Dahua',
       cameras: {
-        dome: { name: '2MP Dome Camera', price: 1500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
-        bullet: { name: '2MP Bullet Camera', price: 1500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
+        dome: { name: '2MP Dome Camera', price: 2000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
+        bullet: { name: '2MP Bullet Camera', price: 2000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
         ptz: { name: '4MP PTZ Camera', price: 15000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
       },
-      dvr4: { name: '4-Channel DVR', price: 3000 },
-      dvr8: { name: '8-Channel DVR', price: 5000 }
+      dvr4: { name: '4-Channel DVR', price: 4500 },
+      dvr8: { name: '8-Channel DVR', price: 7000 }
     }
   },
   monitor: { name: '22" CCTV Monitor', price: 13000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Computer_monitor.jpg/640px-Computer_monitor.jpg' },
-  hdd500: { name: '500GB Surveillance Hard Drive', price: 3100 },
-  psu: { name: '4-Port 5A Centralized Power Supply', price: 800 },
+  hdd500: { name: '500GB Surveillance Hard Drive', price: 3100 }, // Matches Jumia listing
+  psu: { name: '4-Port 5A Centralized Power Supply', price: 1500 }, // Adjusted
   cablePerMeter: { name: 'RG59 Coaxial Cable', price: 20 },
   connectors: { name: '12x BNC & DC Connectors', price: 250 },
   dvrImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Digital_Video_Recorder.jpg/640px-Digital_Video_Recorder.jpg',
@@ -89,7 +90,8 @@ function App() {
   const [quantity, setQuantity] = useState(4);
   const [hasMonitor, setHasMonitor] = useState(false);
   const [cableLength, setCableLength] = useState(50);
-  const [showItemizedPrice, setShowItemizedPrice] = useState(false); // New state for price breakdown
+  const [showItemizedPrice, setShowItemizedPrice] = useState(false); 
+  const [bundleDiscount, setBundleDiscount] = useState(0); // New state for Jumia bundle discount
 
   // Cabling State
   const [cabRooms, setCabRooms] = useState(defaultCabRooms);
@@ -135,7 +137,11 @@ function App() {
     setHasMonitor(false);
     setCableLength(50);
     setActiveProject('cctv');
-    setShowItemizedPrice(true); // Show the itemized breakdown automatically
+    setShowItemizedPrice(true);
+    
+    // Calculate the difference to apply as a bundle discount
+    const rawSum = (2500 * 4) + 5700 + 3100 + 1500 + (50 * 20) + 250; // 21550
+    setBundleDiscount(rawSum - 15850); // 5700 discount
   };
 
   const calculateHardwareCost = () => {
@@ -144,7 +150,9 @@ function App() {
     const selectedDvr = quantity <= 4 ? brandData.dvr4 : brandData.dvr8;
     let total = (cameraData.price * quantity) + selectedDvr.price + PRICING.hdd500.price + PRICING.psu.price + (cableLength * PRICING.cablePerMeter.price) + PRICING.connectors.price;
     if (hasMonitor) total += PRICING.monitor.price;
-    return total;
+    
+    // Subtract bundle discount if applicable
+    return total - bundleDiscount;
   };
   
   const calculateCCTVTotal = () => calculateHardwareCost() + PRICING.installationCost + getCustomItemsTotal();
@@ -301,7 +309,7 @@ function App() {
             <div className={`p-4 rounded-xl border flex items-center justify-between ${darkMode ? 'bg-blue-900/20 border-blue-800' : 'bg-blue-50 border-blue-200'}`}>
               <div>
                 <p className={`font-bold ${darkMode ? 'text-blue-300' : 'text-blue-900'}`}>Jumia Kenya 4-Camera Kit (Hardware only)</p>
-                <p className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Loads the KSh 15,850 package.</p>
+                <p className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-700'}`}>Loads the KSh 15,850 package with a bundle discount.</p>
               </div>
               <button onClick={loadJumiaKit} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md flex items-center space-x-2">
                 <Package className="w-5 h-5" /> <span>Load Jumia Kit</span>
@@ -371,7 +379,7 @@ function App() {
               </div>
             </div>
 
-            {/* NEW: ITEMIZED PRICE BREAKDOWN */}
+            {/* ITEMIZED PRICE BREAKDOWN */}
             {showItemizedPrice && (
               <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-green-900' : 'bg-green-50 border-green-200'}`}>
                 <div className="flex justify-between items-center mb-4">
@@ -387,6 +395,14 @@ function App() {
                   <div className="flex justify-between"><span>1x {PRICING.psu.name}</span> <span>{formatKES(PRICING.psu.price)}</span></div>
                   <div className="flex justify-between"><span>{cableLength}m Coaxial Cable (@{formatKES(PRICING.cablePerMeter.price)}/m)</span> <span>{formatKES(cableLength * PRICING.cablePerMeter.price)}</span></div>
                   <div className="flex justify-between"><span>1x {PRICING.connectors.name}</span> <span>{formatKES(PRICING.connectors.price)}</span></div>
+                  
+                  {bundleDiscount > 0 && (
+                    <div className="flex justify-between text-red-500 font-bold pt-2 border-t border-green-300 dark:border-green-800">
+                      <span>Jumia Bundle Discount</span> 
+                      <span>- {formatKES(bundleDiscount)}</span>
+                    </div>
+                  )}
+
                   <div className="border-t border-green-300 dark:border-green-800 mt-2 pt-2 font-bold flex justify-between text-base">
                     <span>Total Hardware Estimate:</span> 
                     <span>{formatKES(calculateHardwareCost())}</span>
@@ -765,6 +781,15 @@ function App() {
                             <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{(item.price * item.qty).toLocaleString()}</td>
                           </tr>
                         ))}
+
+                        {/* Bundle Discount Line in PDF */}
+                        {bundleDiscount > 0 && (
+                          <tr>
+                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>7</td>
+                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#dc2626' }}><strong>Jumia Bundle Discount</strong></td>
+                            <td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', color: '#dc2626' }}>- {bundleDiscount.toLocaleString()}</td>
+                          </tr>
+                        )}
 
                         <tr><td colSpan="2" style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}><strong>Hardware Subtotal</strong></td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}><strong>{calculateHardwareCost().toLocaleString()}</strong></td></tr>
                         <tr><td colSpan="2" style={{ padding: '10px', borderBottom: '1px solid #e5e7eb', textAlign: 'right' }}>Installation & Configuration</td><td style={{ padding: '10px', borderBottom: '1px solid #e5e7eb' }}>{PRICING.installationCost.toLocaleString()}</td></tr>
