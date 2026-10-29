@@ -7,10 +7,11 @@ import {
   Building, TreePine, ArrowRight, DollarSign, Gauge, Sparkles, Star, 
   Zap, Printer, Eye, Save, FolderOpen, X, User, Briefcase, 
   FileSpreadsheet, MonitorPlay, Monitor, Settings, Package, Activity, 
-  ShoppingCart, HardDrive, Smartphone, Cloud, Calculator, MessageCircle, ClipboardCheck, Shield, Cpu
+  ShoppingCart, HardDrive, Smartphone, Cloud, Calculator, MessageCircle, 
+  ClipboardCheck, Shield, Cpu, Info
 } from 'lucide-react';
 
-// Expanded Catalog with Options
+// Expanded Catalog with "Best For" descriptions
 const CATALOG = {
   dvrs: {
     hik4: { name: 'Hikvision 4-Channel DVR', price: 5700 },
@@ -19,10 +20,34 @@ const CATALOG = {
     dahua8: { name: 'Dahua 8-Channel DVR', price: 7000 }
   },
   cameras: {
-    hikBullet: { name: 'Hikvision 2MP Bullet', price: 1700, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
-    hikDome: { name: 'Hikvision 2MP Dome', price: 1600, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
-    hikPTZ: { name: 'Hikvision 2MP PTZ', price: 12000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
-    dahuaBullet: { name: 'Dahua 2MP Bullet', price: 1500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
+    hikBullet: { 
+      name: 'Hikvision 2MP Bullet', 
+      type: 'Bullet',
+      price: 1700, 
+      bestFor: 'Outdoor perimeters, long-range viewing, and visible deterrence.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' 
+    },
+    hikDome: { 
+      name: 'Hikvision 2MP Dome', 
+      type: 'Dome',
+      price: 1600, 
+      bestFor: 'Indoor ceilings or low-profile outdoor areas. Vandal-resistant.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' 
+    },
+    hikPTZ: { 
+      name: 'Hikvision 2MP PTZ', 
+      type: 'PTZ',
+      price: 12000, 
+      bestFor: 'Large open areas (compounds, warehouses). Pan, tilt, and zoom for tracking.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' 
+    },
+    dahuaBullet: { 
+      name: 'Dahua 2MP Bullet', 
+      type: 'Bullet',
+      price: 1500, 
+      bestFor: 'Budget outdoor security, long-range coverage.',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' 
+    }
   },
   storage: {
     none: { name: 'No Hard Drive', price: 0 },
@@ -89,7 +114,7 @@ function App() {
   const [customItemPrice, setCustomItemPrice] = useState('');
   const [customItemQty, setCustomItemQty] = useState(1);
 
-  // ======================= NEW CONFIGURATOR STATE =======================
+  // ======================= CONFIGURATOR STATE =======================
   const [quantity, setQuantity] = useState(4);
   const [selectedDvr, setSelectedDvr] = useState('hik4');
   const [selectedCamera, setSelectedCamera] = useState('hikBullet');
@@ -97,8 +122,6 @@ function App() {
   const [selectedMonitor, setSelectedMonitor] = useState('none');
   const [selectedLabor, setSelectedLabor] = useState('basic');
   const [cableLength, setCableLength] = useState(50);
-  
-  // Custom bundle override
   const [customBundlePrice, setCustomBundlePrice] = useState('');
 
   // Site Survey Checklist
@@ -154,7 +177,7 @@ function App() {
     setSelectedMonitor('none');
     setSelectedLabor('basic');
     setCableLength(50);
-    setCustomBundlePrice('15500'); // The actual Jumia price
+    setCustomBundlePrice('15500');
   };
 
   const calculateHardwareCost = () => {
@@ -168,7 +191,6 @@ function App() {
 
     const rawTotal = camPrice + dvrPrice + storagePrice + monitorPrice + psuPrice + cablePrice + connPrice;
     
-    // If user entered a custom bundle price, calculate the discount
     let discount = 0;
     if (customBundlePrice && Number(customBundlePrice) > 0) {
       discount = rawTotal - Number(customBundlePrice);
@@ -186,7 +208,7 @@ function App() {
     let phoneStr = clientInfo.phone.replace(/\D/g, ''); 
     if (phoneStr.startsWith('0')) phoneStr = '254' + phoneStr.slice(1);
     
-    const message = `*CCTV QUOTATION*\nFrom: ${businessInfo.name}\nClient: ${clientInfo.name || 'Valued Customer'}\n\n*System:* ${quantity}x ${CATALOG.cameras[selectedCamera].name} + ${CATALOG.dvrs[selectedDvr].name}${selectedStorage !== 'none' ? ' + HDD' : ''}${selectedMonitor !== 'none' ? ' + Monitor' : ''}\n\n*Total Cost:* ${formatKES(calculateCCTVTotal())}\n\nIncludes installation and mobile app setup. Please find the official PDF quotation attached.\n\nContact us: ${businessInfo.phone}`;
+    const message = `*CCTV QUOTATION*\nFrom: ${businessInfo.name}\nClient: ${clientInfo.name || 'Valued Customer'}\n\n*System:* ${quantity}x ${CATALOG.cameras[selectedCamera].name} + ${CATALOG.dvrs[selectedDvr].name}\n*Total Cost:* ${formatKES(calculateCCTVTotal())}\n\nIncludes installation and mobile app setup. Please find the official PDF quotation attached.`;
     
     const encodedMsg = encodeURIComponent(message);
     window.open(`https://wa.me/${phoneStr}?text=${encodedMsg}`, '_blank');
@@ -266,6 +288,9 @@ function App() {
     };
     html2pdf().set(opt).from(element).save().then(() => setIsExporting(false));
   };
+
+  const brandData = CATALOG.cameras[selectedCamera];
+  const selectedDvrData = CATALOG.dvrs[selectedDvr];
 
   // Shared PDF block styles
   const topologyBoxStyle = { backgroundColor: 'white', border: '2px solid #1e3a8a', padding: '10px 15px', borderRadius: '8px', textAlign: 'center', minWidth: '120px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' };
@@ -378,11 +403,20 @@ function App() {
                       </select>
 
                       <label className="text-sm font-medium text-gray-500 block mb-2">Camera Model</label>
-                      <select value={selectedCamera} onChange={e => setSelectedCamera(e.target.value)} className={`w-full px-4 py-3 rounded-xl border mb-4 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
+                      <select value={selectedCamera} onChange={e => setSelectedCamera(e.target.value)} className={`w-full px-4 py-3 rounded-xl border mb-2 ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}>
                         {Object.entries(CATALOG.cameras).map(([k, v]) => (
                           <option key={k} value={k}>{v.name} - {formatKES(v.price)}</option>
                         ))}
                       </select>
+                      
+                      {/* NEW: Camera Suitability Display */}
+                      <div className={`p-3 rounded-lg text-sm flex items-start space-x-2 ${darkMode ? 'bg-blue-900/30 text-blue-200' : 'bg-blue-50 text-blue-800'}`}>
+                        <Info className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold block">Best Suited For:</span>
+                          {CATALOG.cameras[selectedCamera].bestFor}
+                        </div>
+                      </div>
                     </div>
 
                     <div>
@@ -750,6 +784,12 @@ function App() {
                           <span style={{ fontSize: '10px', color: '#666' }}>Live Viewing Display</span>
                         </div>
                       )}
+                    </div>
+
+                    <div style={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '15px 25px', fontSize: '13px', marginBottom: '20px' }}>
+                      <h4 style={{ marginBottom: '10px', color: '#1e3a8a' }}>CAMERA SELECTION GUIDE</h4>
+                      <p><strong>Model: {CATALOG.cameras[selectedCamera].name} ({CATALOG.cameras[selectedCamera].type})</strong></p>
+                      <p style={{ color: '#4b5563', marginTop: '5px' }}><em>Best Suited For: {CATALOG.cameras[selectedCamera].bestFor}</em></p>
                     </div>
 
                     <h4 style={{ marginBottom: '10px', color: '#1e3a8a' }}>WHAT'S IN THE BOX</h4>
