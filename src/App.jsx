@@ -10,24 +10,24 @@ import {
   ShoppingCart, HardDrive, Smartphone, Cloud
 } from 'lucide-react';
 
-// Updated Pricing based on Jumia Kenya screenshots and current market rates
+// Updated Pricing based on Jumia Kenya live listings
 const PRICING = {
   brands: {
     hikvision: {
       name: 'Hikvision',
       cameras: {
-        dome: { name: '2MP Dome Camera', price: 2500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
-        bullet: { name: '2MP Bullet Camera', price: 2500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
+        dome: { name: '2MP Dome Camera', price: 1600, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
+        bullet: { name: '2MP Bullet Camera', price: 1700, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }, // Updated based on screenshot
         ptz: { name: '2MP PTZ Camera', price: 12000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
       },
-      dvr4: { name: '4-Channel DVR', price: 5700 }, // Updated to match screenshot
+      dvr4: { name: '4-Channel DVR', price: 5700 }, // Updated based on screenshot
       dvr8: { name: '8-Channel DVR', price: 8500 }
     },
     dahua: {
       name: 'Dahua',
       cameras: {
-        dome: { name: '2MP Dome Camera', price: 2000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
-        bullet: { name: '2MP Bullet Camera', price: 2000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
+        dome: { name: '2MP Dome Camera', price: 1500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Dome_camera.jpg/640px-Dome_camera.jpg' },
+        bullet: { name: '2MP Bullet Camera', price: 1500, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' },
         ptz: { name: '4MP PTZ Camera', price: 15000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/CCTV_camera_1.jpg/640px-CCTV_camera_1.jpg' }
       },
       dvr4: { name: '4-Channel DVR', price: 4500 },
@@ -35,8 +35,8 @@ const PRICING = {
     }
   },
   monitor: { name: '22" CCTV Monitor', price: 13000, image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/35/Computer_monitor.jpg/640px-Computer_monitor.jpg' },
-  hdd500: { name: '500GB Surveillance Hard Drive', price: 3100 }, // Matches Jumia listing
-  psu: { name: '4-Port 5A Centralized Power Supply', price: 1500 }, // Adjusted
+  hdd500: { name: '500GB Surveillance Hard Drive', price: 3100 },
+  psu: { name: '4-Port 5A Centralized Power Supply', price: 1500 },
   cablePerMeter: { name: 'RG59 Coaxial Cable', price: 20 },
   connectors: { name: '12x BNC & DC Connectors', price: 250 },
   dvrImage: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Digital_Video_Recorder.jpg/640px-Digital_Video_Recorder.jpg',
@@ -91,7 +91,7 @@ function App() {
   const [hasMonitor, setHasMonitor] = useState(false);
   const [cableLength, setCableLength] = useState(50);
   const [showItemizedPrice, setShowItemizedPrice] = useState(false); 
-  const [bundleDiscount, setBundleDiscount] = useState(0); // New state for Jumia bundle discount
+  const [bundleDiscount, setBundleDiscount] = useState(0); 
 
   // Cabling State
   const [cabRooms, setCabRooms] = useState(defaultCabRooms);
@@ -140,8 +140,11 @@ function App() {
     setShowItemizedPrice(true);
     
     // Calculate the difference to apply as a bundle discount
-    const rawSum = (2500 * 4) + 5700 + 3100 + 1500 + (50 * 20) + 250; // 21550
-    setBundleDiscount(rawSum - 15850); // 5700 discount
+    // Raw items: (4 * 1700) + 5700 + 3100 + 1500 + (50 * 20) + 250 = 18350
+    // Bundle Target: 15850
+    // Discount: 2500
+    const rawSum = (1700 * 4) + 5700 + 3100 + 1500 + (50 * 20) + 250; 
+    setBundleDiscount(rawSum - 15850); 
   };
 
   const calculateHardwareCost = () => {
@@ -379,16 +382,16 @@ function App() {
               </div>
             </div>
 
-            {/* ITEMIZED PRICE BREAKDOWN */}
+            {/* ITEMIZED PRICE BREAKDOWN (Fixed Dark Mode Text) */}
             {showItemizedPrice && (
               <div className={`p-6 rounded-xl border ${darkMode ? 'bg-gray-800 border-green-900' : 'bg-green-50 border-green-200'}`}>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className={`text-lg font-bold flex items-center space-x-2 ${darkMode ? 'text-green-400' : 'text-green-800'}`}>
                     <DollarSign className="w-5 h-5" /> <span>Jumia Kit Price Estimate</span>
                   </h3>
-                  <button onClick={() => setShowItemizedPrice(false)} className="text-gray-500 hover:text-gray-700"><X className="w-5 h-5" /></button>
+                  <button onClick={() => setShowItemizedPrice(false)} className={`${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'}`}><X className="w-5 h-5" /></button>
                 </div>
-                <div className="space-y-2 text-sm">
+                <div className={`space-y-2 text-sm ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
                   <div className="flex justify-between"><span>{quantity}x {brandData.name} Cameras (@{formatKES(cameraData.price)})</span> <span>{formatKES(cameraData.price * quantity)}</span></div>
                   <div className="flex justify-between"><span>1x {selectedDvr.name}</span> <span>{formatKES(selectedDvr.price)}</span></div>
                   <div className="flex justify-between"><span>1x {PRICING.hdd500.name}</span> <span>{formatKES(PRICING.hdd500.price)}</span></div>
@@ -397,13 +400,13 @@ function App() {
                   <div className="flex justify-between"><span>1x {PRICING.connectors.name}</span> <span>{formatKES(PRICING.connectors.price)}</span></div>
                   
                   {bundleDiscount > 0 && (
-                    <div className="flex justify-between text-red-500 font-bold pt-2 border-t border-green-300 dark:border-green-800">
+                    <div className={`flex justify-between font-bold pt-2 border-t mt-2 ${darkMode ? 'text-red-400 border-green-800' : 'text-red-600 border-green-300'}`}>
                       <span>Jumia Bundle Discount</span> 
                       <span>- {formatKES(bundleDiscount)}</span>
                     </div>
                   )}
 
-                  <div className="border-t border-green-300 dark:border-green-800 mt-2 pt-2 font-bold flex justify-between text-base">
+                  <div className={`border-t mt-2 pt-2 font-bold flex justify-between text-base ${darkMode ? 'border-green-800 text-white' : 'border-green-300 text-gray-900'}`}>
                     <span>Total Hardware Estimate:</span> 
                     <span>{formatKES(calculateHardwareCost())}</span>
                   </div>
