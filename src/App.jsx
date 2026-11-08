@@ -1,11 +1,11 @@
 // src/App.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import html2pdf from 'html2pdf.js';
 import { 
   Camera, Network, Cable, Home as HomeIcon, FileSpreadsheet, 
-  Sun, Moon, Laptop, Cpu, Lightbulb, ArrowRight, Download, 
+  Sun, Moon, CircleDot, Cpu, Lightbulb, ArrowRight, Download, 
   Settings, CheckCircle, Printer, MonitorPlay, Server, Cloud, 
-  HardDrive, Zap, CircleDot
+  HardDrive, Zap, ChevronDown
 } from 'lucide-react';
 
 const CATALOG = {
@@ -29,8 +29,9 @@ const CATALOG = {
 };
 
 function App() {
-  // THEME STATE: 'light', 'dark', or 'black'
+  // THEME STATE
   const [theme, setTheme] = useState('dark');
+  const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [currentView, setCurrentView] = useState('welcome'); 
   
   // App State
@@ -39,13 +40,6 @@ function App() {
   const [quantity, setQuantity] = useState(4);
   const [selectedDvr, setSelectedDvr] = useState('hik4');
   const [selectedCamera, setSelectedCamera] = useState('hikBullet');
-
-  // 3-Way Toggle Cycle
-  const cycleTheme = () => {
-    if (theme === 'light') setTheme('dark');
-    else if (theme === 'dark') setTheme('black');
-    else setTheme('light');
-  };
 
   const formatKES = (amount) => `KSh ${Math.round(amount).toLocaleString()}`;
 
@@ -62,21 +56,18 @@ function App() {
     html2pdf().set({ margin: 0.5, filename: `Quote.pdf`, html2canvas: { scale: 2, useCORS: true } }).from(element).save();
   };
 
-  // DYNAMIC STYLING VARIABLES (Guarantees no conflicts)
+  // DYNAMIC STYLING VARIABLES
   const isLight = theme === 'light';
   const isDark = theme === 'dark';
   const isBlack = theme === 'black';
 
-  // Main Background & Text
   const bgMain = isLight ? 'bg-gray-50' : isDark ? 'bg-gray-900' : 'bg-black';
   const textMain = isLight ? 'text-gray-900' : 'text-gray-100';
   const textMuted = isLight ? 'text-gray-500' : isDark ? 'text-gray-400' : 'text-gray-500';
   
-  // Cards & Borders
   const bgCard = isLight ? 'bg-white border-gray-200' : isDark ? 'bg-gray-800 border-gray-700' : 'bg-[#0a0a0a] border-[#222]';
   const bgHeader = isLight ? 'bg-white border-gray-200' : isDark ? 'bg-gray-900 border-gray-800' : 'bg-black border-[#222]';
   
-  // Inputs & Buttons
   const bgInput = isLight ? 'bg-gray-50 border-gray-300 text-gray-900' : isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-[#111] border-[#333] text-white';
   const bgButton = isLight ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' : isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-[#222] text-white hover:bg-[#333]';
 
@@ -84,7 +75,7 @@ function App() {
     <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain}`}>
       
       {/* HEADER */}
-      <header className={`sticky top-0 z-20 border-b ${bgHeader}`}>
+      <header className={`sticky top-0 z-50 border-b ${bgHeader}`}>
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div onClick={() => setCurrentView('welcome')} className="flex items-center space-x-3 cursor-pointer">
             <div className="bg-blue-600 p-2.5 rounded-xl"><Cable className="w-6 h-6 text-white" /></div>
@@ -99,15 +90,55 @@ function App() {
               <HomeIcon className="w-5 h-5" />
             </button>
             
-            {/* 3-WAY THEME TOGGLE */}
-            <button onClick={cycleTheme} className={`px-4 py-2 rounded-xl flex items-center space-x-2 font-medium transition-colors ${bgButton}`}>
-              {isLight && <><Sun className="w-5 h-5 text-orange-500" /> <span className="hidden sm:inline">Light</span></>}
-              {isDark && <><Moon className="w-5 h-5 text-blue-400" /> <span className="hidden sm:inline">Dark</span></>}
-              {isBlack && <><CircleDot className="w-5 h-5 text-gray-300" /> <span className="hidden sm:inline">Black</span></>}
-            </button>
+            {/* THEME DROPDOWN MENU */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowThemeMenu(!showThemeMenu)} 
+                className={`px-4 py-2 rounded-xl flex items-center space-x-2 font-medium transition-colors ${bgButton}`}
+              >
+                {isLight && <><Sun className="w-5 h-5 text-orange-500" /> <span className="hidden sm:inline">Light</span></>}
+                {isDark && <><Moon className="w-5 h-5 text-blue-400" /> <span className="hidden sm:inline">Dark</span></>}
+                {isBlack && <><CircleDot className="w-5 h-5 text-gray-300" /> <span className="hidden sm:inline">Black</span></>}
+                <ChevronDown className="w-4 h-4 ml-1 opacity-70" />
+              </button>
+
+              {/* DROPDOWN OPTIONS */}
+              {showThemeMenu && (
+                <div className={`absolute right-0 mt-2 w-48 rounded-xl shadow-xl border overflow-hidden z-50 ${bgCard}`}>
+                  <button 
+                    onClick={() => { setTheme('light'); setShowThemeMenu(false); }} 
+                    className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-colors ${isLight ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30' : `hover:bg-gray-100 dark:hover:bg-gray-700 ${textMain}`}`}
+                  >
+                    <Sun className="w-4 h-4 text-orange-500" />
+                    <span>Light Mode</span>
+                  </button>
+                  
+                  <button 
+                    onClick={() => { setTheme('dark'); setShowThemeMenu(false); }} 
+                    className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-colors ${isDark ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/30' : `hover:bg-gray-100 dark:hover:bg-gray-700 ${textMain}`}`}
+                  >
+                    <Moon className="w-4 h-4 text-blue-400" />
+                    <span>Dark Mode</span>
+                  </button>
+                  
+                  <button 
+                    onClick={() => { setTheme('black'); setShowThemeMenu(false); }} 
+                    className={`w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium transition-colors border-t ${isBlack ? 'bg-gray-800 text-white' : `hover:bg-gray-100 dark:hover:bg-gray-700 ${textMain} ${isLight ? 'border-gray-200' : 'border-gray-700'}`}`}
+                  >
+                    <CircleDot className="w-4 h-4 text-gray-500" />
+                    <span>AMOLED Black</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
+
+      {/* Click-away overlay for dropdown */}
+      {showThemeMenu && (
+        <div className="fixed inset-0 z-40" onClick={() => setShowThemeMenu(false)}></div>
+      )}
 
       <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
         
