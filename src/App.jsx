@@ -1,11 +1,11 @@
 // src/App.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import html2pdf from 'html2pdf.js';
 import { 
   Camera, Network, Cable, Home as HomeIcon, FileSpreadsheet, 
   Sun, Moon, Laptop, Cpu, Lightbulb, ArrowRight, Download, 
   Settings, CheckCircle, Printer, MonitorPlay, Server, Cloud, 
-  HardDrive, Zap
+  HardDrive, Zap, CircleDot
 } from 'lucide-react';
 
 const CATALOG = {
@@ -29,9 +29,8 @@ const CATALOG = {
 };
 
 function App() {
-  // Theme state: 'light', 'dark', or 'auto'
-  const [theme, setTheme] = useState('auto');
-  const [isDark, setIsDark] = useState(false);
+  // THEME STATE: 'light', 'dark', or 'black'
+  const [theme, setTheme] = useState('dark');
   const [currentView, setCurrentView] = useState('welcome'); 
   
   // App State
@@ -41,25 +40,10 @@ function App() {
   const [selectedDvr, setSelectedDvr] = useState('hik4');
   const [selectedCamera, setSelectedCamera] = useState('hikBullet');
 
-  // THEME LOGIC
-  useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    const handleThemeChange = () => {
-      if (theme === 'dark') setIsDark(true);
-      else if (theme === 'light') setIsDark(false);
-      else setIsDark(mediaQuery.matches); // Auto
-    };
-
-    handleThemeChange(); // Run on mount
-    mediaQuery.addEventListener('change', handleThemeChange); // Listen to system changes
-
-    return () => mediaQuery.removeEventListener('change', handleThemeChange);
-  }, [theme]);
-
+  // 3-Way Toggle Cycle
   const cycleTheme = () => {
     if (theme === 'light') setTheme('dark');
-    else if (theme === 'dark') setTheme('auto');
+    else if (theme === 'dark') setTheme('black');
     else setTheme('light');
   };
 
@@ -78,24 +62,34 @@ function App() {
     html2pdf().set({ margin: 0.5, filename: `Quote.pdf`, html2canvas: { scale: 2, useCORS: true } }).from(element).save();
   };
 
-  // DYNAMIC STYLING VARIABLES (Guarantees theme switching)
-  const bgMain = isDark ? 'bg-gray-900' : 'bg-gray-50';
-  const textMain = isDark ? 'text-white' : 'text-gray-900';
-  const textMuted = isDark ? 'text-gray-400' : 'text-gray-500';
-  const bgCard = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
-  const bgInput = isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900';
-  const bgButton = isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-gray-200 text-gray-800 hover:bg-gray-300';
+  // DYNAMIC STYLING VARIABLES (Guarantees no conflicts)
+  const isLight = theme === 'light';
+  const isDark = theme === 'dark';
+  const isBlack = theme === 'black';
+
+  // Main Background & Text
+  const bgMain = isLight ? 'bg-gray-50' : isDark ? 'bg-gray-900' : 'bg-black';
+  const textMain = isLight ? 'text-gray-900' : 'text-gray-100';
+  const textMuted = isLight ? 'text-gray-500' : isDark ? 'text-gray-400' : 'text-gray-500';
+  
+  // Cards & Borders
+  const bgCard = isLight ? 'bg-white border-gray-200' : isDark ? 'bg-gray-800 border-gray-700' : 'bg-[#0a0a0a] border-[#222]';
+  const bgHeader = isLight ? 'bg-white border-gray-200' : isDark ? 'bg-gray-900 border-gray-800' : 'bg-black border-[#222]';
+  
+  // Inputs & Buttons
+  const bgInput = isLight ? 'bg-gray-50 border-gray-300 text-gray-900' : isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-[#111] border-[#333] text-white';
+  const bgButton = isLight ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' : isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-[#222] text-white hover:bg-[#333]';
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain}`}>
       
       {/* HEADER */}
-      <header className={`sticky top-0 z-20 border-b ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'}`}>
+      <header className={`sticky top-0 z-20 border-b ${bgHeader}`}>
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div onClick={() => setCurrentView('welcome')} className="flex items-center space-x-3 cursor-pointer">
             <div className="bg-blue-600 p-2.5 rounded-xl"><Cable className="w-6 h-6 text-white" /></div>
             <div>
-              <h1 className="text-2xl font-bold text-blue-600">CableIQ</h1>
+              <h1 className={`text-2xl font-bold ${isBlack ? 'text-white' : 'text-blue-600'}`}>CableIQ</h1>
               <p className={`text-xs ${textMuted}`}>Kenyan CCTV Planner</p>
             </div>
           </div>
@@ -107,9 +101,9 @@ function App() {
             
             {/* 3-WAY THEME TOGGLE */}
             <button onClick={cycleTheme} className={`px-4 py-2 rounded-xl flex items-center space-x-2 font-medium transition-colors ${bgButton}`}>
-              {theme === 'light' && <><Sun className="w-5 h-5 text-orange-500" /> <span className="hidden sm:inline">Light</span></>}
-              {theme === 'dark' && <><Moon className="w-5 h-5 text-blue-400" /> <span className="hidden sm:inline">Dark</span></>}
-              {theme === 'auto' && <><Laptop className="w-5 h-5 text-green-500" /> <span className="hidden sm:inline">Auto</span></>}
+              {isLight && <><Sun className="w-5 h-5 text-orange-500" /> <span className="hidden sm:inline">Light</span></>}
+              {isDark && <><Moon className="w-5 h-5 text-blue-400" /> <span className="hidden sm:inline">Dark</span></>}
+              {isBlack && <><CircleDot className="w-5 h-5 text-gray-300" /> <span className="hidden sm:inline">Black</span></>}
             </button>
           </div>
         </div>
@@ -139,16 +133,16 @@ function App() {
             <div className="lg:col-span-2 space-y-6">
               
               {/* SMART RECOMMENDATION */}
-              <div className="p-6 rounded-xl bg-gradient-to-r from-blue-700 to-indigo-800 text-white shadow-lg">
+              <div className={`p-6 rounded-xl shadow-lg border ${isBlack ? 'bg-gradient-to-r from-blue-950 to-black border-blue-900' : 'bg-gradient-to-r from-blue-700 to-indigo-800 text-white border-transparent'}`}>
                 <h3 className="text-lg font-bold mb-4 flex items-center space-x-2">
                   <Lightbulb className="w-5 h-5 text-yellow-400" /> <span>Smart Recommendation</span>
                 </h3>
-                <select value={premisesType} onChange={e => setPremisesType(e.target.value)} className="w-full px-4 py-2 rounded-lg bg-blue-900/50 border border-blue-500 text-white mb-3 outline-none">
+                <select value={premisesType} onChange={e => setPremisesType(e.target.value)} className={`w-full px-4 py-2 rounded-lg border mb-3 outline-none ${isBlack ? 'bg-black border-gray-700 text-white' : 'bg-blue-900/50 border-blue-500 text-white'}`}>
                   <option value="home">🏠 Home / Residential</option>
                   <option value="shop">🏪 Shop / Retail</option>
                   <option value="warehouse">🏭 Warehouse</option>
                 </select>
-                <p className="text-sm text-blue-100 italic">"Standard setup covering the gate, compound, and main living area."</p>
+                <p className={`text-sm italic ${isBlack ? 'text-gray-400' : 'text-blue-100'}`}>"Standard setup covering the gate, compound, and main living area."</p>
               </div>
 
               {/* HARDWARE SELECTION */}
@@ -184,7 +178,7 @@ function App() {
                   <div className="flex justify-between"><span>DVR:</span> <span className={textMain}>{formatKES(CATALOG.dvrs[selectedDvr].price)}</span></div>
                   <div className="flex justify-between"><span>Storage:</span> <span className={textMain}>{formatKES(CATALOG.storage.hdd500.price)}</span></div>
                   <div className="flex justify-between"><span>Labor:</span> <span className={textMain}>{formatKES(CATALOG.labor.basic.price)}</span></div>
-                  <div className={`flex justify-between font-bold text-lg border-t pt-3 mt-3 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                  <div className={`flex justify-between font-bold text-lg border-t pt-3 mt-3 ${isLight ? 'border-gray-200' : isDark ? 'border-gray-700' : 'border-[#222]'}`}>
                     <span>Total:</span> <span className="text-green-500">{formatKES(calculateTotal())}</span>
                   </div>
                 </div>
@@ -206,7 +200,7 @@ function App() {
               </button>
             </div>
             
-            <div className={`flex justify-center p-4 rounded-xl overflow-x-auto ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}>
+            <div className={`flex justify-center p-4 rounded-xl overflow-x-auto ${isLight ? 'bg-gray-200' : isDark ? 'bg-gray-800' : 'bg-[#111]'}`}>
               {/* The PDF Container is FORCED to light mode so the PDF prints correctly */}
               <div id="pdf-report-container" className="bg-white text-gray-900 p-10 shadow-2xl" style={{ width: '800px' }}>
                 <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '30px', borderRadius: '10px' }}>
