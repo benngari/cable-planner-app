@@ -1,66 +1,92 @@
 // src/App.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import html2pdf from 'html2pdf.js';
 import { 
   Camera, Network, Cable, Home as HomeIcon, FileSpreadsheet, 
   Sun, Moon, CircleDot, Cpu, Lightbulb, ArrowRight, Download, 
-  Settings, Printer, Cloud, HardDrive, Zap, ChevronDown, Wrench, 
-  Calculator, Globe, Ruler, Plus, Trash2, MapPin, User, Monitor, 
+  Settings, Printer, MonitorPlay, Server, Cloud, 
+  HardDrive, Zap, ChevronDown, Wrench, Calculator, Globe, 
+  Ruler, Plus, Trash2, MapPin, User, Monitor, 
   ClipboardCheck, ShoppingCart, Layers, Tag, Video, CheckSquare, 
-  Image as ImageIcon, Activity, AlertTriangle, Table, Smartphone
+  Image as ImageIcon, Activity, AlertTriangle, Table, Info, ShieldCheck
 } from 'lucide-react';
 
 const CATALOG = {
-  dvrs: { hik4: { name: '4-Ch DVR', price: 5700 }, hik8: { name: '8-Ch DVR', price: 8500 } },
-  nvrs: { hik4: { name: '4-Ch NVR', price: 8500 }, hik8: { name: '8-Ch NVR', price: 12500 } },
-  cameras: {
-    analogBullet: { name: 'Analog Bullet', price: 1700, type: 'Analog' },
-    analogDome: { name: 'Analog Dome', price: 1600, type: 'Analog' },
-    ipBullet: { name: 'IP Bullet (PoE)', price: 4500, type: 'IP' },
-    ipDome: { name: 'IP Dome (PoE)', price: 4300, type: 'IP' }
+  dvrs: {
+    hik4: { name: 'Hikvision 4-Ch DVR', price: 5700 },
+    hik8: { name: 'Hikvision 8-Ch DVR', price: 8500 },
   },
-  storage: { hdd500: { name: '500GB HDD', price: 3100 }, hdd1tb: { name: '1TB HDD', price: 5500 } },
-  monitors: { none: { name: 'No Monitor', price: 0 }, m22: { name: '22" Monitor', price: 13000 } },
-  accessories: { psu: { name: 'Power Supply', price: 1500 }, rg59: { name: 'RG59 Cable /m', price: 20 }, cat6: { name: 'Cat6 Cable /m', price: 65 }, connectors: { name: 'Connectors', price: 250 } },
-  labor: { diy: { name: 'Supply Only', price: 0 }, basic: { name: 'Basic Install', price: 4500 } },
-  cabling: { cat6Box: { name: 'Cat6 Box (305m)', price: 19500 }, keystone: { name: 'Keystone', price: 150 }, faceplate: { name: 'Faceplate', price: 200 }, patchPanel: { name: '24-Port Panel', price: 4500 }, patchCord: { name: 'Patch Cord', price: 450 }, laborPerDrop: 1500 }
+  nvrs: {
+    hik4: { name: 'Hikvision 4-Ch NVR', price: 8500 },
+    hik8: { name: 'Hikvision 8-Ch NVR', price: 12500 },
+  },
+  cameras: {
+    analogBullet: { name: 'Analog Bullet', price: 1700, type: 'Analog', desc: 'Best for outdoor perimeters and gates. Offers long-range visibility and acts as a visible deterrent.' },
+    analogDome: { name: 'Analog Dome', price: 1600, type: 'Analog', desc: 'Best for indoor ceilings or shops. Vandal-resistant and provides a wide-angle view.' },
+    ipBullet: { name: 'IP Bullet (PoE)', price: 4500, type: 'IP', desc: 'High-resolution outdoor camera. Perfect for long driveways and boundaries.' },
+    ipDome: { name: 'IP Dome (PoE)', price: 4300, type: 'IP', desc: 'High-resolution indoor/outdoor camera. Discreet design, hard for criminals to tell where it is pointing.' }
+  },
+  storage: {
+    hdd500: { name: '500GB HDD', price: 3100 },
+    hdd1tb: { name: '1TB HDD', price: 5500 },
+  },
+  monitors: {
+    none: { name: 'No Monitor', price: 0 },
+    m22: { name: '22" CCTV Monitor', price: 13000 },
+  },
+  accessories: {
+    psu: { name: 'Power Supply', price: 1500 },
+    rg59: { name: 'RG59 Cable (per meter)', price: 20 },
+    cat6: { name: 'Cat6 Cable (per meter)', price: 65 },
+    connectors: { name: 'BNC/DC Connectors', price: 250 }
+  },
+  labor: {
+    diy: { name: 'Supply Only (No Install)', price: 0 },
+    basic: { name: 'Basic Installation', price: 4500 },
+  },
+  cabling: {
+    cat6Box: { name: 'Cat6 Box (305m)', price: 19500 },
+    keystone: { name: 'Keystone Jack', price: 150 },
+    faceplate: { name: 'Faceplate', price: 200 },
+    patchPanel: { name: '24-Port Patch Panel', price: 4500 },
+    patchCord: { name: 'Patch Cord', price: 450 },
+    laborPerDrop: 1500
+  }
 };
 
 export default function App() {
-  // --- GLOBAL STATE ---
   const [theme, setTheme] = useState('dark');
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [currentView, setCurrentView] = useState('welcome'); 
+
+  // Client Info
   const [clientInfo, setClientInfo] = useState({ name: '', phone: '' });
   const [businessInfo, setBusinessInfo] = useState({ name: 'Ngari Tech Solutions', phone: '0711645837', mpesa: 'Paybill 400200' });
 
-  // --- CCTV STATE ---
+  // CCTV State
   const [systemType, setSystemType] = useState('Analog'); 
   const [quantity, setQuantity] = useState(4);
   const [selectedDvr, setSelectedDvr] = useState('hik4');
   const [selectedCamera, setSelectedCamera] = useState('analogBullet');
   const [cableLength, setCableLength] = useState(50);
+  const [lensType, setLensType] = useState('3.6'); // 2.8, 3.6, 4, 6
   const [sitePhoto, setSitePhoto] = useState(null);
   const [wizardStep, setWizardStep] = useState(0);
 
-  // --- CABLING STATE ---
+  // Cabling State
   const [cabDevices, setCabDevices] = useState([]);
   const [cabRoom, setCabRoom] = useState('');
   const [cabType, setCabType] = useState('Data');
   const [cabLength, setCabLength] = useState(30);
   const [showLabels, setShowLabels] = useState(false);
 
-  // --- TOOLS STATE ---
-  const [activeTool, setActiveTool] = useState('poe');
+  // Engineer Tools State
   const [poeCams, setPoeCams] = useState(4);
   const [poeAps, setPoeAps] = useState(2);
-  const [baseIp, setBaseIp] = useState('192.168.1.0');
-  const [runRooms, setRunRooms] = useState(5);
-  const [lensType, setLensType] = useState('2.8');
   const [voltLength, setVoltLength] = useState(50);
   const [voltAmps, setVoltAmps] = useState(0.5);
 
-  // --- THEME LOGIC ---
+  // Theme
   const isLight = theme === 'light';
   const isDark = theme === 'dark';
   const isBlack = theme === 'black';
@@ -108,6 +134,10 @@ export default function App() {
     html2pdf().set({ margin: 0.5, filename: filename, html2canvas: { scale: 2, useCORS: true } }).from(element).save();
   };
 
+  // FOV Angle Mapping
+  const fovAngles = { '2.8': 100, '3.6': 80, '4': 70, '6': 50 };
+  const currentAngle = fovAngles[lensType];
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain}`}>
       {/* HEADER */}
@@ -129,9 +159,9 @@ export default function App() {
               </button>
               {showThemeMenu && (
                 <div className={`absolute right-0 mt-2 w-48 rounded-xl shadow-xl border z-50 ${bgCard}`}>
-                  <button onClick={() => { setTheme('light'); setShowThemeMenu(false); }} className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-700`}>Light Mode</button>
-                  <button onClick={() => { setTheme('dark'); setShowThemeMenu(false); }} className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-700`}>Dark Mode</button>
-                  <button onClick={() => { setTheme('black'); setShowThemeMenu(false); }} className={`w-full text-left px-4 py-3 text-sm border-t hover:bg-gray-100 dark:hover:bg-gray-700`}>AMOLED Black</button>
+                  <button onClick={() => { setTheme('light'); setShowThemeMenu(false); }} className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Light Mode</button>
+                  <button onClick={() => { setTheme('dark'); setShowThemeMenu(false); }} className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Dark Mode</button>
+                  <button onClick={() => { setTheme('black'); setShowThemeMenu(false); }} className="w-full text-left px-4 py-3 text-sm border-t hover:bg-gray-100 dark:hover:bg-gray-700">AMOLED Black</button>
                 </div>
               )}
             </div>
@@ -147,7 +177,7 @@ export default function App() {
             <div onClick={() => setCurrentView('cctv-planner')} className={`cursor-pointer p-6 rounded-2xl border hover:border-orange-500 ${bgCard}`}>
               <Camera className="w-10 h-10 text-orange-500 mb-4" />
               <h3 className="text-xl font-bold mb-2">CCTV Configurator</h3>
-              <p className={`text-sm ${textMuted}`}>Quote systems, compare Analog vs IP, and run setup wizards.</p>
+              <p className={`text-sm ${textMuted}`}>Quote systems, view FOV coverage, and run setup wizards.</p>
             </div>
             <div onClick={() => setCurrentView('cabling-planner')} className={`cursor-pointer p-6 rounded-2xl border hover:border-blue-500 ${bgCard}`}>
               <Network className="w-10 h-10 text-blue-500 mb-4" />
@@ -157,7 +187,7 @@ export default function App() {
             <div onClick={() => setCurrentView('tools')} className={`cursor-pointer p-6 rounded-2xl border hover:border-green-500 ${bgCard}`}>
               <Wrench className="w-10 h-10 text-green-500 mb-4" />
               <h3 className="text-xl font-bold mb-2">Engineer Tools</h3>
-              <p className={`text-sm ${textMuted}`}>FOV Simulator, Voltage Drop, PoE, and Subnet tools.</p>
+              <p className={`text-sm ${textMuted}`}>PoE, Voltage Drop, and Subnet Planner.</p>
             </div>
           </div>
         )}
@@ -178,27 +208,50 @@ export default function App() {
                   <div><label className={`text-xs mb-1 ${textMuted}`}>Quantity</label><input type="number" value={quantity} onChange={e => setQuantity(Number(e.target.value))} className={`w-full px-3 py-2 rounded border ${bgInput}`} /></div>
                   <div><label className={`text-xs mb-1 ${textMuted}`}>Cable (m)</label><input type="number" value={cableLength} onChange={e => setCableLength(Number(e.target.value))} className={`w-full px-3 py-2 rounded border ${bgInput}`} /></div>
                 </div>
-                
-                {/* Analog vs IP Cost Comparison */}
-                <div className={`mt-4 p-3 rounded-lg flex justify-between items-center ${isLight ? 'bg-gray-100' : 'bg-gray-900/50'}`}>
-                  <div>
-                    <p className="text-sm font-bold">Compare with {systemType === 'Analog' ? 'IP' : 'Analog'}</p>
-                    <p className="text-xs text-muted">Switch to {systemType === 'Analog' ? 'IP' : 'Analog'} for {formatKES(calculateCCTVTotal(systemType === 'Analog' ? 'IP' : 'Analog'))}</p>
-                  </div>
-                  <button onClick={() => setSystemType(systemType === 'Analog' ? 'IP' : 'Analog')} className="px-3 py-1 bg-blue-600 text-white rounded text-sm font-bold">Switch</button>
-                </div>
               </div>
 
-              {/* IP Camera Setup Wizard */}
+              {/* NEW: FOV & Camera Type Simulator */}
               <div className={`p-6 rounded-xl border ${bgCard}`}>
-                <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><CheckSquare className="w-5 h-5 text-green-500" /> <span>Camera Setup Wizard</span></h3>
-                <div className="space-y-2">
-                  {['Change default IP to match site subnet', 'Set Gateway and DNS', 'Add camera to NVR/DVR', 'Configure Hik-Connect/DMSS App', 'Test motion detection and alerts'].map((step, idx) => (
-                    <label key={idx} className="flex items-center space-x-3 cursor-pointer">
-                      <input type="checkbox" checked={wizardStep > idx} onChange={() => setWizardStep(idx + 1)} className="rounded" />
-                      <span className={`text-sm ${wizardStep > idx ? 'line-through text-gray-500' : ''}`}>{step}</span>
-                    </label>
-                  ))}
+                <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Video className="w-5 h-5 text-purple-500" /> <span>Camera Coverage (FOV) & Type</span></h3>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className={`text-xs mb-1 font-bold ${textMuted}`}>Select Lens (FOV)</label>
+                    <select value={lensType} onChange={e => setLensType(e.target.value)} className={`w-full px-3 py-2 rounded border mb-4 ${bgInput}`}>
+                      <option value="2.8">2.8mm Lens (Wide Angle ~100°)</option>
+                      <option value="3.6">3.6mm Lens (Standard ~80°)</option>
+                      <option value="4">4.0mm Lens (Narrow ~70°)</option>
+                      <option value="6">6.0mm Lens (Telephoto ~50°)</option>
+                    </select>
+                    
+                    <div className={`p-4 rounded-lg text-sm ${isLight ? 'bg-purple-50' : 'bg-purple-900/20'}`}>
+                      <p className="font-bold text-purple-700 dark:text-purple-400 mb-2">Camera Explanation for Client:</p>
+                      <p className="italic text-gray-700 dark:text-gray-300">"{CATALOG.cameras[systemType === 'Analog' ? 'analogBullet' : 'ipBullet'].desc}"</p>
+                      <p className="mt-2 text-xs text-gray-500">
+                        {lensType === '2.8' && "A 2.8mm lens gives a very wide view, perfect for seeing a whole room or a wide shop counter."}
+                        {lensType === '3.6' && "A 3.6mm lens is the standard balance, good for general compound views."}
+                        {lensType === '4' && "A 4.0mm lens zooms in slightly, good for seeing faces clearly at a gate."}
+                        {lensType === '6' && "A 6.0mm lens is a telephoto. Great for looking down a long, narrow driveway or corridor."}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Visual FOV Cone */}
+                  <div className="relative h-48 bg-gray-200 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 flex items-center justify-center">
+                    <div className="absolute bottom-4 text-xs text-gray-500 z-10">Top-Down View (Camera Location)</div>
+                    <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-red-500 rounded-full shadow z-10" />
+                    
+                    {/* The FOV Triangle */}
+                    <div 
+                      className="absolute bottom-10 left-1/2 origin-bottom bg-gradient-to-t from-blue-500/40 to-transparent border-t border-l border-r border-blue-500/50"
+                      style={{
+                        width: lensType === '2.8' ? '300px' : lensType === '3.6' ? '220px' : lensType === '4' ? '180px' : '120px',
+                        height: '150px',
+                        transform: 'translateX(-50%)',
+                        clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -207,7 +260,6 @@ export default function App() {
                 <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><ImageIcon className="w-5 h-5 text-blue-500" /> <span>Site Photo Attachment</span></h3>
                 <input type="file" accept="image/*" onChange={handlePhotoUpload} className="text-sm" />
                 {sitePhoto && <img src={sitePhoto} alt="Site" className="mt-4 h-32 object-cover rounded border" />}
-                <p className={`text-xs mt-2 ${textMuted}`}>This photo will be embedded in the PDF quotation.</p>
               </div>
 
             </div>
@@ -216,7 +268,7 @@ export default function App() {
             <div className={`p-6 rounded-xl border ${bgCard} h-fit`}>
               <h3 className="text-lg font-bold mb-4">Quote Summary</h3>
               <div className={`space-y-2 text-sm ${textMuted}`}>
-                <div className="flex justify-between"><span>Cameras:</span> <span>{formatKES((systemType === 'IP' ? CATALOG.cameras.ipBullet.price : CATALOG.cameras.analogBullet.price) * quantity)}</span></div>
+                <div className="flex justify-between"><span>Cameras ({quantity}x):</span> <span>{formatKES((systemType === 'IP' ? CATALOG.cameras.ipBullet.price : CATALOG.cameras.analogBullet.price) * quantity)}</span></div>
                 <div className="flex justify-between"><span>Recorder:</span> <span>{formatKES(systemType === 'IP' ? CATALOG.nvrs.hik4.price : CATALOG.dvrs.hik4.price)}</span></div>
                 <div className="flex justify-between"><span>Storage:</span> <span>{formatKES(CATALOG.storage.hdd500.price)}</span></div>
                 <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2"><span>Total:</span> <span className="text-green-500">{formatKES(calculateCCTVTotal())}</span></div>
@@ -247,91 +299,41 @@ export default function App() {
                 <div className="flex justify-between"><span>Total Drops:</span> <span>{cabTotals.ports}</span></div>
                 <div className="flex justify-between"><span>Cable Required:</span> <span>{Math.round(cabTotals.lengthWithWaste)}m</span></div>
                 <div className="flex justify-between"><span>Cat6 Boxes (305m):</span> <span>{cabTotals.boxes}</span></div>
-                <div className="flex justify-between"><span>24-Port Patch Panels:</span> <span>{cabTotals.patchPanels}</span></div>
                 <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2"><span>Total Cost:</span> <span className="text-green-500">{formatKES(cabTotals.cost)}</span></div>
               </div>
             </div>
           </div>
         )}
 
-        {/* ================= ENGINEER TOOLS (6 TOOLS) ================= */}
+        {/* ================= ENGINEER TOOLS ================= */}
         {currentView === 'tools' && (
-          <div className="space-y-4">
-            <div className="flex space-x-2 overflow-x-auto pb-2">
-              {['poe', 'fov', 'voltage', 'subnet'].map(t => (
-                <button key={t} onClick={() => setActiveTool(t)} className={`px-4 py-2 rounded-lg font-bold capitalize ${activeTool === t ? 'bg-blue-600 text-white' : bgButton}`}>{t}</button>
-              ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className={`p-6 rounded-xl border ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Zap className="w-5 h-5 text-yellow-500" /> <span>PoE Calculator</span></h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="text-xs">IP Cams (15W)</label><input type="number" value={poeCams} onChange={e => setPoeCams(e.target.value)} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">APs (20W)</label><input type="number" value={poeAps} onChange={e => setPoeAps(e.target.value)} className={`w-full p-2 rounded ${bgInput}`} /></div>
+              </div>
+              <div className={`p-4 rounded text-center ${isLight ? 'bg-yellow-50' : 'bg-yellow-900/20'}`}>
+                <p className="text-2xl font-bold text-yellow-600">{(poeCams*15) + (poeAps*20)} Watts</p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* PoE Tool */}
-              {activeTool === 'poe' && (
-                <div className={`p-6 rounded-xl border ${bgCard} lg:col-span-3`}>
-                  <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Zap className="w-5 h-5 text-yellow-500" /> <span>PoE Calculator</span></h3>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div><label className="text-xs">IP Cameras (15W)</label><input type="number" value={poeCams} onChange={e => setPoeCams(e.target.value)} className={`w-full p-2 rounded ${bgInput}`} /></div>
-                    <div><label className="text-xs">Access Points (20W)</label><input type="number" value={poeAps} onChange={e => setPoeAps(e.target.value)} className={`w-full p-2 rounded ${bgInput}`} /></div>
-                  </div>
-                  <div className={`p-4 rounded text-center ${isLight ? 'bg-yellow-50' : 'bg-yellow-900/20'}`}>
-                    <p className="text-2xl font-bold text-yellow-600">{(poeCams*15) + (poeAps*20)} Watts Required</p>
-                  </div>
-                </div>
-              )}
-
-              {/* FOV Simulator */}
-              {activeTool === 'fov' && (
-                <div className={`p-6 rounded-xl border ${bgCard} lg:col-span-3`}>
-                  <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Video className="w-5 h-5 text-blue-500" /> <span>FOV Simulator</span></h3>
-                  <select value={lensType} onChange={e => setLensType(e.target.value)} className={`w-full p-2 rounded mb-4 ${bgInput}`}>
-                    <option value="2.8">2.8mm Lens (Wide ~100°)</option>
-                    <option value="3.6">3.6mm Lens (Standard ~80°)</option>
-                    <option value="4">4.0mm Lens (Narrow ~70°)</option>
-                    <option value="6">6.0mm Lens (Telephoto ~50°)</option>
-                  </select>
-                  <div className="relative h-64 bg-gray-200 dark:bg-gray-900 rounded overflow-hidden border">
-                    {/* Visual representation of FOV cone */}
-                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                       <div className="w-4 h-4 bg-red-500 rounded-full shadow" />
-                       <div className="absolute top-1/2 left-1/2 w-0 h-0 border-l-[150px] border-l-transparent border-r-[150px] border-r-transparent border-t-[300px] border-t-blue-500/30 transform -translate-x-1/2 -translate-y-full origin-bottom"
-                            style={{ transform: `translate(-50%, -100%) rotate(${lensType === '2.8' ? '60' : lensType === '3.6' ? '50' : lensType === '4' ? '45' : '35'}deg)` }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Voltage Drop */}
-              {activeTool === 'voltage' && (
-                <div className={`p-6 rounded-xl border ${bgCard} lg:col-span-3`}>
-                  <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Activity className="w-5 h-5 text-orange-500" /> <span>Voltage Drop Calculator (12V)</span></h3>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div><label className="text-xs">Cable Length (m)</label><input type="number" value={voltLength} onChange={e => setVoltLength(e.target.value)} className={`w-full p-2 rounded ${bgInput}`} /></div>
-                    <div><label className="text-xs">Camera Load (Amps)</label><input type="number" step="0.1" value={voltAmps} onChange={e => setVoltAmps(e.target.value)} className={`w-full p-2 rounded ${bgInput}`} /></div>
-                  </div>
-                  <div className={`p-4 rounded text-center ${isLight ? 'bg-orange-50' : 'bg-orange-900/20'}`}>
-                    <p className="text-sm">Approx Voltage at Camera</p>
-                    <p className="text-2xl font-bold text-orange-600">{(12 - (voltLength * voltAmps * 0.0164)).toFixed(2)} Volts</p>
-                    {(12 - (voltLength * voltAmps * 0.0164)) < 10.5 && <p className="text-red-500 text-xs mt-2 font-bold flex items-center justify-center space-x-1"><AlertTriangle className="w-3 h-3"/> <span>Warning: Below 10.5V! Use thicker cable or local power.</span></p>}
-                  </div>
-                </div>
-              )}
-
-              {/* Subnet Splitter */}
-              {activeTool === 'subnet' && (
-                <div className={`p-6 rounded-xl border ${bgCard} lg:col-span-3`}>
-                  <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Table className="w-5 h-5 text-purple-500" /> <span>Subnet / VLAN Planner</span></h3>
-                  <p className="text-sm mb-4">Plan your network separation for a 192.168.1.0/24 network.</p>
-                  <div className="space-y-2">
-                    <div className="flex justify-between p-2 bg-blue-100 dark:bg-blue-900/30 rounded text-sm"><span>VLAN 10 - Data (PCs/Printers)</span><span className="font-mono">192.168.10.0/24</span></div>
-                    <div className="flex justify-between p-2 bg-orange-100 dark:bg-orange-900/30 rounded text-sm"><span>VLAN 20 - CCTV (NVR/Cams)</span><span className="font-mono">192.168.20.0/24</span></div>
-                    <div className="flex justify-between p-2 bg-green-100 dark:bg-green-900/30 rounded text-sm"><span>VLAN 30 - VoIP Phones</span><span className="font-mono">192.168.30.0/24</span></div>
-                  </div>
-                </div>
-              )}
+            <div className={`p-6 rounded-xl border ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Activity className="w-5 h-5 text-orange-500" /> <span>Voltage Drop Calculator</span></h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="text-xs">Length (m)</label><input type="number" value={voltLength} onChange={e => setVoltLength(e.target.value)} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">Load (Amps)</label><input type="number" step="0.1" value={voltAmps} onChange={e => setVoltAmps(e.target.value)} className={`w-full p-2 rounded ${bgInput}`} /></div>
+              </div>
+              <div className={`p-4 rounded text-center ${isLight ? 'bg-orange-50' : 'bg-orange-900/20'}`}>
+                <p className="text-2xl font-bold text-orange-600">{(12 - (voltLength * voltAmps * 0.0164)).toFixed(2)}V</p>
+                {(12 - (voltLength * voltAmps * 0.0164)) < 10.5 && <p className="text-red-500 text-xs mt-2 font-bold">Warning: Below 10.5V!</p>}
+              </div>
             </div>
           </div>
         )}
 
-        {/* ================= REPORT / PDF (Includes Brand Chart & Photo) ================= */}
+        {/* ================= REPORT / PDF ================= */}
         {currentView === 'report' && (
           <div className="space-y-6">
             <div className="flex justify-between">
@@ -353,21 +355,9 @@ export default function App() {
                   </div>
                 )}
 
-                <h3 style={{ color: '#1e3a8a', fontSize: '18px', marginTop: '30px', borderBottom: '2px solid #eee', paddingBottom: '5px' }}>Brand Comparison</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '12px' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#f3f4f6' }}>
-                      <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #ddd' }}>Feature</th>
-                      <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #ddd' }}>Hikvision (Premium)</th>
-                      <th style={{ padding: '8px', textAlign: 'left', border: '1px solid #ddd' }}>Dahua (Value)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr><td style={{ padding: '8px', border: '1px solid #ddd' }}>Video Quality</td><td style={{ padding: '8px', border: '1px solid #ddd' }}>Excellent Color / Night Vision</td><td style={{ padding: '8px', border: '1px solid #ddd' }}>Very Good</td></tr>
-                    <tr><td style={{ padding: '8px', border: '1px solid #ddd' }}>App Experience</td><td style={{ padding: '8px', border: '1px solid #ddd' }}>Hik-Connect (Smooth)</td><td style={{ padding: '8px', border: '1px solid #ddd' }}>DMSS (Good)</td></tr>
-                    <tr><td style={{ padding: '8px', border: '1px solid #ddd' }}>Warranty</td><td style={{ padding: '8px', border: '1px solid #ddd' }}>2 Years</td><td style={{ padding: '8px', border: '1px solid #ddd' }}>1-2 Years</td></tr>
-                  </tbody>
-                </table>
+                <h3 style={{ color: '#1e3a8a', fontSize: '18px', marginTop: '30px', borderBottom: '2px solid #eee', paddingBottom: '5px' }}>Camera Selection</h3>
+                <p style={{ fontSize: '14px', marginTop: '10px' }}><strong>{quantity}x {CATALOG.cameras[systemType === 'Analog' ? 'analogBullet' : 'ipBullet'].name}</strong> ({lensType}mm Lens)</p>
+                <p style={{ fontSize: '12px', color: '#555', fontStyle: 'italic', marginTop: '5px' }}>"{CATALOG.cameras[systemType === 'Analog' ? 'analogBullet' : 'ipBullet'].desc}"</p>
 
                 <div style={{ marginTop: '30px', backgroundColor: '#f8fafc', padding: '20px', borderRadius: '8px', textAlign: 'right' }}>
                   <p style={{ margin: 0, fontSize: '14px', color: '#555' }}>TOTAL ESTIMATED COST</p>
@@ -392,7 +382,6 @@ export default function App() {
                   <div key={d.id} className="border-2 border-dashed border-gray-400 p-2 text-center rounded">
                     <p className="font-bold text-sm">{d.room}</p>
                     <p className="text-xs text-gray-600">Port {i + 1}</p>
-                    <p className="text-[10px] text-gray-400 mt-1">Cat6 Drop</p>
                   </div>
                 ))}
               </div>
