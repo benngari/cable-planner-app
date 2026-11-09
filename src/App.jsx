@@ -79,6 +79,14 @@ export default function App() {
   const [cabLength, setCabLength] = useState(30);
   const [showLabels, setShowLabels] = useState(false);
 
+  // Tools State
+  const [poeCams, setPoeCams] = useState(4);
+  const [poeAps, setPoeAps] = useState(2);
+  const [voltLength, setVoltLength] = useState(50);
+  const [voltAmps, setVoltAmps] = useState(0.5);
+  const [runRooms, setRunRooms] = useState(5);
+  const [runFloors, setRunFloors] = useState(1);
+
   // Theme
   const isLight = theme === 'light';
   const isDark = theme === 'dark';
@@ -127,8 +135,6 @@ export default function App() {
     const element = document.getElementById(containerId);
     html2pdf().set({ margin: 0.5, filename: filename, html2canvas: { scale: 2, useCORS: true } }).from(element).save();
   };
-
-  const fovAngles = { '2.8': 100, '3.6': 80, '4': 70, '6': 50 };
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain}`}>
@@ -303,6 +309,64 @@ export default function App() {
                 <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2"><span>Total Cost:</span> <span className="text-green-500">{formatKES(cabTotals.cost)}</span></div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ================= ENGINEER TOOLS (RESTORED) ================= */}
+        {currentView === 'tools' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* PoE Calculator */}
+            <div className={`p-6 rounded-xl border ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Zap className="w-5 h-5 text-yellow-500" /> <span>PoE Calculator</span></h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="text-xs">IP Cams (15W)</label><input type="number" value={poeCams} onChange={e => setPoeCams(Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">APs (20W)</label><input type="number" value={poeAps} onChange={e => setPoeAps(Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+              </div>
+              <div className={`p-4 rounded text-center ${isLight ? 'bg-yellow-50' : 'bg-yellow-900/20'}`}>
+                <p className="text-sm">Total Power Required</p>
+                <p className="text-2xl font-bold text-yellow-600">{(poeCams*15) + (poeAps*20)} Watts</p>
+                <p className="text-xs mt-1 text-gray-500">Rec: Switch with 20% overhead</p>
+              </div>
+            </div>
+
+            {/* Voltage Drop Calculator */}
+            <div className={`p-6 rounded-xl border ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Activity className="w-5 h-5 text-orange-500" /> <span>Voltage Drop Calculator</span></h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="text-xs">Length (m)</label><input type="number" value={voltLength} onChange={e => setVoltLength(Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">Load (Amps)</label><input type="number" step="0.1" value={voltAmps} onChange={e => setVoltAmps(Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+              </div>
+              <div className={`p-4 rounded text-center ${isLight ? 'bg-orange-50' : 'bg-orange-900/20'}`}>
+                <p className="text-sm">Voltage at Camera</p>
+                <p className="text-2xl font-bold text-orange-600">{(12 - (voltLength * voltAmps * 0.0164)).toFixed(2)}V</p>
+                {(12 - (voltLength * voltAmps * 0.0164)) < 10.5 && <p className="text-red-500 text-xs mt-2 font-bold flex items-center justify-center space-x-1"><AlertTriangle className="w-3 h-3"/> <span>Below 10.5V! Use local power.</span></p>}
+              </div>
+            </div>
+
+            {/* Subnet Planner */}
+            <div className={`p-6 rounded-xl border ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Table className="w-5 h-5 text-purple-500" /> <span>Subnet / VLAN Planner</span></h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between p-2 bg-blue-100 dark:bg-blue-900/30 rounded"><span>VLAN 10 (Data)</span><span className="font-mono">192.168.10.1/24</span></div>
+                <div className="flex justify-between p-2 bg-orange-100 dark:bg-orange-900/30 rounded"><span>VLAN 20 (CCTV)</span><span className="font-mono">192.168.20.1/24</span></div>
+                <div className="flex justify-between p-2 bg-green-100 dark:bg-green-900/30 rounded"><span>VLAN 30 (VoIP)</span><span className="font-mono">192.168.30.1/24</span></div>
+              </div>
+            </div>
+
+            {/* Cable Run Estimator */}
+            <div className={`p-6 rounded-xl border ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Ruler className="w-5 h-5 text-green-500" /> <span>Cable Run Estimator</span></h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="text-xs">Rooms</label><input type="number" value={runRooms} onChange={e => setRunRooms(Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">Floors</label><input type="number" value={runFloors} onChange={e => setRunFloors(Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+              </div>
+              <div className={`p-4 rounded text-center ${isLight ? 'bg-green-50' : 'bg-green-900/20'}`}>
+                <p className="text-sm">Estimated Cable Needed</p>
+                <p className="text-2xl font-bold text-green-600">{(runRooms * 25) + (runFloors * 15)}m</p>
+              </div>
+            </div>
+
           </div>
         )}
 
