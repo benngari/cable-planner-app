@@ -40,6 +40,7 @@ export default function App() {
   const [showThemeMenu, setShowThemeMenu] = useState(false);
   const [currentView, setCurrentView] = useState('welcome'); 
   const [showClientView, setShowClientView] = useState(false);
+  const [showLabels, setShowLabels] = useState(false);
 
   // --- STATE WITH LOCALSTORAGE AUTO-SAVE ---
   const [appData, setAppData] = useState(() => {
@@ -83,6 +84,18 @@ export default function App() {
 
   // --- WIFI CALCULATIONS ---
   const estimatedAPs = Math.max(1, Math.ceil((appData.wifiRooms / 2) + (appData.wifiWalls / 3)));
+
+  // --- CABLING CALCULATIONS ---
+  const calculateCabling = () => {
+    const ports = appData.cabDevices.length;
+    const rawLength = appData.cabDevices.reduce((sum, d) => sum + d.length, 0);
+    const lengthWithWaste = rawLength * 1.15;
+    const boxes = Math.ceil(lengthWithWaste / 305) || 0;
+    const patchPanels = Math.ceil(ports / 24) || 0;
+    const cost = (boxes * CATALOG.cabling.cat6Box.price) + (ports * CATALOG.cabling.keystone.price) + (ports * CATALOG.cabling.faceplate.price) + (patchPanels * CATALOG.cabling.patchPanel.price) + (ports * CATALOG.cabling.patchCord.price) + (ports * CATALOG.cabling.laborPerDrop);
+    return { ports, lengthWithWaste, boxes, patchPanels, cost };
+  };
+  const cabTotals = calculateCabling();
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain}`}>
@@ -139,6 +152,62 @@ export default function App() {
               <Star className="w-10 h-10 text-purple-500 mb-4" />
               <h3 className="text-xl font-bold mb-2">Upsell Showcase</h3>
               <p className={`text-sm ${textMuted}`}>Show clients the value of 4K & ColorVu.</p>
+            </div>
+          </div>
+        )}
+
+        {/* ================= CABLING PLANNER ================= */}
+        {currentView === 'cabling-planner' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className={`p-6 rounded-xl border lg:col-span-1 h-fit ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Plus className="w-5 h-5 text-blue-500" /> <span>Add Data Drop</span></h3>
+              <div className="space-y-4">
+                <div>
+                  <label className={`text-xs mb-1 ${textMuted}`}>Room / Location</label>
+                  <input type="text" placeholder="e.g. Reception" value={appData.cabRoom || ''} onChange={e => updateData('cabRoom', e.target.value)} className={`w-full px-3 py-2 rounded border ${bgInput}`} />
+                </div>
+                <div>
+                  <label className={`text-xs mb-1 ${textMuted}`}>Cable Length (m)</label>
+                  <input type="number" placeholder="30" value={appData.cabLength || ''} onChange={e => updateData('cabLength', Number(e.target.value))} className={`w-full px-3 py-2 rounded border ${bgInput}`} />
+                </div>
+                <button onClick={() => {
+                  if(!appData.cabRoom || !appData.cabLength) return alert("Enter room and length");
+                  updateData('cabDevices', [...appData.cabDevices, { id: Date.now(), room: appData.cabRoom, length: appData.cabLength }]);
+                  updateData('cabRoom', '');
+                  updateData('cabLength', '');
+                }} className="w-full py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">Add Drop</button>
+              </div>
+            </div>
+
+            <div className={`p-6 rounded-xl border lg:col-span-2 ${bgCard}`}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">Planned Drops ({cabTotals.ports})</h3>
+                <button onClick={() => setShowLabels(true)} className="px-3 py-1 bg-green-600 text-white rounded text-sm font-bold flex items-center space-x-1 hover:bg-green-700">
+                  <Tag className="w-4 h-4" /> <span>Print Labels</span>
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-60 overflow-y-auto mb-6 pr-2">
+                {appData.cabDevices.length === 0 ? (
+                  <p className={`text-sm ${textMuted}`}>No drops added yet.</p>
+                ) : (
+                  appData.cabDevices.map((d, i) => (
+                    <div key={d.id} className={`flex justify-between items-center p-2 rounded text-sm ${bgInput}`}>
+                      <span><strong className="text-blue-500">Port {i+1}</strong> • {d.room} • {d.length}m</span>
+                      <button onClick={() => updateData('cabDevices', appData.cabDevices.filter(x => x.id !== d.id))} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <h3 className="text-lg font-bold mb-2 border-t pt-4">Bill of Materials (BOM)</h3>
+              <div className={`space-y-1 text-sm ${textMuted}`}>
+                <div className="flex justify-between"><span>Total Drops:</span> <span className={textMain}>{cabTotals.ports} Ports</span></div>
+                <div className="flex justify-between"><span>Cable Required (with 15% slack):</span> <span className={textMain}>{Math.round(cabTotals.lengthWithWaste)}m</span></div>
+                <div className="flex justify-between"><span>Cat6 Boxes (305m):</span> <span className={textMain}>{cabTotals.boxes} boxes</span></div>
+                <div className="flex justify-between"><span>Patch Panels (24-port):</span> <span className={textMain}>{cabTotals.patchPanels} units</span></div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2"><span>Total Cost:</span> <span className="text-green-500">{formatKES(cabTotals.cost)}</span></div>
+              </div>
             </div>
           </div>
         )}
@@ -226,14 +295,14 @@ export default function App() {
             <div className={`p-6 rounded-xl border h-fit sticky top-24 ${bgCard}`}>
               <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><FileSpreadsheet className="w-5 h-5 text-green-500" /> <span>Quote Summary</span></h3>
               <div className={`space-y-2 text-sm ${textMuted}`}>
-                <div className="flex justify-between"><span>Cameras ({appData.quantity}x):</span> <span>{formatKES(camPrice)}</span></div>
-                <div className="flex justify-between"><span>Recorder:</span> <span>{formatKES(recorderPrice)}</span></div>
-                <div className="flex justify-between"><span>Storage:</span> <span>{formatKES(storagePrice)}</span></div>
-                <div className="flex justify-between"><span>Cables & Acc:</span> <span>{formatKES(cablePrice + accPrice)}</span></div>
-                <div className="flex justify-between"><span>Labor:</span> <span>{formatKES(laborPrice)}</span></div>
+                <div className="flex justify-between"><span>Cameras ({appData.quantity}x):</span> <span className={textMain}>{formatKES(camPrice)}</span></div>
+                <div className="flex justify-between"><span>Recorder:</span> <span className={textMain}>{formatKES(recorderPrice)}</span></div>
+                <div className="flex justify-between"><span>Storage:</span> <span className={textMain}>{formatKES(storagePrice)}</span></div>
+                <div className="flex justify-between"><span>Cables & Acc:</span> <span className={textMain}>{formatKES(cablePrice + accPrice)}</span></div>
+                <div className="flex justify-between"><span>Labor:</span> <span className={textMain}>{formatKES(laborPrice)}</span></div>
                 <div className="border-t pt-2 mt-2 flex justify-between font-bold text-lg"><span>Total:</span> <span className="text-green-500">{formatKES(totalCCTV)}</span></div>
               </div>
-              <button onClick={() => setCurrentView('report')} className="w-full mt-6 py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center space-x-2">
+              <button onClick={() => setCurrentView('report')} className="w-full mt-6 py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-700">
                 <Printer className="w-5 h-5" /> <span>Preview Document</span>
               </button>
             </div>
@@ -354,6 +423,27 @@ export default function App() {
                   <p className="text-5xl font-extrabold text-green-600">{formatKES(totalCCTV)}</p>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= CABLE LABEL MODAL ================= */}
+        {showLabels && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+            <div className={`w-full max-w-2xl p-6 rounded-xl shadow-2xl ${bgCard}`}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Cable Labels</h2>
+                <button onClick={() => setShowLabels(false)} className="text-red-500 font-bold">Close</button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-96 overflow-y-auto p-2 bg-white text-black">
+                {appData.cabDevices.map((d, i) => (
+                  <div key={d.id} className="border-2 border-dashed border-gray-400 p-2 text-center rounded">
+                    <p className="font-bold text-sm">{d.room}</p>
+                    <p className="text-xs text-gray-600">Port {i + 1}</p>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => window.print()} className="w-full mt-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700">Print Labels</button>
             </div>
           </div>
         )}
