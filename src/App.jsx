@@ -10,7 +10,7 @@ import {
   ClipboardCheck, ShoppingCart, Layers, Tag, Video, CheckSquare, 
   Image as ImageIcon, Activity, AlertTriangle, Table, Info, 
   ShieldCheck, ShieldAlert, Sparkles, Palette, Wallet, RefreshCw,
-  Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle
+  Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle, Package
 } from 'lucide-react';
 
 const CATALOG = {
@@ -88,6 +88,18 @@ export default function App() {
 
   const totalCCTV = camPrice + recorderPrice + storagePrice + cablePrice + accPrice + laborPrice + transportTotal;
   const balanceDue = totalCCTV - appData.depositPaid;
+
+  // Cabling Calc
+  const calculateCabling = () => {
+    const ports = appData.cabDevices.length;
+    const rawLength = appData.cabDevices.reduce((sum, d) => sum + d.length, 0);
+    const lengthWithWaste = rawLength * 1.15;
+    const boxes = Math.ceil(lengthWithWaste / 305) || 0;
+    const patchPanels = Math.ceil(ports / 24) || 0;
+    const cost = (boxes * CATALOG.cabling.cat6Box.price) + (ports * CATALOG.cabling.keystone.price) + (ports * CATALOG.cabling.faceplate.price) + (patchPanels * CATALOG.cabling.patchPanel.price) + (ports * CATALOG.cabling.patchCord.price) + (ports * CATALOG.cabling.laborPerDrop);
+    return { ports, lengthWithWaste, boxes, patchPanels, cost };
+  };
+  const cabTotals = calculateCabling();
 
   // Storage Calc
   const calculateStorage = () => {
@@ -167,18 +179,118 @@ export default function App() {
           </div>
         )}
 
+        {/* ================= UPSELL SHOWCASE ================= */}
+        {currentView === 'upsell' && (
+          <div className="space-y-6">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-2">Camera Quality Comparison</h2>
+              <p className={textMuted}>Show this screen to the client to close the sale.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className={`rounded-2xl border overflow-hidden ${bgCard}`}>
+                <div className="h-64 bg-gray-300 dark:bg-gray-700 relative flex items-center justify-center">
+                  <span className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-bold">Standard 2MP</span>
+                  <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Standard" className="w-full h-full object-cover opacity-70 grayscale-[30%]" />
+                </div>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold mb-2">Standard 1080p</h3>
+                  <ul className="space-y-2 text-sm text-gray-500">
+                    <li className="flex items-center space-x-2"><CheckSquare className="w-4 h-4"/> <span>Good for general indoor viewing.</span></li>
+                    <li className="flex items-center space-x-2"><CheckSquare className="w-4 h-4"/> <span>Black & White at night (IR).</span></li>
+                    <li className="flex items-center space-x-2"><CheckSquare className="w-4 h-4"/> <span>Cannot read number plates far away.</span></li>
+                  </ul>
+                </div>
+              </div>
+              <div className={`rounded-2xl border-2 border-purple-500 overflow-hidden shadow-lg ${bgCard}`}>
+                <div className="h-64 bg-gray-300 relative flex items-center justify-center">
+                  <span className="absolute top-4 left-4 bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">Premium 4K / ColorVu</span>
+                  <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Premium" className="w-full h-full object-cover brightness-110 contrast-125" />
+                  <div className="absolute bottom-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-xs">Crystal Clear</div>
+                </div>
+                <div className="p-6">
+                  <h3 className="text-xl font-bold mb-2 text-purple-600 dark:text-purple-400">4K ColorVu</h3>
+                  <ul className="space-y-2 text-sm text-gray-500">
+                    <li className="flex items-center space-x-2"><Sparkles className="w-4 h-4 text-purple-500"/> <span><strong>Full Color at Night</strong> (No spotlights needed).</span></li>
+                    <li className="flex items-center space-x-2"><Sparkles className="w-4 h-4 text-purple-500"/> <span><strong>Read faces & number plates</strong> easily.</span></li>
+                    <li className="flex items-center space-x-2"><Sparkles className="w-4 h-4 text-purple-500"/> <span>AI detects humans/vehicles (No false alarms).</span></li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div className="text-center mt-8">
+              <button onClick={() => setCurrentView('cctv-planner')} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg text-lg hover:bg-blue-700">Proceed to Build Quote</button>
+            </div>
+          </div>
+        )}
+
+        {/* ================= CABLING PLANNER ================= */}
+        {currentView === 'cabling-planner' && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className={`p-6 rounded-xl border lg:col-span-1 h-fit ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Plus className="w-5 h-5 text-blue-500" /> <span>Add Data Drop</span></h3>
+              <div className="space-y-4">
+                <div>
+                  <label className={`text-xs mb-1 ${textMuted}`}>Room / Location</label>
+                  <input type="text" placeholder="e.g. Reception" value={appData.cabRoom || ''} onChange={e => updateData('cabRoom', e.target.value)} className={`w-full px-3 py-2 rounded border ${bgInput}`} />
+                </div>
+                <div>
+                  <label className={`text-xs mb-1 ${textMuted}`}>Cable Length (m)</label>
+                  <input type="number" placeholder="30" value={appData.cabLength || ''} onChange={e => updateData('cabLength', Number(e.target.value))} className={`w-full px-3 py-2 rounded border ${bgInput}`} />
+                </div>
+                <button onClick={() => {
+                  if(!appData.cabRoom || !appData.cabLength) return alert("Enter room and length");
+                  updateData('cabDevices', [...appData.cabDevices, { id: Date.now(), room: appData.cabRoom, length: appData.cabLength }]);
+                  updateData('cabRoom', '');
+                  updateData('cabLength', '');
+                }} className="w-full py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">Add Drop</button>
+              </div>
+            </div>
+
+            <div className={`p-6 rounded-xl border lg:col-span-2 ${bgCard}`}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-bold">Planned Drops ({cabTotals.ports})</h3>
+                <button onClick={() => setShowLabels(true)} className="px-3 py-1 bg-green-600 text-white rounded text-sm font-bold flex items-center space-x-1 hover:bg-green-700">
+                  <Tag className="w-4 h-4" /> <span>Print Labels</span>
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-60 overflow-y-auto mb-6 pr-2">
+                {appData.cabDevices.length === 0 ? (
+                  <p className={`text-sm ${textMuted}`}>No drops added yet.</p>
+                ) : (
+                  appData.cabDevices.map((d, i) => (
+                    <div key={d.id} className={`flex justify-between items-center p-2 rounded text-sm ${bgInput}`}>
+                      <span><strong className="text-blue-500">Port {i+1}</strong> • {d.room} • {d.length}m</span>
+                      <button onClick={() => updateData('cabDevices', appData.cabDevices.filter(x => x.id !== d.id))} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <h3 className="text-lg font-bold mb-2 border-t pt-4">Bill of Materials (BOM)</h3>
+              <div className={`space-y-1 text-sm ${textMuted}`}>
+                <div className="flex justify-between"><span>Total Drops:</span> <span className={textMain}>{cabTotals.ports} Ports</span></div>
+                <div className="flex justify-between"><span>Cable Required (with 15% slack):</span> <span className={textMain}>{Math.round(cabTotals.lengthWithWaste)}m</span></div>
+                <div className="flex justify-between"><span>Cat6 Boxes (305m):</span> <span className={textMain}>{cabTotals.boxes} boxes</span></div>
+                <div className="flex justify-between"><span>Patch Panels (24-port):</span> <span className={textMain}>{cabTotals.patchPanels} units</span></div>
+                <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2"><span>Total Cost:</span> <span className="text-green-500">{formatKES(cabTotals.cost)}</span></div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* ================= ENGINEER TOOLS ================= */}
         {currentView === 'tools' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
-            {/* NEW: Fuel & Transport Calculator */}
+            {/* Fuel & Transport */}
             <div className={`p-6 rounded-xl border ${bgCard}`}>
               <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Car className="w-5 h-5 text-red-500" /> <span>Fuel & Transport</span></h3>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div><label className="text-xs">Round Trip (km)</label><input type="number" value={appData.fuelDistance} onChange={e => updateData('fuelDistance', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
                 <div><label className="text-xs">Fuel Price (/L)</label><input type="number" value={appData.fuelPrice} onChange={e => updateData('fuelPrice', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
                 <div><label className="text-xs">Car Consumption (km/L)</label><input type="number" value={appData.fuelConsumption} onChange={e => updateData('fuelConsumption', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
-                <div><label className="text-xs">Extra Fee (Tolls/Parking)</label><input type="number" value={appData.transportFee} onChange={e => updateData('transportFee', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">Extra Fee</label><input type="number" value={appData.transportFee} onChange={e => updateData('transportFee', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
               </div>
               <div className={`p-4 rounded text-center ${isLight ? 'bg-red-50' : 'bg-red-900/20'}`}>
                 <p className="text-sm">Transport Charge</p>
@@ -379,7 +491,6 @@ export default function App() {
                     <>
                       <p style={{ margin: '10px 0 0 0', fontSize: '20px', fontWeight: 'bold', color: '#dc2626' }}>Balance Due: {formatKES(balanceDue)}</p>
                       
-                      {/* NEW: M-PESA PAYMENT TRACKER */}
                       <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #ddd', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                         <div style={{ display: 'flex', alignItems: 'center', spaceX: '10px', marginBottom: '10px' }}>
                           <span style={{ fontSize: '14px', marginRight: '10px' }}>Amount Paid (Deposit):</span>
@@ -432,6 +543,27 @@ export default function App() {
                   <p className="text-5xl font-extrabold text-green-600">{formatKES(totalCCTV)}</p>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= CABLE LABEL MODAL ================= */}
+        {showLabels && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+            <div className={`w-full max-w-2xl p-6 rounded-xl shadow-2xl ${bgCard}`}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Cable Labels</h2>
+                <button onClick={() => setShowLabels(false)} className="text-red-500 font-bold">Close</button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-96 overflow-y-auto p-2 bg-white text-black">
+                {appData.cabDevices.map((d, i) => (
+                  <div key={d.id} className="border-2 border-dashed border-gray-400 p-2 text-center rounded">
+                    <p className="font-bold text-sm">{d.room}</p>
+                    <p className="text-xs text-gray-600">Port {i + 1}</p>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => window.print()} className="w-full mt-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700">Print Labels</button>
             </div>
           </div>
         )}
