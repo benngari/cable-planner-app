@@ -10,7 +10,7 @@ import {
   ClipboardCheck, ShoppingCart, Layers, Tag, Video, CheckSquare, 
   Image as ImageIcon, Activity, AlertTriangle, Table, Info, 
   ShieldCheck, ShieldAlert, Sparkles, Palette, Wallet, RefreshCw,
-  Wifi, Star, Smartphone, Database
+  Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle
 } from 'lucide-react';
 
 const CATALOG = {
@@ -33,8 +33,8 @@ const defaultState = {
   systemType: 'Analog', cameraShape: 'Bullet', quantity: 4, cableLength: 50, selectedStorage: 'hdd500', lensType: '3.6',
   cabDevices: [], poeCams: 4, poeAps: 2, voltLength: 50, voltAmps: 0.5, runRooms: 5, runFloors: 1,
   wifiRooms: 4, wifiWalls: 2, isInvoice: false, depositPaid: 0,
-  // New Storage Calc State
-  calcCams: 4, calcRes: '2MP', calcComp: 'H.265', calcHdd: 1000
+  calcCams: 4, calcRes: '2MP', calcComp: 'H.265', calcHdd: 1000,
+  fuelDistance: 20, fuelPrice: 190, fuelConsumption: 12, transportFee: 0
 };
 
 export default function App() {
@@ -43,6 +43,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState('welcome'); 
   const [showClientView, setShowClientView] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const [appData, setAppData] = useState(() => {
     const saved = localStorage.getItem('cableiq_data');
@@ -73,51 +74,39 @@ export default function App() {
 
   const formatKES = (amount) => `KSh ${Math.round(amount).toLocaleString()}`;
 
-  // --- PRICE CALCULATIONS ---
+  // --- CALCULATIONS ---
   const camPrice = selectedCamera.price * appData.quantity;
   const recorderPrice = appData.systemType === 'Analog' ? CATALOG.dvrs.hik4.price : CATALOG.nvrs.hik4.price;
   const storagePrice = CATALOG.storage[appData.selectedStorage].price;
   const cablePrice = appData.cableLength * (appData.systemType === 'Analog' ? CATALOG.accessories.rg59.price : CATALOG.accessories.cat6.price);
   const accPrice = appData.systemType === 'Analog' ? (CATALOG.accessories.psu.price + CATALOG.accessories.connectors.price) : 0;
   const laborPrice = CATALOG.labor.basic.price;
-  const totalCCTV = camPrice + recorderPrice + storagePrice + cablePrice + accPrice + laborPrice;
+  
+  // Transport Calc
+  const fuelCost = (appData.fuelDistance / appData.fuelConsumption) * appData.fuelPrice;
+  const transportTotal = Math.round(fuelCost + appData.transportFee);
+
+  const totalCCTV = camPrice + recorderPrice + storagePrice + cablePrice + accPrice + laborPrice + transportTotal;
   const balanceDue = totalCCTV - appData.depositPaid;
 
-  // --- WIFI CALCULATIONS ---
-  const estimatedAPs = Math.max(1, Math.ceil((appData.wifiRooms / 2) + (appData.wifiWalls / 3)));
-
-  // --- CABLING CALCULATIONS ---
-  const calculateCabling = () => {
-    const ports = appData.cabDevices.length;
-    const rawLength = appData.cabDevices.reduce((sum, d) => sum + d.length, 0);
-    const lengthWithWaste = rawLength * 1.15;
-    const boxes = Math.ceil(lengthWithWaste / 305) || 0;
-    const patchPanels = Math.ceil(ports / 24) || 0;
-    const cost = (boxes * CATALOG.cabling.cat6Box.price) + (ports * CATALOG.cabling.keystone.price) + (ports * CATALOG.cabling.faceplate.price) + (patchPanels * CATALOG.cabling.patchPanel.price) + (ports * CATALOG.cabling.patchCord.price) + (ports * CATALOG.cabling.laborPerDrop);
-    return { ports, lengthWithWaste, boxes, patchPanels, cost };
-  };
-  const cabTotals = calculateCabling();
-
-  // --- NEW: STORAGE & BANDWIDTH CALCULATOR ---
+  // Storage Calc
   const calculateStorage = () => {
-    // Base bitrates (Mbps) for continuous recording
-    let bitratePerCam = appData.calcRes === '2MP' ? 3 : appData.calcRes === '4MP' ? 6 : 12; // 2MP, 4MP, 8MP(4K)
-    
-    // Compression savings
-    if (appData.calcComp === 'H.265') bitratePerCam *= 0.5; // Saves 50%
-    if (appData.calcComp === 'H.265+') bitratePerCam *= 0.3; // Saves 70%
-
-    // Calculate GB per day for all cameras
-    // Formula: (Mbps * 3600 seconds * 24 hours) / 8 bits / 1024 MB = GB per day
+    let bitratePerCam = appData.calcRes === '2MP' ? 3 : appData.calcRes === '4MP' ? 6 : 12;
+    if (appData.calcComp === 'H.265') bitratePerCam *= 0.5;
+    if (appData.calcComp === 'H.265+') bitratePerCam *= 0.3;
     const gbPerDay = ((bitratePerCam * 3600 * 24) / 8 / 1024) * appData.calcCams;
     const days = Math.floor(appData.calcHdd / gbPerDay) || 0;
-    
-    // Bandwidth for remote viewing (Mbps)
-    const remoteBandwidth = (bitratePerCam * appData.calcCams) * 1.2; // 20% overhead
-
-    return { days, gbPerDay, remoteBandwidth: remoteBandwidth.toFixed(1) };
+    const remoteBandwidth = (bitratePerCam * appData.calcCams) * 1.2;
+    return { days, remoteBandwidth: remoteBandwidth.toFixed(1) };
   };
   const storageCalc = calculateStorage();
+
+  // Copy M-Pesa
+  const copyMpesa = () => {
+    navigator.clipboard.writeText(businessInfo.mpesa);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain}`}>
@@ -168,7 +157,7 @@ export default function App() {
             <div onClick={() => setCurrentView('tools')} className={`cursor-pointer p-6 rounded-2xl border hover:border-green-500 ${bgCard}`}>
               <Wrench className="w-10 h-10 text-green-500 mb-4" />
               <h3 className="text-xl font-bold mb-2">Engineer Tools</h3>
-              <p className={`text-sm ${textMuted}`}>PoE, Wi-Fi, Wiring Guide & more.</p>
+              <p className={`text-sm ${textMuted}`}>Fuel, Storage, Wi-Fi & more.</p>
             </div>
             <div onClick={() => setCurrentView('upsell')} className={`cursor-pointer p-6 rounded-2xl border hover:border-purple-500 ${bgCard}`}>
               <Star className="w-10 h-10 text-purple-500 mb-4" />
@@ -182,10 +171,25 @@ export default function App() {
         {currentView === 'tools' && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             
-            {/* NEW: Storage & Bandwidth Calculator */}
-            <div className={`p-6 rounded-xl border border-blue-500/30 md:col-span-2 lg:col-span-3 ${bgCard}`}>
-              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2 text-blue-600 dark:text-blue-400"><Database className="w-5 h-5" /> <span>CCTV Storage & Bandwidth Calculator</span></h3>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            {/* NEW: Fuel & Transport Calculator */}
+            <div className={`p-6 rounded-xl border ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Car className="w-5 h-5 text-red-500" /> <span>Fuel & Transport</span></h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="text-xs">Round Trip (km)</label><input type="number" value={appData.fuelDistance} onChange={e => updateData('fuelDistance', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">Fuel Price (/L)</label><input type="number" value={appData.fuelPrice} onChange={e => updateData('fuelPrice', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">Car Consumption (km/L)</label><input type="number" value={appData.fuelConsumption} onChange={e => updateData('fuelConsumption', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">Extra Fee (Tolls/Parking)</label><input type="number" value={appData.transportFee} onChange={e => updateData('transportFee', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+              </div>
+              <div className={`p-4 rounded text-center ${isLight ? 'bg-red-50' : 'bg-red-900/20'}`}>
+                <p className="text-sm">Transport Charge</p>
+                <p className="text-2xl font-bold text-red-600">KSh {transportTotal}</p>
+              </div>
+            </div>
+
+            {/* Storage & Bandwidth */}
+            <div className={`p-6 rounded-xl border md:col-span-2 ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2 text-blue-600 dark:text-blue-400"><Database className="w-5 h-5" /> <span>Storage & Bandwidth</span></h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                 <div><label className="text-xs">Cameras</label><input type="number" value={appData.calcCams} onChange={e => updateData('calcCams', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
                 <div>
                   <label className="text-xs">Resolution</label>
@@ -200,7 +204,7 @@ export default function App() {
                   <select value={appData.calcComp} onChange={e => updateData('calcComp', e.target.value)} className={`w-full p-2 rounded ${bgInput}`}>
                     <option value="H.264">H.264</option>
                     <option value="H.265">H.265</option>
-                    <option value="H.265+">H.265+ (Smart)</option>
+                    <option value="H.265+">H.265+</option>
                   </select>
                 </div>
                 <div>
@@ -212,31 +216,16 @@ export default function App() {
                     <option value={4000}>4 TB</option>
                   </select>
                 </div>
-                <div className={`p-2 rounded text-center flex flex-col justify-center ${isLight ? 'bg-blue-50' : 'bg-blue-900/20'}`}>
-                  <p className="text-xs font-bold text-blue-600 dark:text-blue-400">Recording Days</p>
+              </div>
+              <div className={`p-4 rounded-lg flex items-center justify-between ${isLight ? 'bg-gray-100' : 'bg-gray-900/50'}`}>
+                <div>
+                  <p className="text-xs text-gray-500">Recording Days</p>
                   <p className="text-2xl font-extrabold text-blue-700 dark:text-blue-300">{storageCalc.days} Days</p>
                 </div>
-              </div>
-              
-              <div className={`p-4 rounded-lg flex items-center space-x-4 ${isLight ? 'bg-gray-100' : 'bg-gray-900/50'}`}>
-                <Wifi className="w-8 h-8 text-green-500" />
-                <div>
-                  <p className="text-sm font-bold">Remote Viewing Bandwidth</p>
-                  <p className="text-xs text-gray-500">To view all {appData.calcCams} cameras smoothly on a phone, the client needs at least <strong className="text-green-600 dark:text-green-400">{storageCalc.remoteBandwidth} Mbps upload speed</strong> at the site.</p>
+                <div className="text-right">
+                  <p className="text-xs text-gray-500">Upload Speed Needed</p>
+                  <p className="text-lg font-bold text-green-600 dark:text-green-400">{storageCalc.remoteBandwidth} Mbps</p>
                 </div>
-              </div>
-            </div>
-
-            {/* Wi-Fi Estimator */}
-            <div className={`p-6 rounded-xl border ${bgCard}`}>
-              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Wifi className="w-5 h-5 text-blue-500" /> <span>Wi-Fi Estimator</span></h3>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div><label className="text-xs">Number of Rooms</label><input type="number" value={appData.wifiRooms} onChange={e => updateData('wifiRooms', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
-                <div><label className="text-xs">Thick Walls</label><input type="number" value={appData.wifiWalls} onChange={e => updateData('wifiWalls', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
-              </div>
-              <div className={`p-4 rounded text-center ${isLight ? 'bg-blue-50' : 'bg-blue-900/20'}`}>
-                <p className="text-sm">Access Points Needed</p>
-                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{estimatedAPs} APs</p>
               </div>
             </div>
 
@@ -249,6 +238,19 @@ export default function App() {
               </div>
               <div className={`p-4 rounded text-center ${isLight ? 'bg-yellow-50' : 'bg-yellow-900/20'}`}>
                 <p className="text-2xl font-bold text-yellow-600">{(appData.poeCams*15) + (appData.poeAps*20)} Watts</p>
+              </div>
+            </div>
+
+            {/* Wi-Fi Estimator */}
+            <div className={`p-6 rounded-xl border ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Wifi className="w-5 h-5 text-blue-500" /> <span>Wi-Fi Estimator</span></h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="text-xs">Number of Rooms</label><input type="number" value={appData.wifiRooms} onChange={e => updateData('wifiRooms', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">Thick Walls</label><input type="number" value={appData.wifiWalls} onChange={e => updateData('wifiWalls', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+              </div>
+              <div className={`p-4 rounded text-center ${isLight ? 'bg-blue-50' : 'bg-blue-900/20'}`}>
+                <p className="text-sm">Access Points Needed</p>
+                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{Math.max(1, Math.ceil((appData.wifiRooms / 2) + (appData.wifiWalls / 3)))} APs</p>
               </div>
             </div>
 
@@ -312,6 +314,7 @@ export default function App() {
                 <div className="flex justify-between"><span>Storage:</span> <span className={textMain}>{formatKES(storagePrice)}</span></div>
                 <div className="flex justify-between"><span>Cables & Acc:</span> <span className={textMain}>{formatKES(cablePrice + accPrice)}</span></div>
                 <div className="flex justify-between"><span>Labor:</span> <span className={textMain}>{formatKES(laborPrice)}</span></div>
+                <div className="flex justify-between text-red-500"><span>Transport:</span> <span>{formatKES(transportTotal)}</span></div>
                 <div className="border-t pt-2 mt-2 flex justify-between font-bold text-lg"><span>Total:</span> <span className="text-green-500">{formatKES(totalCCTV)}</span></div>
               </div>
               <button onClick={() => setCurrentView('report')} className="w-full mt-6 py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-700">
@@ -338,6 +341,7 @@ export default function App() {
                 </button>
               </div>
             </div>
+            
             <div className={`flex justify-center p-4 rounded-xl overflow-x-auto ${isLight ? 'bg-gray-200' : isDark ? 'bg-gray-800' : 'bg-[#111]'}`}>
               <div id="pdf-cctv-container" className="bg-white text-gray-900 p-10 shadow-2xl" style={{ width: '800px', fontFamily: 'Arial, sans-serif' }}>
                 <div style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '30px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between' }}>
@@ -347,26 +351,58 @@ export default function App() {
                     <p style={{ margin: 0, fontSize: '12px' }}>Tel: {businessInfo.phone}</p>
                   </div>
                 </div>
+                
                 <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between' }}>
                   <div>
                     <p style={{ fontSize: '12px', color: '#666' }}>PREPARED FOR:</p>
                     <p style={{ fontSize: '16px', fontWeight: 'bold' }}>{appData.clientName || 'Client Name'}</p>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <button onClick={() => updateData('isInvoice', !appData.isInvoice)} style={{ fontSize: '12px', padding: '5px 10px', backgroundColor: '#e5e7eb', borderRadius: '4px' }}>Toggle Quote/Invoice</button>
+                    <button onClick={() => updateData('isInvoice', !appData.isInvoice)} style={{ fontSize: '12px', padding: '5px 10px', backgroundColor: '#e5e7eb', borderRadius: '4px', border: 'none', cursor: 'pointer' }}>Toggle Quote/Invoice</button>
                   </div>
                 </div>
+
                 <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px', fontSize: '14px' }}>
                   <tbody>
                     <tr style={{ borderBottom: '1px solid #eee' }}><td style={{ padding: '8px 0' }}>Cameras ({appData.quantity}x)</td><td style={{ textAlign: 'right' }}>{formatKES(camPrice)}</td></tr>
                     <tr style={{ borderBottom: '1px solid #eee' }}><td style={{ padding: '8px 0' }}>Recorder</td><td style={{ textAlign: 'right' }}>{formatKES(recorderPrice)}</td></tr>
                     <tr style={{ borderBottom: '1px solid #eee' }}><td style={{ padding: '8px 0' }}>Storage & Cables</td><td style={{ textAlign: 'right' }}>{formatKES(storagePrice + cablePrice + accPrice)}</td></tr>
-                    <tr style={{ borderBottom: '1px solid #eee' }}><td style={{ padding: '8px 0' }}>Installation</td><td style={{ textAlign: 'right' }}>{formatKES(laborPrice)}</td></tr>
+                    <tr style={{ borderBottom: '1px solid #eee' }}><td style={{ padding: '8px 0' }}>Installation Labor</td><td style={{ textAlign: 'right' }}>{formatKES(laborPrice)}</td></tr>
+                    <tr style={{ borderBottom: '1px solid #eee' }}><td style={{ padding: '8px 0' }}>Transport & Logistics</td><td style={{ textAlign: 'right' }}>{formatKES(transportTotal)}</td></tr>
                   </tbody>
                 </table>
+
                 <div style={{ marginTop: '30px', backgroundColor: '#f8fafc', padding: '20px', borderRadius: '8px', textAlign: 'right' }}>
                   <p style={{ margin: 0, fontSize: '14px' }}>TOTAL: <strong>{formatKES(totalCCTV)}</strong></p>
-                  {appData.isInvoice && <p style={{ margin: '10px 0 0 0', fontSize: '20px', fontWeight: 'bold', color: '#dc2626' }}>Balance Due: {formatKES(balanceDue)}</p>}
+                  
+                  {appData.isInvoice && (
+                    <>
+                      <p style={{ margin: '10px 0 0 0', fontSize: '20px', fontWeight: 'bold', color: '#dc2626' }}>Balance Due: {formatKES(balanceDue)}</p>
+                      
+                      {/* NEW: M-PESA PAYMENT TRACKER */}
+                      <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #ddd', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', spaceX: '10px', marginBottom: '10px' }}>
+                          <span style={{ fontSize: '14px', marginRight: '10px' }}>Amount Paid (Deposit):</span>
+                          <input 
+                            type="number" 
+                            value={appData.depositPaid} 
+                            onChange={e => updateData('depositPaid', Number(e.target.value))} 
+                            style={{ border: '1px solid #ccc', padding: '5px', borderRadius: '4px', width: '120px', textAlign: 'right', fontSize: '14px' }} 
+                          />
+                        </div>
+                        
+                        <button 
+                          onClick={copyMpesa}
+                          style={{ backgroundColor: '#10b981', color: 'white', padding: '8px 16px', borderRadius: '4px', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', spaceX: '8px', fontSize: '14px', fontWeight: 'bold' }}
+                        >
+                          {copied ? <CheckCircle style={{ width: '16px', height: '16px', marginRight: '5px' }} /> : <Copy style={{ width: '16px', height: '16px', marginRight: '5px' }} />}
+                          {copied ? 'Copied M-Pesa Details!' : `Pay via M-Pesa: ${businessInfo.mpesa}`}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  
+                  {!appData.isInvoice && <p style={{ margin: '5px 0 0 0', fontSize: '28px', fontWeight: 'bold', color: '#16a34a' }}>{formatKES(totalCCTV)}</p>}
                 </div>
               </div>
             </div>
