@@ -10,7 +10,7 @@ import {
   ClipboardCheck, ShoppingCart, Layers, Tag, Video, CheckSquare, 
   Image as ImageIcon, Activity, AlertTriangle, Table, Info, 
   ShieldCheck, ShieldAlert, Sparkles, Palette, Wallet, RefreshCw,
-  Wifi, Star, Smartphone
+  Wifi, Star, Smartphone, Database
 } from 'lucide-react';
 
 const CATALOG = {
@@ -22,7 +22,7 @@ const CATALOG = {
     ipBullet: { name: 'IP Bullet (PoE)', price: 4500, type: 'IP', shape: 'Bullet', desc: 'High-res outdoor camera.' },
     ipDome: { name: 'IP Dome (PoE)', price: 4300, type: 'IP', shape: 'Dome', desc: 'High-res indoor/outdoor.' }
   },
-  storage: { hdd500: { name: '500GB HDD', price: 3100 }, hdd1tb: { name: '1TB HDD', price: 5500 } },
+  storage: { hdd500: { name: '500GB HDD', price: 3100 }, hdd1tb: { name: '1TB HDD', price: 5500 }, hdd2tb: { name: '2TB HDD', price: 9800 } },
   accessories: { psu: { name: 'Power Supply', price: 1500 }, rg59: { name: 'RG59 Cable /m', price: 20 }, cat6: { name: 'Cat6 Cable /m', price: 65 }, connectors: { name: 'Connectors', price: 250 } },
   labor: { diy: { name: 'Supply Only', price: 0 }, basic: { name: 'Basic Install', price: 4500 } },
   cabling: { cat6Box: { name: 'Cat6 Box (305m)', price: 19500 }, keystone: { name: 'Keystone', price: 150 }, faceplate: { name: 'Faceplate', price: 200 }, patchPanel: { name: '24-Port Panel', price: 4500 }, patchCord: { name: 'Patch Cord', price: 450 }, laborPerDrop: 1500 }
@@ -32,7 +32,9 @@ const defaultState = {
   clientName: '', clientPhone: '',
   systemType: 'Analog', cameraShape: 'Bullet', quantity: 4, cableLength: 50, selectedStorage: 'hdd500', lensType: '3.6',
   cabDevices: [], poeCams: 4, poeAps: 2, voltLength: 50, voltAmps: 0.5, runRooms: 5, runFloors: 1,
-  wifiRooms: 4, wifiWalls: 2, isInvoice: false, depositPaid: 0
+  wifiRooms: 4, wifiWalls: 2, isInvoice: false, depositPaid: 0,
+  // New Storage Calc State
+  calcCams: 4, calcRes: '2MP', calcComp: 'H.265', calcHdd: 1000
 };
 
 export default function App() {
@@ -42,7 +44,6 @@ export default function App() {
   const [showClientView, setShowClientView] = useState(false);
   const [showLabels, setShowLabels] = useState(false);
 
-  // --- STATE WITH LOCALSTORAGE AUTO-SAVE ---
   const [appData, setAppData] = useState(() => {
     const saved = localStorage.getItem('cableiq_data');
     return saved ? JSON.parse(saved) : defaultState;
@@ -96,6 +97,27 @@ export default function App() {
     return { ports, lengthWithWaste, boxes, patchPanels, cost };
   };
   const cabTotals = calculateCabling();
+
+  // --- NEW: STORAGE & BANDWIDTH CALCULATOR ---
+  const calculateStorage = () => {
+    // Base bitrates (Mbps) for continuous recording
+    let bitratePerCam = appData.calcRes === '2MP' ? 3 : appData.calcRes === '4MP' ? 6 : 12; // 2MP, 4MP, 8MP(4K)
+    
+    // Compression savings
+    if (appData.calcComp === 'H.265') bitratePerCam *= 0.5; // Saves 50%
+    if (appData.calcComp === 'H.265+') bitratePerCam *= 0.3; // Saves 70%
+
+    // Calculate GB per day for all cameras
+    // Formula: (Mbps * 3600 seconds * 24 hours) / 8 bits / 1024 MB = GB per day
+    const gbPerDay = ((bitratePerCam * 3600 * 24) / 8 / 1024) * appData.calcCams;
+    const days = Math.floor(appData.calcHdd / gbPerDay) || 0;
+    
+    // Bandwidth for remote viewing (Mbps)
+    const remoteBandwidth = (bitratePerCam * appData.calcCams) * 1.2; // 20% overhead
+
+    return { days, gbPerDay, remoteBandwidth: remoteBandwidth.toFixed(1) };
+  };
+  const storageCalc = calculateStorage();
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain}`}>
@@ -156,103 +178,92 @@ export default function App() {
           </div>
         )}
 
-        {/* ================= CABLING PLANNER ================= */}
-        {currentView === 'cabling-planner' && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className={`p-6 rounded-xl border lg:col-span-1 h-fit ${bgCard}`}>
-              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Plus className="w-5 h-5 text-blue-500" /> <span>Add Data Drop</span></h3>
-              <div className="space-y-4">
+        {/* ================= ENGINEER TOOLS ================= */}
+        {currentView === 'tools' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            {/* NEW: Storage & Bandwidth Calculator */}
+            <div className={`p-6 rounded-xl border border-blue-500/30 md:col-span-2 lg:col-span-3 ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2 text-blue-600 dark:text-blue-400"><Database className="w-5 h-5" /> <span>CCTV Storage & Bandwidth Calculator</span></h3>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+                <div><label className="text-xs">Cameras</label><input type="number" value={appData.calcCams} onChange={e => updateData('calcCams', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
                 <div>
-                  <label className={`text-xs mb-1 ${textMuted}`}>Room / Location</label>
-                  <input type="text" placeholder="e.g. Reception" value={appData.cabRoom || ''} onChange={e => updateData('cabRoom', e.target.value)} className={`w-full px-3 py-2 rounded border ${bgInput}`} />
+                  <label className="text-xs">Resolution</label>
+                  <select value={appData.calcRes} onChange={e => updateData('calcRes', e.target.value)} className={`w-full p-2 rounded ${bgInput}`}>
+                    <option value="2MP">2MP (1080p)</option>
+                    <option value="4MP">4MP (2K)</option>
+                    <option value="8MP">8MP (4K)</option>
+                  </select>
                 </div>
                 <div>
-                  <label className={`text-xs mb-1 ${textMuted}`}>Cable Length (m)</label>
-                  <input type="number" placeholder="30" value={appData.cabLength || ''} onChange={e => updateData('cabLength', Number(e.target.value))} className={`w-full px-3 py-2 rounded border ${bgInput}`} />
+                  <label className="text-xs">Compression</label>
+                  <select value={appData.calcComp} onChange={e => updateData('calcComp', e.target.value)} className={`w-full p-2 rounded ${bgInput}`}>
+                    <option value="H.264">H.264</option>
+                    <option value="H.265">H.265</option>
+                    <option value="H.265+">H.265+ (Smart)</option>
+                  </select>
                 </div>
-                <button onClick={() => {
-                  if(!appData.cabRoom || !appData.cabLength) return alert("Enter room and length");
-                  updateData('cabDevices', [...appData.cabDevices, { id: Date.now(), room: appData.cabRoom, length: appData.cabLength }]);
-                  updateData('cabRoom', '');
-                  updateData('cabLength', '');
-                }} className="w-full py-2 bg-blue-600 text-white rounded font-bold hover:bg-blue-700">Add Drop</button>
+                <div>
+                  <label className="text-xs">Hard Drive</label>
+                  <select value={appData.calcHdd} onChange={e => updateData('calcHdd', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`}>
+                    <option value={500}>500 GB</option>
+                    <option value={1000}>1 TB</option>
+                    <option value={2000}>2 TB</option>
+                    <option value={4000}>4 TB</option>
+                  </select>
+                </div>
+                <div className={`p-2 rounded text-center flex flex-col justify-center ${isLight ? 'bg-blue-50' : 'bg-blue-900/20'}`}>
+                  <p className="text-xs font-bold text-blue-600 dark:text-blue-400">Recording Days</p>
+                  <p className="text-2xl font-extrabold text-blue-700 dark:text-blue-300">{storageCalc.days} Days</p>
+                </div>
+              </div>
+              
+              <div className={`p-4 rounded-lg flex items-center space-x-4 ${isLight ? 'bg-gray-100' : 'bg-gray-900/50'}`}>
+                <Wifi className="w-8 h-8 text-green-500" />
+                <div>
+                  <p className="text-sm font-bold">Remote Viewing Bandwidth</p>
+                  <p className="text-xs text-gray-500">To view all {appData.calcCams} cameras smoothly on a phone, the client needs at least <strong className="text-green-600 dark:text-green-400">{storageCalc.remoteBandwidth} Mbps upload speed</strong> at the site.</p>
+                </div>
               </div>
             </div>
 
-            <div className={`p-6 rounded-xl border lg:col-span-2 ${bgCard}`}>
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold">Planned Drops ({cabTotals.ports})</h3>
-                <button onClick={() => setShowLabels(true)} className="px-3 py-1 bg-green-600 text-white rounded text-sm font-bold flex items-center space-x-1 hover:bg-green-700">
-                  <Tag className="w-4 h-4" /> <span>Print Labels</span>
-                </button>
+            {/* Wi-Fi Estimator */}
+            <div className={`p-6 rounded-xl border ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Wifi className="w-5 h-5 text-blue-500" /> <span>Wi-Fi Estimator</span></h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="text-xs">Number of Rooms</label><input type="number" value={appData.wifiRooms} onChange={e => updateData('wifiRooms', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">Thick Walls</label><input type="number" value={appData.wifiWalls} onChange={e => updateData('wifiWalls', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
               </div>
+              <div className={`p-4 rounded text-center ${isLight ? 'bg-blue-50' : 'bg-blue-900/20'}`}>
+                <p className="text-sm">Access Points Needed</p>
+                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{estimatedAPs} APs</p>
+              </div>
+            </div>
 
-              <div className="space-y-2 max-h-60 overflow-y-auto mb-6 pr-2">
-                {appData.cabDevices.length === 0 ? (
-                  <p className={`text-sm ${textMuted}`}>No drops added yet.</p>
-                ) : (
-                  appData.cabDevices.map((d, i) => (
-                    <div key={d.id} className={`flex justify-between items-center p-2 rounded text-sm ${bgInput}`}>
-                      <span><strong className="text-blue-500">Port {i+1}</strong> • {d.room} • {d.length}m</span>
-                      <button onClick={() => updateData('cabDevices', appData.cabDevices.filter(x => x.id !== d.id))} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
-                    </div>
-                  ))
-                )}
+            {/* PoE Calculator */}
+            <div className={`p-6 rounded-xl border ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Zap className="w-5 h-5 text-yellow-500" /> <span>PoE Calculator</span></h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="text-xs">IP Cams (15W)</label><input type="number" value={appData.poeCams} onChange={e => updateData('poeCams', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">APs (20W)</label><input type="number" value={appData.poeAps} onChange={e => updateData('poeAps', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
               </div>
+              <div className={`p-4 rounded text-center ${isLight ? 'bg-yellow-50' : 'bg-yellow-900/20'}`}>
+                <p className="text-2xl font-bold text-yellow-600">{(appData.poeCams*15) + (appData.poeAps*20)} Watts</p>
+              </div>
+            </div>
 
-              <h3 className="text-lg font-bold mb-2 border-t pt-4">Bill of Materials (BOM)</h3>
-              <div className={`space-y-1 text-sm ${textMuted}`}>
-                <div className="flex justify-between"><span>Total Drops:</span> <span className={textMain}>{cabTotals.ports} Ports</span></div>
-                <div className="flex justify-between"><span>Cable Required (with 15% slack):</span> <span className={textMain}>{Math.round(cabTotals.lengthWithWaste)}m</span></div>
-                <div className="flex justify-between"><span>Cat6 Boxes (305m):</span> <span className={textMain}>{cabTotals.boxes} boxes</span></div>
-                <div className="flex justify-between"><span>Patch Panels (24-port):</span> <span className={textMain}>{cabTotals.patchPanels} units</span></div>
-                <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2"><span>Total Cost:</span> <span className="text-green-500">{formatKES(cabTotals.cost)}</span></div>
+            {/* Voltage Drop */}
+            <div className={`p-6 rounded-xl border ${bgCard}`}>
+              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Activity className="w-5 h-5 text-orange-500" /> <span>Voltage Drop</span></h3>
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div><label className="text-xs">Length (m)</label><input type="number" value={appData.voltLength} onChange={e => updateData('voltLength', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                <div><label className="text-xs">Load (Amps)</label><input type="number" step="0.1" value={appData.voltAmps} onChange={e => updateData('voltAmps', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+              </div>
+              <div className={`p-4 rounded text-center ${isLight ? 'bg-orange-50' : 'bg-orange-900/20'}`}>
+                <p className="text-2xl font-bold text-orange-600">{(12 - (appData.voltLength * appData.voltAmps * 0.0164)).toFixed(2)}V</p>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* ================= UPSELL SHOWCASE ================= */}
-        {currentView === 'upsell' && (
-          <div className="space-y-6">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold mb-2">Camera Quality Comparison</h2>
-              <p className={textMuted}>Show this screen to the client to close the sale.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className={`rounded-2xl border overflow-hidden ${bgCard}`}>
-                <div className="h-64 bg-gray-300 dark:bg-gray-700 relative flex items-center justify-center">
-                  <span className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-bold">Standard 2MP</span>
-                  <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Standard" className="w-full h-full object-cover opacity-70 grayscale-[30%]" />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2">Standard 1080p</h3>
-                  <ul className="space-y-2 text-sm text-gray-500">
-                    <li className="flex items-center space-x-2"><CheckSquare className="w-4 h-4"/> <span>Good for general indoor viewing.</span></li>
-                    <li className="flex items-center space-x-2"><CheckSquare className="w-4 h-4"/> <span>Black & White at night (IR).</span></li>
-                    <li className="flex items-center space-x-2"><CheckSquare className="w-4 h-4"/> <span>Cannot read number plates far away.</span></li>
-                  </ul>
-                </div>
-              </div>
-              <div className={`rounded-2xl border-2 border-purple-500 overflow-hidden shadow-lg ${bgCard}`}>
-                <div className="h-64 bg-gray-300 relative flex items-center justify-center">
-                  <span className="absolute top-4 left-4 bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">Premium 4K / ColorVu</span>
-                  <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Premium" className="w-full h-full object-cover brightness-110 contrast-125" />
-                  <div className="absolute bottom-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-xs">Crystal Clear</div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2 text-purple-600 dark:text-purple-400">4K ColorVu</h3>
-                  <ul className="space-y-2 text-sm text-gray-500">
-                    <li className="flex items-center space-x-2"><Sparkles className="w-4 h-4 text-purple-500"/> <span><strong>Full Color at Night</strong> (No spotlights needed).</span></li>
-                    <li className="flex items-center space-x-2"><Sparkles className="w-4 h-4 text-purple-500"/> <span><strong>Read faces & number plates</strong> easily.</span></li>
-                    <li className="flex items-center space-x-2"><Sparkles className="w-4 h-4 text-purple-500"/> <span>AI detects humans/vehicles (No false alarms).</span></li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-            <div className="text-center mt-8">
-              <button onClick={() => setCurrentView('cctv-planner')} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg text-lg hover:bg-blue-700">Proceed to Build Quote</button>
-            </div>
           </div>
         )}
 
@@ -286,6 +297,7 @@ export default function App() {
                     <select value={appData.selectedStorage} onChange={e => updateData('selectedStorage', e.target.value)} className={`w-full px-3 py-2 rounded border ${bgInput}`}>
                       <option value="hdd500">500GB HDD</option>
                       <option value="hdd1tb">1TB HDD</option>
+                      <option value="hdd2tb">2TB HDD</option>
                     </select>
                   </div>
                 </div>
@@ -305,45 +317,6 @@ export default function App() {
               <button onClick={() => setCurrentView('report')} className="w-full mt-6 py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-700">
                 <Printer className="w-5 h-5" /> <span>Preview Document</span>
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* ================= ENGINEER TOOLS ================= */}
-        {currentView === 'tools' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className={`p-6 rounded-xl border ${bgCard}`}>
-              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Wifi className="w-5 h-5 text-blue-500" /> <span>Wi-Fi Estimator</span></h3>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div><label className="text-xs">Number of Rooms</label><input type="number" value={appData.wifiRooms} onChange={e => updateData('wifiRooms', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
-                <div><label className="text-xs">Thick Walls</label><input type="number" value={appData.wifiWalls} onChange={e => updateData('wifiWalls', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
-              </div>
-              <div className={`p-4 rounded text-center ${isLight ? 'bg-blue-50' : 'bg-blue-900/20'}`}>
-                <p className="text-sm">Access Points Needed</p>
-                <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{estimatedAPs} APs</p>
-              </div>
-            </div>
-
-            <div className={`p-6 rounded-xl border ${bgCard}`}>
-              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Zap className="w-5 h-5 text-yellow-500" /> <span>PoE Calculator</span></h3>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div><label className="text-xs">IP Cams (15W)</label><input type="number" value={appData.poeCams} onChange={e => updateData('poeCams', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
-                <div><label className="text-xs">APs (20W)</label><input type="number" value={appData.poeAps} onChange={e => updateData('poeAps', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
-              </div>
-              <div className={`p-4 rounded text-center ${isLight ? 'bg-yellow-50' : 'bg-yellow-900/20'}`}>
-                <p className="text-2xl font-bold text-yellow-600">{(appData.poeCams*15) + (appData.poeAps*20)} Watts</p>
-              </div>
-            </div>
-
-            <div className={`p-6 rounded-xl border ${bgCard}`}>
-              <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Activity className="w-5 h-5 text-orange-500" /> <span>Voltage Drop</span></h3>
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <div><label className="text-xs">Length (m)</label><input type="number" value={appData.voltLength} onChange={e => updateData('voltLength', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
-                <div><label className="text-xs">Load (Amps)</label><input type="number" step="0.1" value={appData.voltAmps} onChange={e => updateData('voltAmps', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
-              </div>
-              <div className={`p-4 rounded text-center ${isLight ? 'bg-orange-50' : 'bg-orange-900/20'}`}>
-                <p className="text-2xl font-bold text-orange-600">{(12 - (appData.voltLength * appData.voltAmps * 0.0164)).toFixed(2)}V</p>
-              </div>
             </div>
           </div>
         )}
@@ -423,27 +396,6 @@ export default function App() {
                   <p className="text-5xl font-extrabold text-green-600">{formatKES(totalCCTV)}</p>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ================= CABLE LABEL MODAL ================= */}
-        {showLabels && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-            <div className={`w-full max-w-2xl p-6 rounded-xl shadow-2xl ${bgCard}`}>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Cable Labels</h2>
-                <button onClick={() => setShowLabels(false)} className="text-red-500 font-bold">Close</button>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-96 overflow-y-auto p-2 bg-white text-black">
-                {appData.cabDevices.map((d, i) => (
-                  <div key={d.id} className="border-2 border-dashed border-gray-400 p-2 text-center rounded">
-                    <p className="font-bold text-sm">{d.room}</p>
-                    <p className="text-xs text-gray-600">Port {i + 1}</p>
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => window.print()} className="w-full mt-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700">Print Labels</button>
             </div>
           </div>
         )}
