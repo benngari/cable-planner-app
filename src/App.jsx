@@ -10,7 +10,7 @@ import {
   ClipboardCheck, ShoppingCart, Layers, Tag, Video, CheckSquare, 
   Image as ImageIcon, Activity, AlertTriangle, Table, Info, 
   ShieldCheck, ShieldAlert, Sparkles, Palette, Wallet, RefreshCw,
-  Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle, Package, Key, FileText
+  Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle, Package
 } from 'lucide-react';
 
 const CATALOG = {
@@ -29,13 +29,12 @@ const CATALOG = {
 };
 
 const defaultState = {
-  clientName: '', clientPhone: '', clientLocation: '',
+  clientName: '', clientPhone: '',
   systemType: 'Analog', cameraShape: 'Bullet', quantity: 4, cableLength: 50, selectedStorage: 'hdd500', lensType: '3.6',
   cabDevices: [], poeCams: 4, poeAps: 2, voltLength: 50, voltAmps: 0.5, runRooms: 5, runFloors: 1,
   wifiRooms: 4, wifiWalls: 2, isInvoice: false, depositPaid: 0,
   calcCams: 4, calcRes: '2MP', calcComp: 'H.265', calcHdd: 1000,
-  fuelDistance: 20, fuelPrice: 190, fuelConsumption: 12, transportFee: 0,
-  handoverApp: 'Hik-Connect', handoverIp: '192.168.1.100', handoverUser: 'admin', handoverPass: 'Password123'
+  fuelDistance: 20, fuelPrice: 190, fuelConsumption: 12, transportFee: 0
 };
 
 export default function App() {
@@ -82,11 +81,15 @@ export default function App() {
   const cablePrice = appData.cableLength * (appData.systemType === 'Analog' ? CATALOG.accessories.rg59.price : CATALOG.accessories.cat6.price);
   const accPrice = appData.systemType === 'Analog' ? (CATALOG.accessories.psu.price + CATALOG.accessories.connectors.price) : 0;
   const laborPrice = CATALOG.labor.basic.price;
+  
+  // Transport Calc
   const fuelCost = (appData.fuelDistance / appData.fuelConsumption) * appData.fuelPrice;
   const transportTotal = Math.round(fuelCost + appData.transportFee);
+
   const totalCCTV = camPrice + recorderPrice + storagePrice + cablePrice + accPrice + laborPrice + transportTotal;
   const balanceDue = totalCCTV - appData.depositPaid;
 
+  // Cabling Calc
   const calculateCabling = () => {
     const ports = appData.cabDevices.length;
     const rawLength = appData.cabDevices.reduce((sum, d) => sum + d.length, 0);
@@ -98,6 +101,7 @@ export default function App() {
   };
   const cabTotals = calculateCabling();
 
+  // Storage Calc
   const calculateStorage = () => {
     let bitratePerCam = appData.calcRes === '2MP' ? 3 : appData.calcRes === '4MP' ? 6 : 12;
     if (appData.calcComp === 'H.265') bitratePerCam *= 0.5;
@@ -109,6 +113,7 @@ export default function App() {
   };
   const storageCalc = calculateStorage();
 
+  // Copy M-Pesa
   const copyMpesa = () => {
     navigator.clipboard.writeText(businessInfo.mpesa);
     setCopied(true);
@@ -427,82 +432,6 @@ export default function App() {
               <button onClick={() => setCurrentView('report')} className="w-full mt-6 py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-700">
                 <Printer className="w-5 h-5" /> <span>Preview Document</span>
               </button>
-              
-              {/* NEW: Handover Button */}
-              <button onClick={() => setCurrentView('handover')} className="w-full mt-3 py-3 bg-purple-600 text-white font-bold rounded-lg flex items-center justify-center space-x-2 hover:bg-purple-700">
-                <FileText className="w-5 h-5" /> <span>Client Handover Guide</span>
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ================= CLIENT HANDOVER GUIDE ================= */}
-        {currentView === 'handover' && (
-          <div className="space-y-6">
-            <div className="flex flex-wrap justify-between items-center gap-2">
-              <button onClick={() => setCurrentView('cctv-planner')} className={`px-4 py-2 font-bold rounded-lg ${bgButton}`}>← Back</button>
-              <button onClick={() => {
-                  const element = document.getElementById('pdf-handover-container');
-                  html2pdf().set({ margin: 0.5, filename: 'Handover_Guide.pdf', html2canvas: { scale: 2, useCORS: true } }).from(element).save();
-                }} className="px-6 py-2 bg-purple-600 text-white font-bold rounded-lg flex items-center space-x-2">
-                  <Download className="w-5 h-5" /> <span>Download Handover PDF</span>
-              </button>
-            </div>
-
-            {/* Inputs for Handover */}
-            <div className={`p-6 rounded-xl border max-w-2xl mx-auto ${bgCard}`}>
-               <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Key className="w-5 h-5 text-purple-500" /> <span>Setup Details</span></h3>
-               <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <label className="text-xs">App Name (Hik-Connect / DMSS / Other)</label>
-                    <input type="text" value={appData.handoverApp} onChange={e => updateData('handoverApp', e.target.value)} className={`w-full p-2 rounded ${bgInput}`} />
-                  </div>
-                  <div>
-                    <label className="text-xs">Device IP Address</label>
-                    <input type="text" value={appData.handoverIp} onChange={e => updateData('handoverIp', e.target.value)} className={`w-full p-2 rounded ${bgInput}`} />
-                  </div>
-                  <div>
-                    <label className="text-xs">Username</label>
-                    <input type="text" value={appData.handoverUser} onChange={e => updateData('handoverUser', e.target.value)} className={`w-full p-2 rounded ${bgInput}`} />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="text-xs">Password</label>
-                    <input type="text" value={appData.handoverPass} onChange={e => updateData('handoverPass', e.target.value)} className={`w-full p-2 rounded ${bgInput}`} />
-                  </div>
-               </div>
-            </div>
-
-            {/* PDF Preview */}
-            <div className={`flex justify-center p-4 rounded-xl overflow-x-auto ${isLight ? 'bg-gray-200' : isDark ? 'bg-gray-800' : 'bg-[#111]'}`}>
-              <div id="pdf-handover-container" className="bg-white text-gray-900 p-10 shadow-2xl rounded-lg" style={{ width: '800px', fontFamily: 'Arial, sans-serif' }}>
-                <div style={{ textAlign: 'center', borderBottom: '2px solid #1e3a8a', paddingBottom: '20px', marginBottom: '30px' }}>
-                  <h1 style={{ margin: 0, color: '#1e3a8a', fontSize: '32px' }}>{businessInfo.name}</h1>
-                  <p style={{ margin: '5px 0', color: '#666' }}>CCTV System Handover & Setup Guide</p>
-                </div>
-
-                <p style={{ fontSize: '16px' }}>Hello <strong>{appData.clientName || 'Client'}</strong>,</p>
-                <p style={{ fontSize: '16px', lineHeight: '1.6' }}>Thank you for choosing us. Your <strong>{appData.quantity}-camera {appData.systemType}</strong> system is now fully installed and tested. Below are the details you need to view your cameras on your phone.</p>
-
-                <div style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '10px', marginTop: '30px', borderLeft: '4px solid #8b5cf6' }}>
-                  <h3 style={{ margin: '0 0 15px 0', color: '#1e3a8a' }}>1. Download the App</h3>
-                  <p style={{ fontSize: '16px' }}>Search for <strong style={{ color: '#8b5cf6', fontSize: '20px' }}>{appData.handoverApp}</strong> on the Google Play Store (Android) or App Store (iPhone).</p>
-                </div>
-
-                <div style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '10px', marginTop: '20px', borderLeft: '4px solid #3b82f6' }}>
-                  <h3 style={{ margin: '0 0 15px 0', color: '#1e3a8a' }}>2. Login Credentials</h3>
-                  <table style={{ width: '100%', fontSize: '16px' }}>
-                    <tr><td style={{ padding: '5px 0', width: '150px' }}>Device IP:</td><td><strong>{appData.handoverIp}</strong></td></tr>
-                    <tr><td style={{ padding: '5px 0' }}>Username:</td><td><strong>{appData.handoverUser}</strong></td></tr>
-                    <tr><td style={{ padding: '5px 0' }}>Password:</td><td><strong>{appData.handoverPass}</strong></td></tr>
-                  </table>
-                  <p style={{ fontSize: '12px', color: '#dc2626', marginTop: '10px' }}>*For security, please do not share these credentials with unauthorized persons.</p>
-                </div>
-
-                <div style={{ marginTop: '40px', textAlign: 'center', borderTop: '1px solid #ddd', paddingTop: '20px' }}>
-                  <p style={{ margin: 0 }}>Need help? Call us at <strong style={{ fontSize: '20px', color: '#1e3a8a' }}>{businessInfo.phone}</strong></p>
-                  <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#666' }}>Warranty valid for 12 months from today.</p>
-                </div>
-              </div>
             </div>
           </div>
         )}
