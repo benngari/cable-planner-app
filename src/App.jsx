@@ -11,7 +11,7 @@ import {
   Image as ImageIcon, Activity, AlertTriangle, Table, Info, 
   ShieldCheck, ShieldAlert, Sparkles, Palette, Wallet, RefreshCw,
   Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle, Package, Share2,
-  FolderOpen, Save, Bookmark, AlertCircle
+  FolderOpen, Save, Bookmark, AlertCircle, Box, BoxSelect, LayoutGrid, Router
 } from 'lucide-react';
 
 const CATALOG = {
@@ -29,6 +29,14 @@ const CATALOG = {
   cabling: { cat6Box: { name: 'Cat6 Box (305m)', price: 19500 }, keystone: { name: 'Keystone', price: 150 }, faceplate: { name: 'Faceplate', price: 200 }, patchPanel: { name: '24-Port Panel', price: 4500 }, patchCord: { name: 'Patch Cord', price: 450 }, laborPerDrop: 1500 }
 };
 
+const RACK_EQUIPMENT = {
+  patchPanel: { name: '24-Port Patch Panel', size: 1, color: 'bg-blue-500' },
+  switch: { name: '24-Port PoE Switch', size: 1, color: 'bg-green-500' },
+  router: { name: 'Router / Firewall', size: 1, color: 'bg-purple-500' },
+  ups: { name: 'UPS Backup Unit', size: 2, color: 'bg-red-500' },
+  blank: { name: 'Blanking Panel', size: 1, color: 'bg-gray-600' }
+};
+
 const defaultState = {
   clientName: '', clientPhone: '',
   systemType: 'Analog', cameraShape: 'Bullet', quantity: 4, cableLength: 50, selectedStorage: 'hdd500', lensType: '3.6',
@@ -36,7 +44,8 @@ const defaultState = {
   wifiRooms: 4, wifiWalls: 2, isInvoice: false, depositPaid: 0,
   calcCams: 4, calcRes: '2MP', calcComp: 'H.265', calcHdd: 1000,
   fuelDistance: 20, fuelPrice: 190, fuelConsumption: 12, transportFee: 0,
-  ipRecords: []
+  ipRecords: [],
+  rackItems: [] // NEW: Server Rack Items
 };
 
 export default function App() {
@@ -48,7 +57,6 @@ export default function App() {
   const [copied, setCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
 
-  // IP Tracker Form State
   const [newDevice, setNewDevice] = useState({ name: '', ip: '', gateway: '', vlan: '10' });
 
   const [appData, setAppData] = useState(() => {
@@ -123,38 +131,28 @@ export default function App() {
   };
   const storageCalc = calculateStorage();
 
+  // --- RACK BUILDER LOGIC ---
+  const rackTotalU = appData.rackItems.reduce((sum, item) => sum + RACK_EQUIPMENT[item.type].size, 0);
+  const rackRemainingU = 42 - rackTotalU;
+
+  const addRackItem = (type) => {
+    if (rackTotalU + RACK_EQUIPMENT[type].size > 42) return alert("Not enough space in the 42U rack!");
+    updateData('rackItems', [...appData.rackItems, { id: Date.now(), type }]);
+  };
+
+  const removeRackItem = (id) => {
+    updateData('rackItems', appData.rackItems.filter(item => item.id !== id));
+  };
+
   const copyMpesa = () => {
     navigator.clipboard.writeText(businessInfo.mpesa);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // --- IP TRACKER LOGIC ---
-  const addIpRecord = () => {
-    if (!newDevice.name || !newDevice.ip) return alert("Device Name and IP Address are required.");
-    
-    // Check for duplicate IP
-    const isDuplicate = appData.ipRecords.some(rec => rec.ip === newDevice.ip);
-    if (isDuplicate) {
-      return alert(`⚠️ IP CONFLICT! The IP address ${newDevice.ip} is already assigned to another device.`);
-    }
-
-    updateData('ipRecords', [...appData.ipRecords, { id: Date.now(), ...newDevice }]);
-    setNewDevice({ name: '', ip: '', gateway: '', vlan: '10' });
-  };
-
-  const removeIpRecord = (id) => {
-    updateData('ipRecords', appData.ipRecords.filter(rec => rec.id !== id));
-  };
-
   const handleSaveProject = () => {
     if (!appData.clientName) return alert("Please enter a Client Name before saving.");
-    const newProject = {
-      id: Date.now(),
-      date: new Date().toLocaleDateString(),
-      client: appData.clientName,
-      data: appData
-    };
+    const newProject = { id: Date.now(), date: new Date().toLocaleDateString(), client: appData.clientName, data: appData };
     setSavedProjects([newProject, ...savedProjects]);
     alert("Project Saved Successfully!");
   };
@@ -166,9 +164,7 @@ export default function App() {
 
   const handleDeleteProject = (id, e) => {
     e.stopPropagation();
-    if (window.confirm("Delete this project?")) {
-      setSavedProjects(savedProjects.filter(p => p.id !== id));
-    }
+    if (window.confirm("Delete this project?")) setSavedProjects(savedProjects.filter(p => p.id !== id));
   };
 
   const handleNewProject = () => {
@@ -183,39 +179,22 @@ export default function App() {
     const element = document.getElementById('pdf-cctv-container');
     
     try {
-      const pdfBlob = await html2pdf().set({
-        margin: 0.5,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
-      }).from(element).outputPdf('blob');
-
+      const pdfBlob = await html2pdf().set({ margin: 0.5, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(element).outputPdf('blob');
       const fileName = `Quote_${appData.clientName || 'Client'}.pdf`;
       const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: 'CCTV Quotation',
-          text: `Hello ${appData.clientName}, here is your quotation from ${businessInfo.name}.`
-        });
+        await navigator.share({ files: [file], title: 'CCTV Quotation', text: `Hello ${appData.clientName}, here is your quotation.` });
       } else {
         const url = URL.createObjectURL(pdfBlob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        a.click();
-        URL.revokeObjectURL(url);
-
+        const a = document.createElement('a'); a.href = url; a.download = fileName; a.click(); URL.revokeObjectURL(url);
         let phoneStr = appData.clientPhone.replace(/\D/g, ''); 
         if (phoneStr.startsWith('0')) phoneStr = '254' + phoneStr.slice(1);
-        
-        const message = encodeURIComponent(`Hello ${appData.clientName}, here is your quotation from ${businessInfo.name}. Total: ${formatKES(totalCCTV)}.`);
-        window.open(`https://wa.me/${phoneStr}?text=${message}`, '_blank');
+        window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(`Hello ${appData.clientName}, here is your quotation.`)}`, '_blank');
       }
     } catch (error) {
       console.error("Error sharing PDF:", error);
-      alert("Could not share the PDF. Please try downloading it instead.");
+      alert("Could not share PDF.");
     } finally {
       setIsSharing(false);
     }
@@ -223,7 +202,6 @@ export default function App() {
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain}`}>
-      {/* HEADER */}
       <header className={`sticky top-0 z-50 border-b ${isLight ? 'bg-white border-gray-200' : isDark ? 'bg-gray-900 border-gray-800' : 'bg-black border-[#222]'}`}>
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <div onClick={() => setCurrentView('welcome')} className="flex items-center space-x-3 cursor-pointer">
@@ -262,41 +240,159 @@ export default function App() {
         
         {/* ================= WELCOME ================= */}
         {currentView === 'welcome' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mt-12">
-            
-            <div onClick={() => setCurrentView('saved-projects')} className={`cursor-pointer p-6 rounded-2xl border hover:border-yellow-500 ${bgCard}`}>
-              <FolderOpen className="w-10 h-10 text-yellow-500 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Saved Quotes</h3>
-              <p className={`text-sm ${textMuted}`}>Load previous quotes ({savedProjects.length}).</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-4 mt-12">
+            <div onClick={() => setCurrentView('saved-projects')} className={`cursor-pointer p-4 rounded-2xl border hover:border-yellow-500 ${bgCard}`}>
+              <FolderOpen className="w-8 h-8 text-yellow-500 mb-3" />
+              <h3 className="text-lg font-bold mb-1">Saved Quotes</h3>
+              <p className={`text-xs ${textMuted}`}>Load previous quotes ({savedProjects.length}).</p>
+            </div>
+            <div onClick={() => setCurrentView('cctv-planner')} className={`cursor-pointer p-4 rounded-2xl border hover:border-orange-500 ${bgCard}`}>
+              <Camera className="w-8 h-8 text-orange-500 mb-3" />
+              <h3 className="text-lg font-bold mb-1">CCTV Configurator</h3>
+              <p className={`text-xs ${textMuted}`}>Quote systems and calculate FOV.</p>
+            </div>
+            <div onClick={() => setCurrentView('cabling-planner')} className={`cursor-pointer p-4 rounded-2xl border hover:border-blue-500 ${bgCard}`}>
+              <Network className="w-8 h-8 text-blue-500 mb-3" />
+              <h3 className="text-lg font-bold mb-1">Cabling Planner</h3>
+              <p className={`text-xs ${textMuted}`}>Cat6 BOM and printable labels.</p>
+            </div>
+            {/* NEW: RACK BUILDER CARD */}
+            <div onClick={() => setCurrentView('rack-builder')} className={`cursor-pointer p-4 rounded-2xl border hover:border-pink-500 ${bgCard}`}>
+              <Server className="w-8 h-8 text-pink-500 mb-3" />
+              <h3 className="text-lg font-bold mb-1">Rack Builder</h3>
+              <p className={`text-xs ${textMuted}`}>Visual 42U server rack diagram.</p>
+            </div>
+            <div onClick={() => setCurrentView('ip-tracker')} className={`cursor-pointer p-4 rounded-2xl border hover:border-cyan-500 ${bgCard}`}>
+              <Globe className="w-8 h-8 text-cyan-500 mb-3" />
+              <h3 className="text-lg font-bold mb-1">IP & VLAN Tracker</h3>
+              <p className={`text-xs ${textMuted}`}>Manage static IPs and prevent conflicts.</p>
+            </div>
+            <div onClick={() => setCurrentView('tools')} className={`cursor-pointer p-4 rounded-2xl border hover:border-green-500 ${bgCard}`}>
+              <Wrench className="w-8 h-8 text-green-500 mb-3" />
+              <h3 className="text-lg font-bold mb-1">Engineer Tools</h3>
+              <p className={`text-xs ${textMuted}`}>Fuel, Storage, Wi-Fi & more.</p>
+            </div>
+            <div onClick={() => setCurrentView('upsell')} className={`cursor-pointer p-4 rounded-2xl border hover:border-purple-500 ${bgCard}`}>
+              <Star className="w-8 h-8 text-purple-500 mb-3" />
+              <h3 className="text-lg font-bold mb-1">Upsell Showcase</h3>
+              <p className={`text-xs ${textMuted}`}>Show clients the value of 4K & ColorVu.</p>
+            </div>
+          </div>
+        )}
+
+        {/* ================= RACK BUILDER VIEW ================= */}
+        {currentView === 'rack-builder' && (
+          <div className="max-w-5xl mx-auto space-y-6">
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h2 className="text-2xl font-bold">Server Rack Builder</h2>
+                <p className={textMuted}>Click to add equipment and visualize your 42U rack.</p>
+              </div>
+              <button onClick={() => setCurrentView('welcome')} className={`px-4 py-2 font-bold rounded-lg ${bgButton}`}>Back</button>
             </div>
 
-            <div onClick={() => setCurrentView('cctv-planner')} className={`cursor-pointer p-6 rounded-2xl border hover:border-orange-500 ${bgCard}`}>
-              <Camera className="w-10 h-10 text-orange-500 mb-4" />
-              <h3 className="text-xl font-bold mb-2">CCTV Configurator</h3>
-              <p className={`text-sm ${textMuted}`}>Quote systems and calculate FOV.</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Left: Equipment List */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-lg">Available Equipment</h3>
+                {Object.entries(RACK_EQUIPMENT).map(([key, item]) => (
+                  <button 
+                    key={key} 
+                    onClick={() => addRackItem(key)}
+                    className={`w-full flex items-center justify-between p-3 rounded-lg border shadow-sm hover:shadow-md transition-all ${bgCard}`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-4 h-4 rounded-full ${item.color}`}></div>
+                      <span className="font-medium text-sm">{item.name} ({item.size}U)</span>
+                    </div>
+                    <Plus className="w-4 h-4 text-gray-400" />
+                  </button>
+                ))}
+              </div>
+
+              {/* Right: Visual Rack */}
+              <div className="md:col-span-2">
+                <div className={`p-6 rounded-xl border ${bgCard}`}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold">Your Rack Layout</h3>
+                    <div className="text-sm font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">
+                      {rackRemainingU}U Available
+                    </div>
+                  </div>
+
+                  {/* Rack Visual Container */}
+                  <div className="relative w-full max-w-sm mx-auto bg-gray-900 border-4 border-gray-700 rounded-lg shadow-2xl p-2" style={{ minHeight: '400px' }}>
+                    {appData.rackItems.length === 0 ? (
+                      <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-20">
+                        Click equipment on the left to add it.
+                      </div>
+                    ) : (
+                      <div className="flex flex-col">
+                        {appData.rackItems.map((item, index) => {
+                          const eq = RACK_EQUIPMENT[item.type];
+                          return (
+                            <div 
+                              key={item.id} 
+                              className={`relative w-full ${eq.color} border-b border-gray-800 flex items-center justify-between px-3 text-white font-bold text-sm shadow-inner transition-all hover:brightness-110`}
+                              style={{ height: `${eq.size * 40}px` }}
+                            >
+                              <span>{eq.name}</span>
+                              <button onClick={() => removeRackItem(item.id)} className="p-1 bg-black/20 rounded hover:bg-black/40"><Trash2 className="w-3 h-3 text-white" /></button>
+                            </div>
+                          );
+                        })}
+                        {/* Empty space filler */}
+                        {rackRemainingU > 0 && (
+                          <div 
+                            className="w-full border-t border-gray-700/50 border-dashed flex items-center justify-center text-gray-600 text-xs"
+                            style={{ height: `${rackRemainingU * 40}px` }}
+                          >
+                            {rackRemainingU}U Empty Space
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-6 flex justify-center">
+                    <button 
+                      onClick={() => {
+                        const element = document.getElementById('pdf-rack-container');
+                        html2pdf().set({ margin: 0.5, filename: 'Rack_Diagram.pdf', html2canvas: { scale: 2, useCORS: true } }).from(element).save();
+                      }}
+                      disabled={appData.rackItems.length === 0}
+                      className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-2"
+                    >
+                      <Download className="w-5 h-5" /> <span>Export Rack PDF</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* NEW: IP TRACKER CARD */}
-            <div onClick={() => setCurrentView('ip-tracker')} className={`cursor-pointer p-6 rounded-2xl border hover:border-cyan-500 ${bgCard}`}>
-              <Globe className="w-10 h-10 text-cyan-500 mb-4" />
-              <h3 className="text-xl font-bold mb-2">IP & VLAN Tracker</h3>
-              <p className={`text-sm ${textMuted}`}>Manage static IPs and prevent conflicts.</p>
-            </div>
-
-            <div onClick={() => setCurrentView('cabling-planner')} className={`cursor-pointer p-6 rounded-2xl border hover:border-blue-500 ${bgCard}`}>
-              <Network className="w-10 h-10 text-blue-500 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Cabling Planner</h3>
-              <p className={`text-sm ${textMuted}`}>Cat6 BOM and printable labels.</p>
-            </div>
-            <div onClick={() => setCurrentView('tools')} className={`cursor-pointer p-6 rounded-2xl border hover:border-green-500 ${bgCard}`}>
-              <Wrench className="w-10 h-10 text-green-500 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Engineer Tools</h3>
-              <p className={`text-sm ${textMuted}`}>Fuel, Storage, Wi-Fi & more.</p>
-            </div>
-            <div onClick={() => setCurrentView('upsell')} className={`cursor-pointer p-6 rounded-2xl border hover:border-purple-500 ${bgCard}`}>
-              <Star className="w-10 h-10 text-purple-500 mb-4" />
-              <h3 className="text-xl font-bold mb-2">Upsell Showcase</h3>
-              <p className={`text-sm ${textMuted}`}>Show clients the value of 4K & ColorVu.</p>
+            {/* Hidden PDF Container for Rack Export */}
+            <div className="absolute top-0 left-0 -z-50 overflow-hidden h-0">
+              <div id="pdf-rack-container" className="bg-white text-gray-900 p-10" style={{ width: '600px', fontFamily: 'Arial, sans-serif' }}>
+                <h1 style={{ color: '#1e3a8a', borderBottom: '2px solid #1e3a8a', paddingBottom: '10px' }}>Server Rack Elevation</h1>
+                <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>Project: {appData.clientName || 'Client'}</p>
+                
+                <div className="bg-gray-200 border-4 border-gray-400 rounded-lg p-2 mx-auto" style={{ width: '300px' }}>
+                  {appData.rackItems.map((item) => {
+                    const eq = RACK_EQUIPMENT[item.type];
+                    return (
+                      <div key={item.id} className={`${eq.color} border-b border-gray-400 flex items-center px-3 text-white font-bold text-sm`} style={{ height: `${eq.size * 30}px` }}>
+                        {eq.name}
+                      </div>
+                    );
+                  })}
+                  {rackRemainingU > 0 && (
+                    <div className="border-t border-gray-400 border-dashed flex items-center justify-center text-gray-500 text-xs" style={{ height: `${rackRemainingU * 30}px` }}>
+                      {rackRemainingU}U Empty
+                    </div>
+                  )}
+                </div>
+                <p style={{ marginTop: '20px', fontSize: '12px', textAlign: 'center', color: '#666' }}>Generated by CableIQ - {new Date().toLocaleDateString()}</p>
+              </div>
             </div>
           </div>
         )}
@@ -312,19 +408,22 @@ export default function App() {
               <button onClick={() => setCurrentView('welcome')} className={`px-4 py-2 font-bold rounded-lg ${bgButton}`}>Back</button>
             </div>
 
-            {/* Add Device Form */}
             <div className={`p-6 rounded-xl border ${bgCard}`}>
               <h3 className="text-lg font-bold mb-4">Add Device</h3>
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div><label className="text-xs">Device Name (e.g. NVR, Cam 1)</label><input type="text" value={newDevice.name} onChange={e => setNewDevice({...newDevice, name: e.target.value})} className={`w-full p-2 rounded border ${bgInput}`} /></div>
+                <div><label className="text-xs">Device Name</label><input type="text" value={newDevice.name} onChange={e => setNewDevice({...newDevice, name: e.target.value})} className={`w-full p-2 rounded border ${bgInput}`} /></div>
                 <div><label className="text-xs">IP Address</label><input type="text" placeholder="192.168.1.10" value={newDevice.ip} onChange={e => setNewDevice({...newDevice, ip: e.target.value})} className={`w-full p-2 rounded border ${bgInput}`} /></div>
-                <div><label className="text-xs">Gateway (Router)</label><input type="text" placeholder="192.168.1.1" value={newDevice.gateway} onChange={e => setNewDevice({...newDevice, gateway: e.target.value})} className={`w-full p-2 rounded border ${bgInput}`} /></div>
+                <div><label className="text-xs">Gateway</label><input type="text" placeholder="192.168.1.1" value={newDevice.gateway} onChange={e => setNewDevice({...newDevice, gateway: e.target.value})} className={`w-full p-2 rounded border ${bgInput}`} /></div>
                 <div><label className="text-xs">VLAN ID</label><input type="text" placeholder="10" value={newDevice.vlan} onChange={e => setNewDevice({...newDevice, vlan: e.target.value})} className={`w-full p-2 rounded border ${bgInput}`} /></div>
-                <div className="flex items-end"><button onClick={addIpRecord} className="w-full py-2 bg-cyan-600 text-white rounded font-bold hover:bg-cyan-700">Add Device</button></div>
+                <div className="flex items-end"><button onClick={() => {
+                  if(!newDevice.name || !newDevice.ip) return alert("Name and IP required");
+                  if(appData.ipRecords.some(r => r.ip === newDevice.ip)) return alert("⚠️ IP Conflict! Address already used.");
+                  updateData('ipRecords', [...appData.ipRecords, { id: Date.now(), ...newDevice }]);
+                  setNewDevice({ name: '', ip: '', gateway: '', vlan: '10' });
+                }} className="w-full py-2 bg-cyan-600 text-white rounded font-bold hover:bg-cyan-700">Add Device</button></div>
               </div>
             </div>
 
-            {/* IP List */}
             <div className={`rounded-xl border overflow-hidden ${bgCard}`}>
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -347,7 +446,7 @@ export default function App() {
                         <td className="p-4 font-mono text-gray-500">{rec.gateway || '-'}</td>
                         <td className="p-4"><span className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-xs font-bold">VLAN {rec.vlan}</span></td>
                         <td className="p-4 text-right">
-                          <button onClick={() => removeIpRecord(rec.id)} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4 inline" /></button>
+                          <button onClick={() => updateData('ipRecords', appData.ipRecords.filter(r => r.id !== rec.id))} className="text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4 inline" /></button>
                         </td>
                       </tr>
                     ))
@@ -370,7 +469,7 @@ export default function App() {
               <div className={`p-12 text-center rounded-xl border ${bgCard}`}>
                 <FolderOpen className="w-16 h-16 text-gray-500 mx-auto mb-4" />
                 <h3 className="text-xl font-bold mb-2">No Saved Quotes</h3>
-                <p className={textMuted}>Create a quote and click the "Save" button in the header to save it here.</p>
+                <p className={textMuted}>Create a quote and click the "Save" button in the header.</p>
               </div>
             ) : (
               savedProjects.map(project => (
@@ -383,7 +482,7 @@ export default function App() {
                     <button onClick={(e) => handleDeleteProject(project.id, e)} className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 rounded hover:bg-red-200">
                       <Trash2 className="w-5 h-5" />
                     </button>
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded font-bold text-sm">Load Quote</button>
+                    <button className="px-4 py-2 bg-blue-600 text-white rounded font-bold text-sm">Load</button>
                   </div>
                 </div>
               ))
