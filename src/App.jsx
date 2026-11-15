@@ -34,6 +34,7 @@ const CATALOG = {
 const RACK_EQUIPMENT = {
   patchPanel: { name: '24-Port Patch Panel', size: 1, color: 'bg-blue-500' },
   switch: { name: '24-Port PoE Switch', size: 1, color: 'bg-green-500' },
+  cableManager: { name: 'Cable Manager (1U)', size: 1, color: 'bg-yellow-500' }, // <--- NEW CABLE MANAGER
   router: { name: 'Router / Firewall', size: 1, color: 'bg-purple-500' },
   ups: { name: 'UPS Backup Unit', size: 2, color: 'bg-red-500' },
   blank: { name: 'Blanking Panel', size: 1, color: 'bg-gray-600' }
