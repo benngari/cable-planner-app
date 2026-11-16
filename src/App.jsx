@@ -248,10 +248,11 @@ export default function App() {
     exit: { opacity: 0, y: -20, transition: { duration: 0.2 } }
   };
 
+  // NEW: 3D Flip Modal Animation
   const modalVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
-    visible: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 25 } },
-    exit: { opacity: 0, scale: 0.95 }
+    hidden: { opacity: 0, rotateX: 90, scale: 0.8 },
+    visible: { opacity: 1, rotateX: 0, scale: 1, transition: { type: 'spring', damping: 20, stiffness: 200 } },
+    exit: { opacity: 0, rotateX: -90, scale: 0.8, transition: { duration: 0.2 } }
   };
 
   return (
@@ -363,16 +364,24 @@ export default function App() {
                       <h3 className="font-bold">Your Rack Layout</h3>
                       <div className="text-sm font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">{rackRemainingU}U Available</div>
                     </div>
-                    <div className="relative w-full max-w-sm mx-auto bg-gray-900 border-4 border-gray-700 rounded-lg shadow-2xl p-2" style={{ minHeight: '400px' }}>
+                    <div className="relative w-full max-w-sm mx-auto bg-gray-900 border-4 border-gray-700 rounded-lg shadow-2xl p-2" style={{ minHeight: '400px', perspective: '1000px' }}>
                       {appData.rackItems.length === 0 ? (
                         <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-20">Click equipment on the left to add it.</div>
                       ) : (
-                        <div className="flex flex-col">
+                        <div className="flex flex-col" style={{ transformStyle: 'preserve-3d' }}>
                           <AnimatePresence>
                             {appData.rackItems.map((item, index) => {
                               const eq = RACK_EQUIPMENT[item.type];
                               return (
-                                <motion.div key={item.id} initial={{ opacity: 0, height: 0, x: -50 }} animate={{ opacity: 1, height: eq.size * 40, x: 0 }} exit={{ opacity: 0, height: 0, x: 50 }} transition={{ type: 'spring', stiffness: 200, damping: 20 }} className={`relative w-full ${eq.color} border-b border-gray-800 flex items-center justify-between px-3 text-white font-bold text-sm shadow-inner`}>
+                                <motion.div 
+                                  key={item.id} 
+                                  initial={{ opacity: 0, height: 0, x: -50 }} 
+                                  animate={{ opacity: 1, height: eq.size * 40, x: 0 }} 
+                                  exit={{ opacity: 0, height: 0, x: 50 }} 
+                                  transition={{ type: 'spring', stiffness: 200, damping: 20 }} 
+                                  whileHover={{ scale: 1.05, z: 50, boxShadow: "0px 15px 25px rgba(0,0,0,0.5)" }}
+                                  className={`relative w-full ${eq.color} border-b border-gray-800 flex items-center justify-between px-3 text-white font-bold text-sm shadow-inner cursor-pointer`}
+                                >
                                   <span>{eq.name}</span>
                                   <button onClick={() => removeRackItem(item.id)} className="p-1 bg-black/20 rounded hover:bg-black/40"><Trash2 className="w-3 h-3 text-white" /></button>
                                 </motion.div>
@@ -757,7 +766,7 @@ export default function App() {
 
         <AnimatePresence>
           {showClientView && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 flex flex-col p-4 md:p-12 overflow-y-auto">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 bg-black/80 flex flex-col p-4 md:p-12 overflow-y-auto" style={{ perspective: 1000 }}>
               <motion.div variants={modalVariants} initial="hidden" animate="visible" exit="exit" className="max-w-4xl mx-auto w-full bg-white rounded-3xl p-8 md:p-12 relative shadow-2xl text-gray-900 mt-10">
                 <button onClick={() => setShowClientView(false)} className="absolute top-6 right-6 p-2 bg-gray-100 rounded-full hover:bg-gray-200"><Trash2 className="w-6 h-6 text-gray-600" /></button>
                 <div className="text-center mb-10"><h1 className="text-4xl md:text-5xl font-extrabold text-blue-900 mb-2">{businessInfo.name}</h1><p className="text-xl text-gray-500">CCTV Security Proposal</p></div>
