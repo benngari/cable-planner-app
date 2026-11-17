@@ -13,7 +13,7 @@ import {
   ShieldCheck, ShieldAlert, Sparkles, Palette, Wallet, RefreshCw,
   Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle, Package, Share2,
   FolderOpen, Save, Bookmark, AlertCircle, Box, BoxSelect, LayoutGrid, Router,
-  Volume2, Unplug, Terminal
+  Volume2, Unplug, Terminal, Eye
 } from 'lucide-react';
 
 const CATALOG = {
@@ -242,10 +242,11 @@ export default function App() {
     }
   };
 
+  // NEW: 3D Page Turn Transition
   const pageVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0, transition: { duration: 0.3 } },
-    exit: { opacity: 0, y: -20, transition: { duration: 0.2 } }
+    initial: { opacity: 0, rotateY: -20, scale: 0.95 },
+    animate: { opacity: 1, rotateY: 0, scale: 1, transition: { type: 'spring', stiffness: 100, damping: 20 } },
+    exit: { opacity: 0, rotateY: 20, scale: 0.95, transition: { duration: 0.2 } }
   };
 
   // NEW: 3D Flip Modal Animation
@@ -256,7 +257,7 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain}`}>
+    <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain}`} style={{ perspective: '1200px' }}>
       <header className={`sticky top-0 z-50 border-b ${isLight ? 'bg-white border-gray-200' : isDark ? 'bg-gray-900 border-gray-800' : 'bg-black border-[#222]'}`}>
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <motion.div whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('welcome')} className="flex items-center space-x-3 cursor-pointer">
@@ -293,7 +294,7 @@ export default function App() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 py-8 relative z-10" style={{ transformStyle: 'preserve-3d' }}>
         <AnimatePresence mode="wait">
           
           {currentView === 'welcome' && (
@@ -349,7 +350,7 @@ export default function App() {
                 <div className="space-y-4">
                   <h3 className="font-bold text-lg">Available Equipment</h3>
                   {Object.entries(RACK_EQUIPMENT).map(([key, item]) => (
-                    <motion.button whileHover={{ x: 5 }} whileTap={{ scale: 0.98 }} key={key} onClick={() => addRackItem(key)} className={`w-full flex items-center justify-between p-3 rounded-lg border shadow-sm hover:shadow-md transition-all ${bgCard}`}>
+                    <motion.button whileHover={{ x: 5, scale: 1.02 }} whileTap={{ scale: 0.98 }} key={key} onClick={() => addRackItem(key)} className={`w-full flex items-center justify-between p-3 rounded-lg border shadow-sm hover:shadow-md transition-all ${bgCard}`}>
                       <div className="flex items-center space-x-3">
                         <div className={`w-4 h-4 rounded-full ${item.color}`}></div>
                         <span className="font-medium text-sm">{item.name} ({item.size}U)</span>
@@ -375,9 +376,9 @@ export default function App() {
                               return (
                                 <motion.div 
                                   key={item.id} 
-                                  initial={{ opacity: 0, height: 0, x: -50 }} 
-                                  animate={{ opacity: 1, height: eq.size * 40, x: 0 }} 
-                                  exit={{ opacity: 0, height: 0, x: 50 }} 
+                                  initial={{ opacity: 0, height: 0, x: -50, rotateY: -30 }} 
+                                  animate={{ opacity: 1, height: eq.size * 40, x: 0, rotateY: 0 }} 
+                                  exit={{ opacity: 0, height: 0, x: 50, rotateY: 30 }} 
                                   transition={{ type: 'spring', stiffness: 200, damping: 20 }} 
                                   whileHover={{ scale: 1.05, z: 50, boxShadow: "0px 15px 25px rgba(0,0,0,0.5)" }}
                                   className={`relative w-full ${eq.color} border-b border-gray-800 flex items-center justify-between px-3 text-white font-bold text-sm shadow-inner cursor-pointer`}
@@ -480,7 +481,7 @@ export default function App() {
                 </div>
               ) : (
                 savedProjects.map(project => (
-                  <motion.div whileHover={{ scale: 1.01 }} key={project.id} onClick={() => handleLoadProject(project)} className={`p-4 rounded-xl border cursor-pointer hover:border-blue-500 flex justify-between items-center ${bgCard}`}>
+                  <motion.div whileHover={{ scale: 1.01, rotateX: 2, rotateY: -2 }} key={project.id} onClick={() => handleLoadProject(project)} className={`p-4 rounded-xl border cursor-pointer hover:border-blue-500 flex justify-between items-center ${bgCard}`}>
                     <div><h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">{project.client}</h3><p className={`text-sm ${textMuted}`}>Date Saved: {project.date}</p></div>
                     <div className="flex items-center space-x-4">
                       <button onClick={(e) => handleDeleteProject(project.id, e)} className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 rounded hover:bg-red-200"><Trash2 className="w-5 h-5" /></button>
@@ -496,14 +497,14 @@ export default function App() {
             <motion.div key="upsell" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="space-y-6">
               <div className="text-center mb-8"><h2 className="text-3xl font-bold mb-2">Camera Quality Comparison</h2><p className={textMuted}>Show this screen to the client to close the sale.</p></div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <motion.div whileHover={{ y: -5 }} className={`rounded-2xl border overflow-hidden ${bgCard}`}>
+                <motion.div whileHover={{ y: -5, rotateX: 5 }} className={`rounded-2xl border overflow-hidden ${bgCard}`} style={{ transformStyle: "preserve-3d" }}>
                   <div className="h-64 bg-gray-300 dark:bg-gray-700 relative flex items-center justify-center">
                     <span className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-bold">Standard 2MP</span>
                     <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Standard" className="w-full h-full object-cover opacity-70 grayscale-[30%]" />
                   </div>
                   <div className="p-6"><h3 className="text-xl font-bold mb-2">Standard 1080p</h3><ul className="space-y-2 text-sm text-gray-500"><li className="flex items-center space-x-2"><CheckSquare className="w-4 h-4"/> <span>Good for general indoor viewing.</span></li><li className="flex items-center space-x-2"><CheckSquare className="w-4 h-4"/> <span>Black & White at night (IR).</span></li></ul></div>
                 </motion.div>
-                <motion.div whileHover={{ y: -5 }} className={`rounded-2xl border-2 border-purple-500 overflow-hidden shadow-lg ${bgCard}`}>
+                <motion.div whileHover={{ y: -5, rotateX: 5 }} className={`rounded-2xl border-2 border-purple-500 overflow-hidden shadow-lg ${bgCard}`} style={{ transformStyle: "preserve-3d" }}>
                   <div className="h-64 bg-gray-300 relative flex items-center justify-center">
                     <span className="absolute top-4 left-4 bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">Premium 4K / ColorVu</span>
                     <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Premium" className="w-full h-full object-cover brightness-110 contrast-125" />
@@ -690,6 +691,41 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+
+                {/* NEW: Animated 3D FOV Simulator */}
+                <div className={`p-6 rounded-xl border ${bgCard}`}>
+                  <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Eye className="w-5 h-5 text-purple-500" /> <span>Camera Coverage (FOV)</span></h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className={`text-xs mb-1 font-bold ${textMuted}`}>Select Lens (FOV)</label>
+                      <select value={appData.lensType || '3.6'} onChange={e => updateData('lensType', e.target.value)} className={`w-full px-3 py-2 rounded border mb-4 ${bgInput}`}>
+                        <option value="2.8">2.8mm Lens (Wide Angle ~100°)</option>
+                        <option value="3.6">3.6mm Lens (Standard ~80°)</option>
+                        <option value="4">4.0mm Lens (Narrow ~70°)</option>
+                        <option value="6">6.0mm Lens (Telephoto ~50°)</option>
+                      </select>
+                    </div>
+                    <div className="relative h-48 bg-gray-200 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 flex items-center justify-center" style={{ perspective: '800px' }}>
+                      <div className="absolute bottom-4 text-xs text-gray-500 z-10">Top-Down View</div>
+                      <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-red-500 rounded-full shadow z-10" />
+                      <motion.div 
+                        animate={{ 
+                          width: appData.lensType === '2.8' ? '300px' : appData.lensType === '3.6' ? '220px' : appData.lensType === '4' ? '180px' : '120px',
+                          rotateX: 20
+                        }}
+                        transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+                        className="absolute bottom-10 left-1/2 origin-bottom bg-gradient-to-t from-blue-500/60 to-transparent border-t border-l border-r border-blue-500/80"
+                        style={{
+                          height: '150px',
+                          transform: 'translateX(-50%)',
+                          clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
+                          filter: 'drop-shadow(0 10px 10px rgba(59, 130, 246, 0.5))'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
               </div>
               <div className={`p-6 rounded-xl border h-fit sticky top-24 ${bgCard}`}>
                 <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><FileSpreadsheet className="w-5 h-5 text-green-500" /> <span>Quote Summary</span></h3>
