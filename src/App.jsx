@@ -13,7 +13,7 @@ import {
   ShieldCheck, ShieldAlert, Sparkles, Palette, Wallet, RefreshCw,
   Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle, Package, Share2,
   FolderOpen, Save, Bookmark, AlertCircle, Box, BoxSelect, LayoutGrid, Router,
-  Volume2, Unplug, Terminal, Eye
+  Volume2, Unplug, Terminal, Eye, Award, Briefcase
 } from 'lucide-react';
 
 const CATALOG = {
@@ -101,6 +101,7 @@ export default function App() {
   const [showLabels, setShowLabels] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [flippedCard, setFlippedCard] = useState(null); // For 3D Upsell Cards
 
   const [newDevice, setNewDevice] = useState({ name: '', ip: '', gateway: '', vlan: '10' });
 
@@ -242,14 +243,14 @@ export default function App() {
     }
   };
 
-  // NEW: 3D Page Turn Transition
+  // 3D Page Turn Transition
   const pageVariants = {
     initial: { opacity: 0, rotateY: -20, scale: 0.95 },
     animate: { opacity: 1, rotateY: 0, scale: 1, transition: { type: 'spring', stiffness: 100, damping: 20 } },
     exit: { opacity: 0, rotateY: 20, scale: 0.95, transition: { duration: 0.2 } }
   };
 
-  // NEW: 3D Flip Modal Animation
+  // 3D Flip Modal Animation
   const modalVariants = {
     hidden: { opacity: 0, rotateX: 90, scale: 0.8 },
     visible: { opacity: 1, rotateX: 0, scale: 1, transition: { type: 'spring', damping: 20, stiffness: 200 } },
@@ -257,11 +258,26 @@ export default function App() {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain}`} style={{ perspective: '1200px' }}>
-      <header className={`sticky top-0 z-50 border-b ${isLight ? 'bg-white border-gray-200' : isDark ? 'bg-gray-900 border-gray-800' : 'bg-black border-[#222]'}`}>
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+    <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain} relative overflow-hidden`} style={{ perspective: '1200px' }}>
+      
+      {/* 3D CYBER GRID BACKGROUND */}
+      <div className="fixed inset-0 z-0 pointer-events-none" style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}>
+        <motion.div
+          animate={{ backgroundPosition: ["0px 0px", "0px 40px"] }}
+          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+          className="absolute inset-0 w-[200%] h-[200%] -left-1/2 -top-1/2 opacity-[0.03] dark:opacity-[0.05]"
+          style={{
+            backgroundImage: `linear-gradient(#3b82f6 1px, transparent 1px), linear-gradient(90deg, #3b82f6 1px, transparent 1px)`,
+            backgroundSize: '40px 40px',
+            transform: 'rotateX(60deg) translateY(-10%)',
+          }}
+        />
+      </div>
+
+      <header className={`sticky top-0 z-50 border-b backdrop-blur-md ${isLight ? 'bg-white/80 border-gray-200' : isDark ? 'bg-gray-900/80 border-gray-800' : 'bg-black/80 border-[#222]'}`}>
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center relative z-10">
           <motion.div whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('welcome')} className="flex items-center space-x-3 cursor-pointer">
-            <div className="bg-blue-600 p-2.5 rounded-xl"><Cable className="w-6 h-6 text-white" /></div>
+            <div className="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/30"><Cable className="w-6 h-6 text-white" /></div>
             <div>
               <h1 className={`text-2xl font-bold ${isBlack ? 'text-white' : 'text-blue-600'}`}>CableIQ</h1>
               <p className={`text-xs ${textMuted}`}>Engineer Dashboard</p>
@@ -334,6 +350,74 @@ export default function App() {
                 <h3 className="text-lg font-bold mb-1">Upsell Showcase</h3>
                 <p className={`text-xs ${textMuted}`}>Show clients the value of 4K.</p>
               </TiltCard>
+            </motion.div>
+          )}
+
+          {currentView === 'upsell' && (
+            <motion.div key="upsell" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="space-y-6" style={{ perspective: 1500 }}>
+              <div className="text-center mb-8"><h2 className="text-3xl font-bold mb-2">Camera Quality Comparison</h2><p className={textMuted}>Click a card to flip it and see the specs.</p></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* 3D FLIP CARD - STANDARD */}
+                <motion.div 
+                  onClick={() => setFlippedCard(flippedCard === 'standard' ? null : 'standard')}
+                  animate={{ rotateY: flippedCard === 'standard' ? 180 : 0 }}
+                  transition={{ duration: 0.6, type: "spring" }}
+                  style={{ transformStyle: "preserve-3d", cursor: 'pointer' }}
+                  className="relative h-[400px] w-full"
+                >
+                  {/* Front */}
+                  <div className={`absolute inset-0 backface-hidden rounded-2xl border overflow-hidden ${bgCard}`} style={{ backfaceVisibility: 'hidden' }}>
+                    <div className="h-64 bg-gray-300 dark:bg-gray-700 relative flex items-center justify-center">
+                      <span className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-bold">Standard 2MP</span>
+                      <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Standard" className="w-full h-full object-cover opacity-70 grayscale-[30%]" />
+                    </div>
+                    <div className="p-6"><h3 className="text-xl font-bold mb-2">Standard 1080p</h3><p className={`text-sm ${textMuted}`}>Good for general indoor viewing. Tap to flip.</p></div>
+                  </div>
+                  {/* Back */}
+                  <div className={`absolute inset-0 backface-hidden rounded-2xl border p-8 bg-gray-100 dark:bg-gray-800 flex flex-col justify-center`} style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                    <h3 className="text-2xl font-bold mb-4">Standard Tech Specs</h3>
+                    <ul className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
+                      <li><strong>Resolution:</strong> 2MP (1920x1080)</li>
+                      <li><strong>Night Vision:</strong> Standard IR (Black & White)</li>
+                      <li><strong>Lens:</strong> Fixed 3.6mm</li>
+                      <li><strong>Audio:</strong> None</li>
+                      <li><strong>Smart Features:</strong> Basic Motion Detection</li>
+                    </ul>
+                  </div>
+                </motion.div>
+
+                {/* 3D FLIP CARD - PREMIUM */}
+                <motion.div 
+                  onClick={() => setFlippedCard(flippedCard === 'premium' ? null : 'premium')}
+                  animate={{ rotateY: flippedCard === 'premium' ? 180 : 0 }}
+                  transition={{ duration: 0.6, type: "spring" }}
+                  style={{ transformStyle: "preserve-3d", cursor: 'pointer' }}
+                  className="relative h-[400px] w-full"
+                >
+                  {/* Front */}
+                  <div className={`absolute inset-0 backface-hidden rounded-2xl border-2 border-purple-500 overflow-hidden shadow-lg ${bgCard}`} style={{ backfaceVisibility: 'hidden' }}>
+                    <div className="h-64 bg-gray-300 relative flex items-center justify-center">
+                      <span className="absolute top-4 left-4 bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">Premium 4K / ColorVu</span>
+                      <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Premium" className="w-full h-full object-cover brightness-110 contrast-125" />
+                    </div>
+                    <div className="p-6"><h3 className="text-xl font-bold mb-2 text-purple-600 dark:text-purple-400">4K ColorVu</h3><p className={`text-sm ${textMuted}`}>Full color at night. Tap to flip.</p></div>
+                  </div>
+                  {/* Back */}
+                  <div className={`absolute inset-0 backface-hidden rounded-2xl border-2 border-purple-500 p-8 bg-purple-50 dark:bg-purple-900/20 flex flex-col justify-center`} style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                    <h3 className="text-2xl font-bold mb-4 text-purple-700 dark:text-purple-300">Premium Tech Specs</h3>
+                    <ul className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+                      <li><strong>Resolution:</strong> 4K (3840x2160)</li>
+                      <li><strong>Night Vision:</strong> Full Color (ColorVu)</li>
+                      <li><strong>Lens:</strong> 2.8mm Wide Angle</li>
+                      <li><strong>Audio:</strong> Built-in Mic & Speaker</li>
+                      <li><strong>Smart Features:</strong> AI Human/Vehicle Detection</li>
+                    </ul>
+                  </div>
+                </motion.div>
+
+              </div>
+              <div className="text-center mt-8"><motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('cctv-planner')} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg text-lg hover:bg-blue-700">Proceed to Build Quote</motion.button></div>
             </motion.div>
           )}
 
@@ -498,29 +582,6 @@ export default function App() {
                   </motion.div>
                 ))
               )}
-            </motion.div>
-          )}
-
-          {currentView === 'upsell' && (
-            <motion.div key="upsell" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="space-y-6">
-              <div className="text-center mb-8"><h2 className="text-3xl font-bold mb-2">Camera Quality Comparison</h2><p className={textMuted}>Show this screen to the client to close the sale.</p></div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <motion.div whileHover={{ y: -5, rotateX: 5 }} className={`rounded-2xl border overflow-hidden ${bgCard}`} style={{ transformStyle: "preserve-3d" }}>
-                  <div className="h-64 bg-gray-300 dark:bg-gray-700 relative flex items-center justify-center">
-                    <span className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-bold">Standard 2MP</span>
-                    <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Standard" className="w-full h-full object-cover opacity-70 grayscale-[30%]" />
-                  </div>
-                  <div className="p-6"><h3 className="text-xl font-bold mb-2">Standard 1080p</h3><ul className="space-y-2 text-sm text-gray-500"><li className="flex items-center space-x-2"><CheckSquare className="w-4 h-4"/> <span>Good for general indoor viewing.</span></li><li className="flex items-center space-x-2"><CheckSquare className="w-4 h-4"/> <span>Black & White at night (IR).</span></li></ul></div>
-                </motion.div>
-                <motion.div whileHover={{ y: -5, rotateX: 5 }} className={`rounded-2xl border-2 border-purple-500 overflow-hidden shadow-lg ${bgCard}`} style={{ transformStyle: "preserve-3d" }}>
-                  <div className="h-64 bg-gray-300 relative flex items-center justify-center">
-                    <span className="absolute top-4 left-4 bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">Premium 4K / ColorVu</span>
-                    <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Premium" className="w-full h-full object-cover brightness-110 contrast-125" />
-                  </div>
-                  <div className="p-6"><h3 className="text-xl font-bold mb-2 text-purple-600 dark:text-purple-400">4K ColorVu</h3><ul className="space-y-2 text-sm text-gray-500"><li className="flex items-center space-x-2"><Sparkles className="w-4 h-4 text-purple-500"/> <span><strong>Full Color at Night</strong> (No spotlights needed).</span></li><li className="flex items-center space-x-2"><Sparkles className="w-4 h-4 text-purple-500"/> <span><strong>Read faces & number plates</strong> easily.</span></li></ul></div>
-                </motion.div>
-              </div>
-              <div className="text-center mt-8"><motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('cctv-planner')} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg text-lg hover:bg-blue-700">Proceed to Build Quote</motion.button></div>
             </motion.div>
           )}
 
