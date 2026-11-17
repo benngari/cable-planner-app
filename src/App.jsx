@@ -480,8 +480,16 @@ export default function App() {
                   <FolderOpen className="w-16 h-16 text-gray-500 mx-auto mb-4" /><h3 className="text-xl font-bold mb-2">No Saved Quotes</h3><p className={textMuted}>Create a quote and click the "Save" button in the header.</p>
                 </div>
               ) : (
-                savedProjects.map(project => (
-                  <motion.div whileHover={{ scale: 1.01, rotateX: 2, rotateY: -2 }} key={project.id} onClick={() => handleLoadProject(project)} className={`p-4 rounded-xl border cursor-pointer hover:border-blue-500 flex justify-between items-center ${bgCard}`}>
+                savedProjects.map((project, index) => (
+                  <motion.div 
+                    initial={{ opacity: 0, rotateX: 45, y: 50 }} 
+                    animate={{ opacity: 1, rotateX: 0, y: 0 }} 
+                    transition={{ type: "spring", stiffness: 100, delay: index * 0.1 }} 
+                    whileHover={{ scale: 1.02, rotateY: -5, boxShadow: "0px 20px 30px rgba(0,0,0,0.1)" }} 
+                    key={project.id} 
+                    onClick={() => handleLoadProject(project)} 
+                    className={`p-4 rounded-xl border cursor-pointer hover:border-blue-500 flex justify-between items-center ${bgCard}`}
+                  >
                     <div><h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">{project.client}</h3><p className={`text-sm ${textMuted}`}>Date Saved: {project.date}</p></div>
                     <div className="flex items-center space-x-4">
                       <button onClick={(e) => handleDeleteProject(project.id, e)} className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 rounded hover:bg-red-200"><Trash2 className="w-5 h-5" /></button>
@@ -692,7 +700,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* NEW: Animated 3D FOV Simulator */}
+                {/* 3D ANIMATED FOV SIMULATOR */}
                 <div className={`p-6 rounded-xl border ${bgCard}`}>
                   <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Eye className="w-5 h-5 text-purple-500" /> <span>Camera Coverage (FOV)</span></h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -736,8 +744,18 @@ export default function App() {
                   <div className="flex justify-between"><span>Cables & Acc:</span> <span className={textMain}>{formatKES(cablePrice + accPrice)}</span></div>
                   <div className="flex justify-between"><span>Labor:</span> <span className={textMain}>{formatKES(laborPrice)}</span></div>
                   <div className="flex justify-between text-red-500"><span>Transport:</span> <span>{formatKES(transportTotal)}</span></div>
-                  <div className="border-t pt-2 mt-2 flex justify-between font-bold text-lg"><span>Total:</span> <span className="text-green-500">{formatKES(totalCCTV)}</span></div>
                 </div>
+                
+                {/* 3D LEVITATING PRICE */}
+                <motion.div
+                  animate={{ y: [0, -5, 0], boxShadow: ["0px 0px 0px rgba(0,0,0,0)", "0px 15px 20px rgba(59,130,246,0.2)", "0px 0px 0px rgba(0,0,0,0)"] }}
+                  transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                  className="mt-4 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white"
+                >
+                  <p className="text-sm opacity-80">Total</p>
+                  <p className="text-3xl font-bold">{formatKES(totalCCTV)}</p>
+                </motion.div>
+
                 <motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('report')} className="w-full mt-6 py-3 bg-blue-600 text-white font-bold rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-700"><Printer className="w-5 h-5" /> <span>Preview Document</span></motion.button>
               </div>
             </motion.div>
