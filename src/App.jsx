@@ -13,7 +13,7 @@ import {
   ShieldCheck, ShieldAlert, Sparkles, Palette, Wallet, RefreshCw,
   Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle, Package, Share2,
   FolderOpen, Save, Bookmark, AlertCircle, Box, BoxSelect, LayoutGrid, Router,
-  Volume2, Unplug, Terminal, Eye, GripVertical
+  Volume2, Unplug, Terminal, Eye, GripVertical, DollarSign, Edit
 } from 'lucide-react';
 
 const CATALOG = {
@@ -48,7 +48,8 @@ const defaultState = {
   calcCams: 4, calcRes: '2MP', calcComp: 'H.265', calcHdd: 1000,
   fuelDistance: 20, fuelPrice: 190, fuelConsumption: 12, transportFee: 0,
   ipRecords: [],
-  rackItems: [] 
+  rackItems: [],
+  hardwarePrices: {} // NEW: Custom Prices
 };
 
 const TiltCard = ({ children, className, onClick }) => {
@@ -127,6 +128,20 @@ export default function App() {
 
   const businessInfo = { name: 'Ngari Tech Solutions', phone: '0711645837', mpesa: 'Paybill 400200' };
 
+  // --- HELPER: GET PRICE (Custom or Default) ---
+  const getPrice = (category, key) => {
+    if (appData.hardwarePrices?.[category]?.[key] !== undefined) {
+      return appData.hardwarePrices[category][key];
+    }
+    return CATALOG[category][key].price;
+  };
+
+  const updatePrice = (category, key, newPrice) => {
+    const currentPrices = appData.hardwarePrices || {};
+    const updatedCategory = { ...currentPrices[category], [key]: Number(newPrice) };
+    updateData('hardwarePrices', { ...currentPrices, [category]: updatedCategory });
+  };
+
   const selectedCameraKey = `${appData.systemType === 'Analog' ? 'analog' : 'ip'}${appData.cameraShape}`;
   const selectedCamera = CATALOG.cameras[selectedCameraKey];
 
@@ -142,12 +157,13 @@ export default function App() {
 
   const formatKES = (amount) => `KSh ${Math.round(amount).toLocaleString()}`;
 
-  const camPrice = selectedCamera.price * appData.quantity;
-  const recorderPrice = appData.systemType === 'Analog' ? CATALOG.dvrs.hik4.price : CATALOG.nvrs.hik4.price;
-  const storagePrice = CATALOG.storage[appData.selectedStorage].price;
-  const cablePrice = appData.cableLength * (appData.systemType === 'Analog' ? CATALOG.accessories.rg59.price : CATALOG.accessories.cat6.price);
-  const accPrice = appData.systemType === 'Analog' ? (CATALOG.accessories.psu.price + CATALOG.accessories.connectors.price) : 0;
-  const laborPrice = CATALOG.labor.basic.price;
+  // --- CALCULATIONS ---
+  const camPrice = getPrice('cameras', selectedCameraKey) * appData.quantity;
+  const recorderPrice = appData.systemType === 'Analog' ? getPrice('dvrs', 'hik4') : getPrice('nvrs', 'hik4');
+  const storagePrice = getPrice('storage', appData.selectedStorage);
+  const cablePrice = appData.cableLength * (appData.systemType === 'Analog' ? getPrice('accessories', 'rg59') : getPrice('accessories', 'cat6'));
+  const accPrice = appData.systemType === 'Analog' ? (getPrice('accessories', 'psu') + getPrice('accessories', 'connectors')) : 0;
+  const laborPrice = getPrice('labor', 'basic');
   const fuelCost = (appData.fuelDistance / appData.fuelConsumption) * appData.fuelPrice;
   const transportTotal = Math.round(fuelCost + appData.transportFee);
   const totalCCTV = camPrice + recorderPrice + storagePrice + cablePrice + accPrice + laborPrice + transportTotal;
@@ -159,7 +175,7 @@ export default function App() {
     const lengthWithWaste = rawLength * 1.15;
     const boxes = Math.ceil(lengthWithWaste / 305) || 0;
     const patchPanels = Math.ceil(ports / 24) || 0;
-    const cost = (boxes * CATALOG.cabling.cat6Box.price) + (ports * CATALOG.cabling.keystone.price) + (ports * CATALOG.cabling.faceplate.price) + (patchPanels * CATALOG.cabling.patchPanel.price) + (ports * CATALOG.cabling.patchCord.price) + (ports * CATALOG.cabling.laborPerDrop);
+    const cost = (boxes * getPrice('cabling', 'cat6Box')) + (ports * getPrice('cabling', 'keystone')) + (ports * getPrice('cabling', 'faceplate')) + (patchPanels * getPrice('cabling', 'patchPanel')) + (ports * getPrice('cabling', 'patchCord')) + (ports * getPrice('cabling', 'laborPerDrop'));
     return { ports, lengthWithWaste, boxes, patchPanels, cost };
   };
   const cabTotals = calculateCabling();
@@ -282,7 +298,6 @@ export default function App() {
             </div>
           </motion.div>
           <div className="flex items-center space-x-2">
-            {/* 3D MAGNETIC BUTTONS */}
             <motion.button whileHover={{ scale: 1.05, rotateX: 10, rotateY: 10, boxShadow: "0px 10px 20px rgba(59,130,246,0.3)" }} whileTap={{ scale: 0.95 }} onClick={handleSaveProject} className={`px-3 py-2 rounded-xl flex items-center space-x-2 text-sm font-bold bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 transition-all`}>
               <Save className="w-4 h-4" /> <span className="hidden sm:inline">Save</span>
             </motion.button>
@@ -351,6 +366,112 @@ export default function App() {
                 <h3 className="text-lg font-bold mb-1">Upsell Showcase</h3>
                 <p className={`text-xs ${textMuted}`}>Show clients the value of 4K.</p>
               </TiltCard>
+              <TiltCard onClick={() => setCurrentView('pricing')} className={`p-4 border shadow-sm hover:shadow-2xl ${bgCard}`}>
+                <DollarSign className="w-8 h-8 text-emerald-500 mb-3" />
+                <h3 className="text-lg font-bold mb-1">Hardware Prices</h3>
+                <p className={`text-xs ${textMuted}`}>Update your supplier costs.</p>
+              </TiltCard>
+            </motion.div>
+          )}
+
+          {currentView === 'pricing' && (
+            <motion.div key="pricing" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="max-w-4xl mx-auto space-y-6">
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h2 className="text-2xl font-bold">Hardware Pricing</h2>
+                  <p className={textMuted}>Update your base costs here. The app will use these for all calculations.</p>
+                </div>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('welcome')} className={`px-4 py-2 font-bold rounded-lg ${bgButton}`}>Back</motion.button>
+              </div>
+
+              <div className={`p-6 rounded-xl border ${bgCard}`}>
+                <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><DollarSign className="w-5 h-5 text-emerald-500" /> <span>Custom Price Settings (KSh)</span></h3>
+                
+                <div className="space-y-6">
+                  {/* DVRs & NVRs */}
+                  <div>
+                    <h4 className={`font-bold mb-2 ${textMuted}`}>Recorders</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(CATALOG.dvrs).map(([key, item]) => (
+                        <div key={key} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                          <span className="text-sm font-medium">{item.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">KSh</span>
+                            <input type="number" value={appData.hardwarePrices?.dvrs?.[key] ?? item.price} onChange={(e) => updatePrice('dvrs', key, e.target.value)} className={`w-24 p-1 text-right rounded border ${bgInput}`} />
+                          </div>
+                        </div>
+                      ))}
+                      {Object.entries(CATALOG.nvrs).map(([key, item]) => (
+                        <div key={key} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                          <span className="text-sm font-medium">{item.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">KSh</span>
+                            <input type="number" value={appData.hardwarePrices?.nvrs?.[key] ?? item.price} onChange={(e) => updatePrice('nvrs', key, e.target.value)} className={`w-24 p-1 text-right rounded border ${bgInput}`} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Cameras */}
+                  <div>
+                    <h4 className={`font-bold mb-2 ${textMuted}`}>Cameras</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(CATALOG.cameras).map(([key, item]) => (
+                        <div key={key} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                          <span className="text-sm font-medium">{item.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">KSh</span>
+                            <input type="number" value={appData.hardwarePrices?.cameras?.[key] ?? item.price} onChange={(e) => updatePrice('cameras', key, e.target.value)} className={`w-24 p-1 text-right rounded border ${bgInput}`} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Storage & Acc */}
+                  <div>
+                    <h4 className={`font-bold mb-2 ${textMuted}`}>Storage & Accessories</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(CATALOG.storage).map(([key, item]) => (
+                        <div key={key} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                          <span className="text-sm font-medium">{item.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">KSh</span>
+                            <input type="number" value={appData.hardwarePrices?.storage?.[key] ?? item.price} onChange={(e) => updatePrice('storage', key, e.target.value)} className={`w-24 p-1 text-right rounded border ${bgInput}`} />
+                          </div>
+                        </div>
+                      ))}
+                      {Object.entries(CATALOG.accessories).map(([key, item]) => (
+                        <div key={key} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                          <span className="text-sm font-medium">{item.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">KSh</span>
+                            <input type="number" value={appData.hardwarePrices?.accessories?.[key] ?? item.price} onChange={(e) => updatePrice('accessories', key, e.target.value)} className={`w-24 p-1 text-right rounded border ${bgInput}`} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Cabling */}
+                  <div>
+                    <h4 className={`font-bold mb-2 ${textMuted}`}>Cabling Materials</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(CATALOG.cabling).map(([key, item]) => (
+                        <div key={key} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
+                          <span className="text-sm font-medium">{item.name}</span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500">KSh</span>
+                            <input type="number" value={appData.hardwarePrices?.cabling?.[key] ?? item.price} onChange={(e) => updatePrice('cabling', key, e.target.value)} className={`w-24 p-1 text-right rounded border ${bgInput}`} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
             </motion.div>
           )}
 
@@ -383,7 +504,6 @@ export default function App() {
                       <div className="text-sm font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">{rackRemainingU}U Available</div>
                     </div>
                     
-                    {/* 3D ISOMETRIC RACK */}
                     <motion.div 
                       initial={{ rotateX: 25, rotateY: -15, rotateZ: 5 }}
                       whileHover={{ rotateX: 0, rotateY: 0, rotateZ: 0, scale: 1.02 }}
@@ -401,13 +521,7 @@ export default function App() {
                               <Reorder.Item 
                                 key={item.id} 
                                 value={item} 
-                                whileDrag={{ 
-                                  scale: 1.1, 
-                                  rotateX: 10, 
-                                  zIndex: 50, 
-                                  boxShadow: "0px 20px 30px rgba(0,0,0,0.6)",
-                                  backgroundColor: "#374151"
-                                }}
+                                whileDrag={{ scale: 1.1, rotateX: 10, zIndex: 50, boxShadow: "0px 20px 30px rgba(0,0,0,0.6)", backgroundColor: "#374151" }}
                                 className={`relative w-full ${eq.color} border-b border-gray-800 flex items-center justify-between px-3 text-white font-bold text-sm shadow-inner cursor-grab active:cursor-grabbing`}
                                 style={{ height: `${eq.size * 40}px`, listStyle: 'none' }}
                               >
