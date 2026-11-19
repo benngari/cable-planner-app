@@ -1,7 +1,7 @@
 ﻿// src/App.jsx
 import React, { useState, useEffect } from 'react';
 import html2pdf from 'html2pdf.js';
-import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, Reorder } from 'framer-motion';
 import { 
   Camera, Network, Cable, Home as HomeIcon, FileSpreadsheet, 
   Sun, Moon, CircleDot, Cpu, Lightbulb, ArrowRight, Download, 
@@ -13,7 +13,7 @@ import {
   ShieldCheck, ShieldAlert, Sparkles, Palette, Wallet, RefreshCw,
   Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle, Package, Share2,
   FolderOpen, Save, Bookmark, AlertCircle, Box, BoxSelect, LayoutGrid, Router,
-  Volume2, Unplug, Terminal, Eye, Award, Briefcase
+  Volume2, Unplug, Terminal, Eye, GripVertical
 } from 'lucide-react';
 
 const CATALOG = {
@@ -101,7 +101,7 @@ export default function App() {
   const [showLabels, setShowLabels] = useState(false);
   const [copied, setCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
-  const [flippedCard, setFlippedCard] = useState(null); // For 3D Upsell Cards
+  const [flippedCard, setFlippedCard] = useState(null);
 
   const [newDevice, setNewDevice] = useState({ name: '', ip: '', gateway: '', vlan: '10' });
 
@@ -243,14 +243,12 @@ export default function App() {
     }
   };
 
-  // 3D Page Turn Transition
   const pageVariants = {
     initial: { opacity: 0, rotateY: -20, scale: 0.95 },
     animate: { opacity: 1, rotateY: 0, scale: 1, transition: { type: 'spring', stiffness: 100, damping: 20 } },
     exit: { opacity: 0, rotateY: 20, scale: 0.95, transition: { duration: 0.2 } }
   };
 
-  // 3D Flip Modal Animation
   const modalVariants = {
     hidden: { opacity: 0, rotateX: 90, scale: 0.8 },
     visible: { opacity: 1, rotateX: 0, scale: 1, transition: { type: 'spring', damping: 20, stiffness: 200 } },
@@ -284,21 +282,24 @@ export default function App() {
             </div>
           </motion.div>
           <div className="flex items-center space-x-2">
-            <motion.button whileTap={{ scale: 0.95 }} onClick={handleSaveProject} className={`px-3 py-2 rounded-xl flex items-center space-x-2 text-sm font-bold bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400`}>
+            {/* 3D MAGNETIC BUTTONS */}
+            <motion.button whileHover={{ scale: 1.05, rotateX: 10, rotateY: 10, boxShadow: "0px 10px 20px rgba(59,130,246,0.3)" }} whileTap={{ scale: 0.95 }} onClick={handleSaveProject} className={`px-3 py-2 rounded-xl flex items-center space-x-2 text-sm font-bold bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-400 transition-all`}>
               <Save className="w-4 h-4" /> <span className="hidden sm:inline">Save</span>
             </motion.button>
-            <motion.button whileTap={{ scale: 0.95 }} onClick={handleNewProject} className={`px-3 py-2 rounded-xl flex items-center space-x-2 text-sm font-bold bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400`}>
+            <motion.button whileHover={{ scale: 1.05, rotateX: 10, rotateY: 10, boxShadow: "0px 10px 20px rgba(34,197,94,0.3)" }} whileTap={{ scale: 0.95 }} onClick={handleNewProject} className={`px-3 py-2 rounded-xl flex items-center space-x-2 text-sm font-bold bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 transition-all`}>
               <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New</span>
             </motion.button>
-            <motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('welcome')} className={`px-4 py-2 rounded-xl ${bgButton}`}><HomeIcon className="w-5 h-5" /></motion.button>
+            
+            <motion.button whileHover={{ scale: 1.1, rotateY: -15 }} whileTap={{ scale: 0.9 }} onClick={() => setCurrentView('welcome')} className={`px-4 py-2 rounded-xl ${bgButton} transition-all`}><HomeIcon className="w-5 h-5" /></motion.button>
+            
             <div className="relative">
-              <motion.button whileTap={{ scale: 0.95 }} onClick={() => setShowThemeMenu(!showThemeMenu)} className={`px-4 py-2 rounded-xl flex items-center space-x-2 font-medium ${bgButton}`}>
+              <motion.button whileHover={{ scale: 1.05, rotateX: 5 }} whileTap={{ scale: 0.95 }} onClick={() => setShowThemeMenu(!showThemeMenu)} className={`px-4 py-2 rounded-xl flex items-center space-x-2 font-medium ${bgButton} transition-all`}>
                 {isLight ? <Sun className="w-5 h-5 text-orange-500" /> : isDark ? <Moon className="w-5 h-5 text-blue-400" /> : <CircleDot className="w-5 h-5 text-gray-300" />}
                 <ChevronDown className="w-4 h-4" />
               </motion.button>
               <AnimatePresence>
                 {showThemeMenu && (
-                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className={`absolute right-0 mt-2 w-48 rounded-xl shadow-xl border z-50 ${bgCard}`}>
+                  <motion.div initial={{ opacity: 0, y: -10, rotateX: -90 }} animate={{ opacity: 1, y: 0, rotateX: 0 }} exit={{ opacity: 0, y: -10, rotateX: -90 }} className={`absolute right-0 mt-2 w-48 rounded-xl shadow-xl border z-50 ${bgCard}`}>
                     <button onClick={() => { setTheme('light'); setShowThemeMenu(false); }} className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Light Mode</button>
                     <button onClick={() => { setTheme('dark'); setShowThemeMenu(false); }} className="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">Dark Mode</button>
                     <button onClick={() => { setTheme('black'); setShowThemeMenu(false); }} className="w-full text-left px-4 py-3 text-sm border-t hover:bg-gray-100 dark:hover:bg-gray-700">AMOLED Black</button>
@@ -353,80 +354,12 @@ export default function App() {
             </motion.div>
           )}
 
-          {currentView === 'upsell' && (
-            <motion.div key="upsell" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="space-y-6" style={{ perspective: 1500 }}>
-              <div className="text-center mb-8"><h2 className="text-3xl font-bold mb-2">Camera Quality Comparison</h2><p className={textMuted}>Click a card to flip it and see the specs.</p></div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                
-                {/* 3D FLIP CARD - STANDARD */}
-                <motion.div 
-                  onClick={() => setFlippedCard(flippedCard === 'standard' ? null : 'standard')}
-                  animate={{ rotateY: flippedCard === 'standard' ? 180 : 0 }}
-                  transition={{ duration: 0.6, type: "spring" }}
-                  style={{ transformStyle: "preserve-3d", cursor: 'pointer' }}
-                  className="relative h-[400px] w-full"
-                >
-                  {/* Front */}
-                  <div className={`absolute inset-0 backface-hidden rounded-2xl border overflow-hidden ${bgCard}`} style={{ backfaceVisibility: 'hidden' }}>
-                    <div className="h-64 bg-gray-300 dark:bg-gray-700 relative flex items-center justify-center">
-                      <span className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-bold">Standard 2MP</span>
-                      <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Standard" className="w-full h-full object-cover opacity-70 grayscale-[30%]" />
-                    </div>
-                    <div className="p-6"><h3 className="text-xl font-bold mb-2">Standard 1080p</h3><p className={`text-sm ${textMuted}`}>Good for general indoor viewing. Tap to flip.</p></div>
-                  </div>
-                  {/* Back */}
-                  <div className={`absolute inset-0 backface-hidden rounded-2xl border p-8 bg-gray-100 dark:bg-gray-800 flex flex-col justify-center`} style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-                    <h3 className="text-2xl font-bold mb-4">Standard Tech Specs</h3>
-                    <ul className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
-                      <li><strong>Resolution:</strong> 2MP (1920x1080)</li>
-                      <li><strong>Night Vision:</strong> Standard IR (Black & White)</li>
-                      <li><strong>Lens:</strong> Fixed 3.6mm</li>
-                      <li><strong>Audio:</strong> None</li>
-                      <li><strong>Smart Features:</strong> Basic Motion Detection</li>
-                    </ul>
-                  </div>
-                </motion.div>
-
-                {/* 3D FLIP CARD - PREMIUM */}
-                <motion.div 
-                  onClick={() => setFlippedCard(flippedCard === 'premium' ? null : 'premium')}
-                  animate={{ rotateY: flippedCard === 'premium' ? 180 : 0 }}
-                  transition={{ duration: 0.6, type: "spring" }}
-                  style={{ transformStyle: "preserve-3d", cursor: 'pointer' }}
-                  className="relative h-[400px] w-full"
-                >
-                  {/* Front */}
-                  <div className={`absolute inset-0 backface-hidden rounded-2xl border-2 border-purple-500 overflow-hidden shadow-lg ${bgCard}`} style={{ backfaceVisibility: 'hidden' }}>
-                    <div className="h-64 bg-gray-300 relative flex items-center justify-center">
-                      <span className="absolute top-4 left-4 bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">Premium 4K / ColorVu</span>
-                      <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Premium" className="w-full h-full object-cover brightness-110 contrast-125" />
-                    </div>
-                    <div className="p-6"><h3 className="text-xl font-bold mb-2 text-purple-600 dark:text-purple-400">4K ColorVu</h3><p className={`text-sm ${textMuted}`}>Full color at night. Tap to flip.</p></div>
-                  </div>
-                  {/* Back */}
-                  <div className={`absolute inset-0 backface-hidden rounded-2xl border-2 border-purple-500 p-8 bg-purple-50 dark:bg-purple-900/20 flex flex-col justify-center`} style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
-                    <h3 className="text-2xl font-bold mb-4 text-purple-700 dark:text-purple-300">Premium Tech Specs</h3>
-                    <ul className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
-                      <li><strong>Resolution:</strong> 4K (3840x2160)</li>
-                      <li><strong>Night Vision:</strong> Full Color (ColorVu)</li>
-                      <li><strong>Lens:</strong> 2.8mm Wide Angle</li>
-                      <li><strong>Audio:</strong> Built-in Mic & Speaker</li>
-                      <li><strong>Smart Features:</strong> AI Human/Vehicle Detection</li>
-                    </ul>
-                  </div>
-                </motion.div>
-
-              </div>
-              <div className="text-center mt-8"><motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('cctv-planner')} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg text-lg hover:bg-blue-700">Proceed to Build Quote</motion.button></div>
-            </motion.div>
-          )}
-
           {currentView === 'rack-builder' && (
             <motion.div key="rack" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="max-w-5xl mx-auto space-y-6">
               <div className="flex justify-between items-center mb-8">
                 <div>
                   <h2 className="text-2xl font-bold">Server Rack Builder</h2>
-                  <p className={textMuted}>Click to add equipment and visualize your 42U rack.</p>
+                  <p className={textMuted}>Click to add, then drag items up/down to re-arrange.</p>
                 </div>
                 <motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('welcome')} className={`px-4 py-2 font-bold rounded-lg ${bgButton}`}>Back</motion.button>
               </div>
@@ -449,36 +382,50 @@ export default function App() {
                       <h3 className="font-bold">Your Rack Layout</h3>
                       <div className="text-sm font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">{rackRemainingU}U Available</div>
                     </div>
-                    <div className="relative w-full max-w-sm mx-auto bg-gray-900 border-4 border-gray-700 rounded-lg shadow-2xl p-2" style={{ minHeight: '400px', perspective: '1000px' }}>
+                    
+                    {/* 3D ISOMETRIC RACK */}
+                    <motion.div 
+                      initial={{ rotateX: 25, rotateY: -15, rotateZ: 5 }}
+                      whileHover={{ rotateX: 0, rotateY: 0, rotateZ: 0, scale: 1.02 }}
+                      transition={{ type: "spring", stiffness: 100, damping: 20 }}
+                      className="relative w-full max-w-sm mx-auto bg-gray-900 border-4 border-gray-700 rounded-lg shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] p-2" 
+                      style={{ minHeight: '400px', transformStyle: 'preserve-3d', perspective: 1000 }}
+                    >
                       {appData.rackItems.length === 0 ? (
                         <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-20">Click equipment on the left to add it.</div>
                       ) : (
-                        <div className="flex flex-col" style={{ transformStyle: 'preserve-3d' }}>
-                          <AnimatePresence>
-                            {appData.rackItems.map((item, index) => {
-                              const eq = RACK_EQUIPMENT[item.type];
-                              return (
-                                <motion.div 
-                                  key={item.id} 
-                                  initial={{ opacity: 0, height: 0, x: -50, rotateY: -30 }} 
-                                  animate={{ opacity: 1, height: eq.size * 40, x: 0, rotateY: 0 }} 
-                                  exit={{ opacity: 0, height: 0, x: 50, rotateY: 30 }} 
-                                  transition={{ type: 'spring', stiffness: 200, damping: 20 }} 
-                                  whileHover={{ scale: 1.05, z: 50, boxShadow: "0px 15px 25px rgba(0,0,0,0.5)" }}
-                                  className={`relative w-full ${eq.color} border-b border-gray-800 flex items-center justify-between px-3 text-white font-bold text-sm shadow-inner cursor-pointer`}
-                                >
+                        <Reorder.Group axis="y" values={appData.rackItems} onReorder={(newOrder) => updateData('rackItems', newOrder)} className="flex flex-col" style={{ transformStyle: 'preserve-3d' }}>
+                          {appData.rackItems.map((item) => {
+                            const eq = RACK_EQUIPMENT[item.type];
+                            return (
+                              <Reorder.Item 
+                                key={item.id} 
+                                value={item} 
+                                whileDrag={{ 
+                                  scale: 1.1, 
+                                  rotateX: 10, 
+                                  zIndex: 50, 
+                                  boxShadow: "0px 20px 30px rgba(0,0,0,0.6)",
+                                  backgroundColor: "#374151"
+                                }}
+                                className={`relative w-full ${eq.color} border-b border-gray-800 flex items-center justify-between px-3 text-white font-bold text-sm shadow-inner cursor-grab active:cursor-grabbing`}
+                                style={{ height: `${eq.size * 40}px`, listStyle: 'none' }}
+                              >
+                                <div className="flex items-center space-x-2">
+                                  <GripVertical className="w-4 h-4 opacity-50" />
                                   <span>{eq.name}</span>
-                                  <button onClick={() => removeRackItem(item.id)} className="p-1 bg-black/20 rounded hover:bg-black/40"><Trash2 className="w-3 h-3 text-white" /></button>
-                                </motion.div>
-                              );
-                            })}
-                          </AnimatePresence>
-                          {rackRemainingU > 0 && (
-                            <div className="w-full border-t border-gray-700/50 border-dashed flex items-center justify-center text-gray-600 text-xs transition-all duration-500" style={{ height: `${rackRemainingU * 40}px` }}>{rackRemainingU}U Empty Space</div>
-                          )}
-                        </div>
+                                </div>
+                                <button onClick={() => removeRackItem(item.id)} className="p-1 bg-black/20 rounded hover:bg-black/40"><Trash2 className="w-3 h-3 text-white" /></button>
+                              </Reorder.Item>
+                            );
+                          })}
+                        </Reorder.Group>
                       )}
-                    </div>
+                      {rackRemainingU > 0 && (
+                        <div className="w-full border-t border-gray-700/50 border-dashed flex items-center justify-center text-gray-600 text-xs transition-all duration-500" style={{ height: `${rackRemainingU * 40}px` }}>{rackRemainingU}U Empty Space</div>
+                      )}
+                    </motion.div>
+                    
                     <div className="mt-6 flex justify-center">
                       <motion.button whileTap={{ scale: 0.95 }} onClick={() => {
                         const element = document.getElementById('pdf-rack-container');
@@ -582,6 +529,68 @@ export default function App() {
                   </motion.div>
                 ))
               )}
+            </motion.div>
+          )}
+
+          {currentView === 'upsell' && (
+            <motion.div key="upsell" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="space-y-6" style={{ perspective: 1500 }}>
+              <div className="text-center mb-8"><h2 className="text-3xl font-bold mb-2">Camera Quality Comparison</h2><p className={textMuted}>Click a card to flip it and see the specs.</p></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                <motion.div 
+                  onClick={() => setFlippedCard(flippedCard === 'standard' ? null : 'standard')}
+                  animate={{ rotateY: flippedCard === 'standard' ? 180 : 0 }}
+                  transition={{ duration: 0.6, type: "spring" }}
+                  style={{ transformStyle: "preserve-3d", cursor: 'pointer' }}
+                  className="relative h-[400px] w-full"
+                >
+                  <div className={`absolute inset-0 backface-hidden rounded-2xl border overflow-hidden ${bgCard}`} style={{ backfaceVisibility: 'hidden' }}>
+                    <div className="h-64 bg-gray-300 dark:bg-gray-700 relative flex items-center justify-center">
+                      <span className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-bold">Standard 2MP</span>
+                      <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Standard" className="w-full h-full object-cover opacity-70 grayscale-[30%]" />
+                    </div>
+                    <div className="p-6"><h3 className="text-xl font-bold mb-2">Standard 1080p</h3><p className={`text-sm ${textMuted}`}>Good for general indoor viewing. Tap to flip.</p></div>
+                  </div>
+                  <div className={`absolute inset-0 backface-hidden rounded-2xl border p-8 bg-gray-100 dark:bg-gray-800 flex flex-col justify-center`} style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                    <h3 className="text-2xl font-bold mb-4">Standard Tech Specs</h3>
+                    <ul className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
+                      <li><strong>Resolution:</strong> 2MP (1920x1080)</li>
+                      <li><strong>Night Vision:</strong> Standard IR (Black & White)</li>
+                      <li><strong>Lens:</strong> Fixed 3.6mm</li>
+                      <li><strong>Audio:</strong> None</li>
+                      <li><strong>Smart Features:</strong> Basic Motion Detection</li>
+                    </ul>
+                  </div>
+                </motion.div>
+
+                <motion.div 
+                  onClick={() => setFlippedCard(flippedCard === 'premium' ? null : 'premium')}
+                  animate={{ rotateY: flippedCard === 'premium' ? 180 : 0 }}
+                  transition={{ duration: 0.6, type: "spring" }}
+                  style={{ transformStyle: "preserve-3d", cursor: 'pointer' }}
+                  className="relative h-[400px] w-full"
+                >
+                  <div className={`absolute inset-0 backface-hidden rounded-2xl border-2 border-purple-500 overflow-hidden shadow-lg ${bgCard}`} style={{ backfaceVisibility: 'hidden' }}>
+                    <div className="h-64 bg-gray-300 relative flex items-center justify-center">
+                      <span className="absolute top-4 left-4 bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">Premium 4K / ColorVu</span>
+                      <img src="https://images.unsplash.com/photo-1557597774-9d273605dfa9?q=80&w=600&auto=format&fit=crop" alt="Premium" className="w-full h-full object-cover brightness-110 contrast-125" />
+                    </div>
+                    <div className="p-6"><h3 className="text-xl font-bold mb-2 text-purple-600 dark:text-purple-400">4K ColorVu</h3><p className={`text-sm ${textMuted}`}>Full color at night. Tap to flip.</p></div>
+                  </div>
+                  <div className={`absolute inset-0 backface-hidden rounded-2xl border-2 border-purple-500 p-8 bg-purple-50 dark:bg-purple-900/20 flex flex-col justify-center`} style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}>
+                    <h3 className="text-2xl font-bold mb-4 text-purple-700 dark:text-purple-300">Premium Tech Specs</h3>
+                    <ul className="space-y-3 text-sm text-gray-700 dark:text-gray-300">
+                      <li><strong>Resolution:</strong> 4K (3840x2160)</li>
+                      <li><strong>Night Vision:</strong> Full Color (ColorVu)</li>
+                      <li><strong>Lens:</strong> 2.8mm Wide Angle</li>
+                      <li><strong>Audio:</strong> Built-in Mic & Speaker</li>
+                      <li><strong>Smart Features:</strong> AI Human/Vehicle Detection</li>
+                    </ul>
+                  </div>
+                </motion.div>
+
+              </div>
+              <div className="text-center mt-8"><motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('cctv-planner')} className="px-8 py-3 bg-blue-600 text-white font-bold rounded-lg text-lg hover:bg-blue-700">Proceed to Build Quote</motion.button></div>
             </motion.div>
           )}
 
@@ -761,7 +770,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 3D ANIMATED FOV SIMULATOR */}
                 <div className={`p-6 rounded-xl border ${bgCard}`}>
                   <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Eye className="w-5 h-5 text-purple-500" /> <span>Camera Coverage (FOV)</span></h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -807,7 +815,6 @@ export default function App() {
                   <div className="flex justify-between text-red-500"><span>Transport:</span> <span>{formatKES(transportTotal)}</span></div>
                 </div>
                 
-                {/* 3D LEVITATING PRICE */}
                 <motion.div
                   animate={{ y: [0, -5, 0], boxShadow: ["0px 0px 0px rgba(0,0,0,0)", "0px 15px 20px rgba(59,130,246,0.2)", "0px 0px 0px rgba(0,0,0,0)"] }}
                   transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
