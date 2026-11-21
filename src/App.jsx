@@ -94,6 +94,33 @@ const TiltCard = ({ children, className, onClick }) => {
   );
 };
 
+// NEW: Reusable Pricing Input Component
+const PriceInput = ({ category, itemKey, defaultPrice, currentPrice, onUpdate, bgInput, textMuted, isCustom }) => {
+  return (
+    <div className={`flex justify-between items-center p-3 rounded-lg transition-colors border ${isCustom ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent bg-gray-50 dark:bg-gray-700/50'}`}>
+      <span className="text-sm font-medium pr-2 leading-tight">{itemKey}</span>
+      <div className="flex items-center space-x-2 shrink-0">
+        <span className={`text-xs ${textMuted}`}>KSh</span>
+        <input 
+          type="number" 
+          value={currentPrice ?? defaultPrice} 
+          onChange={(e) => onUpdate(category, itemKey, e.target.value)} 
+          className={`w-24 p-1.5 text-right font-mono text-sm rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${bgInput} ${isCustom ? 'border-blue-500 text-blue-600 dark:text-blue-400 font-bold' : ''}`} 
+        />
+        {isCustom && (
+          <button 
+            onClick={() => onUpdate(category, itemKey, defaultPrice)} 
+            className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
+            title="Reset to default"
+          >
+            <RefreshCw className="w-3 h-3" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [theme, setTheme] = useState('dark');
   const [showThemeMenu, setShowThemeMenu] = useState(false);
@@ -152,7 +179,10 @@ export default function App() {
   const textMain = isLight ? 'text-gray-900' : 'text-gray-100';
   const textMuted = isLight ? 'text-gray-500' : isDark ? 'text-gray-400' : 'text-gray-500';
   const bgCard = isLight ? 'bg-white border-gray-200' : isDark ? 'bg-gray-800 border-gray-700' : 'bg-[#0a0a0a] border-[#222]';
-  const bgInput = isLight ? 'bg-gray-50 border-gray-300 text-gray-900' : isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-[#111] border-[#333] text-white';
+  
+  // UPDATED: Added better focus rings, hover states, and transitions
+  const bgInput = `transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isLight ? 'bg-gray-50 border-gray-300 text-gray-900 hover:border-gray-400' : isDark ? 'bg-gray-700 border-gray-600 text-white hover:border-gray-500' : 'bg-[#111] border-[#333] text-white hover:border-[#555]'}`;
+  
   const bgButton = isLight ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' : isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-[#222] text-white hover:bg-[#333]';
 
   const formatKES = (amount) => `KSh ${Math.round(amount).toLocaleString()}`;
@@ -374,103 +404,86 @@ export default function App() {
             </motion.div>
           )}
 
+          {/* UPDATED: DYNAMIC PRICING VIEW */}
           {currentView === 'pricing' && (
-            <motion.div key="pricing" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="max-w-4xl mx-auto space-y-6">
-              <div className="flex justify-between items-center mb-8">
+            <motion.div key="pricing" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="max-w-5xl mx-auto space-y-6 pb-20">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
-                  <h2 className="text-2xl font-bold">Hardware Pricing</h2>
-                  <p className={textMuted}>Update your base costs here. The app will use these for all calculations.</p>
+                  <h2 className="text-3xl font-extrabold tracking-tight">Hardware Pricing</h2>
+                  <p className={textMuted}>Update your supplier costs. Highlighted fields indicate custom pricing.</p>
                 </div>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('welcome')} className={`px-4 py-2 font-bold rounded-lg ${bgButton}`}>Back</motion.button>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('welcome')} className={`px-4 py-2 font-bold rounded-lg flex items-center space-x-2 ${bgButton}`}>
+                  <ArrowRight className="w-4 h-4 rotate-180" /> <span>Back</span>
+                </motion.button>
               </div>
 
-              <div className={`p-6 rounded-xl border ${bgCard}`}>
-                <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><DollarSign className="w-5 h-5 text-emerald-500" /> <span>Custom Price Settings (KSh)</span></h3>
-                
-                <div className="space-y-6">
-                  {/* DVRs & NVRs */}
-                  <div>
-                    <h4 className={`font-bold mb-2 ${textMuted}`}>Recorders</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(CATALOG.dvrs).map(([key, item]) => (
-                        <div key={key} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                          <span className="text-sm font-medium">{item.name}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-500">KSh</span>
-                            <input type="number" value={appData.hardwarePrices?.dvrs?.[key] ?? item.price} onChange={(e) => updatePrice('dvrs', key, e.target.value)} className={`w-24 p-1 text-right rounded border ${bgInput}`} />
-                          </div>
-                        </div>
-                      ))}
-                      {Object.entries(CATALOG.nvrs).map(([key, item]) => (
-                        <div key={key} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                          <span className="text-sm font-medium">{item.name}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-500">KSh</span>
-                            <input type="number" value={appData.hardwarePrices?.nvrs?.[key] ?? item.price} onChange={(e) => updatePrice('nvrs', key, e.target.value)} className={`w-24 p-1 text-right rounded border ${bgInput}`} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {Object.entries(CATALOG).map(([categoryName, categoryData]) => {
+                  // Skip if no data or if it's primitive (like laborPerDrop inside cabling)
+                  if (!categoryData) return null; 
 
-                  {/* Cameras */}
-                  <div>
-                    <h4 className={`font-bold mb-2 ${textMuted}`}>Cameras</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(CATALOG.cameras).map(([key, item]) => (
-                        <div key={key} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                          <span className="text-sm font-medium">{item.name}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-500">KSh</span>
-                            <input type="number" value={appData.hardwarePrices?.cameras?.[key] ?? item.price} onChange={(e) => updatePrice('cameras', key, e.target.value)} className={`w-24 p-1 text-right rounded border ${bgInput}`} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  return (
+                    <div key={categoryName} className={`p-6 rounded-2xl border shadow-sm ${bgCard}`}>
+                      <h3 className="text-lg font-bold mb-4 flex items-center space-x-2 capitalize border-b pb-2 border-gray-200 dark:border-gray-700">
+                        <DollarSign className="w-5 h-5 text-emerald-500" /> 
+                        <span>{categoryName.replace(/([A-Z])/g, ' $1').trim()}</span>
+                      </h3>
+                      <div className="space-y-2">
+                        {Object.entries(categoryData).map(([key, item]) => {
+                          // Handle nested primitives (like laborPerDrop: 1500)
+                          if (typeof item !== 'object' || item === null) {
+                            return (
+                              <PriceInput 
+                                key={key}
+                                category={categoryName}
+                                itemKey={key.replace(/([A-Z])/g, ' $1').trim()} // e.g. labor Per Drop
+                                defaultPrice={item}
+                                currentPrice={appData.hardwarePrices?.[categoryName]?.[key]}
+                                onUpdate={(cat, k, val) => {
+                                  if (Number(val) === item) {
+                                    const newPrices = { ...appData.hardwarePrices };
+                                    if (newPrices[cat]) delete newPrices[cat][k];
+                                    updateData('hardwarePrices', newPrices);
+                                  } else {
+                                    updatePrice(cat, k, val);
+                                  }
+                                }}
+                                bgInput={bgInput}
+                                textMuted={textMuted}
+                                isCustom={appData.hardwarePrices?.[categoryName]?.[key] !== undefined}
+                              />
+                            );
+                          }
 
-                  {/* Storage & Acc */}
-                  <div>
-                    <h4 className={`font-bold mb-2 ${textMuted}`}>Storage & Accessories</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(CATALOG.storage).map(([key, item]) => (
-                        <div key={key} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                          <span className="text-sm font-medium">{item.name}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-500">KSh</span>
-                            <input type="number" value={appData.hardwarePrices?.storage?.[key] ?? item.price} onChange={(e) => updatePrice('storage', key, e.target.value)} className={`w-24 p-1 text-right rounded border ${bgInput}`} />
-                          </div>
-                        </div>
-                      ))}
-                      {Object.entries(CATALOG.accessories).map(([key, item]) => (
-                        <div key={key} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                          <span className="text-sm font-medium">{item.name}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-500">KSh</span>
-                            <input type="number" value={appData.hardwarePrices?.accessories?.[key] ?? item.price} onChange={(e) => updatePrice('accessories', key, e.target.value)} className={`w-24 p-1 text-right rounded border ${bgInput}`} />
-                          </div>
-                        </div>
-                      ))}
+                          // Handle standard objects
+                          const isCustom = appData.hardwarePrices?.[categoryName]?.[key] !== undefined;
+                          
+                          return (
+                            <PriceInput 
+                              key={key}
+                              category={categoryName}
+                              itemKey={item.name || key}
+                              defaultPrice={item.price}
+                              currentPrice={appData.hardwarePrices?.[categoryName]?.[key]}
+                              onUpdate={(cat, k, val) => {
+                                if (Number(val) === item.price) {
+                                  const newPrices = { ...appData.hardwarePrices };
+                                  if (newPrices[cat]) delete newPrices[cat][k];
+                                  updateData('hardwarePrices', newPrices);
+                                } else {
+                                  updatePrice(cat, k, val);
+                                }
+                              }}
+                              bgInput={bgInput}
+                              textMuted={textMuted}
+                              isCustom={isCustom}
+                            />
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-
-                  {/* Cabling */}
-                  <div>
-                    <h4 className={`font-bold mb-2 ${textMuted}`}>Cabling Materials</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(CATALOG.cabling).map(([key, item]) => (
-                        <div key={key} className="flex justify-between items-center p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                          <span className="text-sm font-medium">{item.name}</span>
-                          <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-500">KSh</span>
-                            <input type="number" value={appData.hardwarePrices?.cabling?.[key] ?? item.price} onChange={(e) => updatePrice('cabling', key, e.target.value)} className={`w-24 p-1 text-right rounded border ${bgInput}`} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                </div>
+                  );
+                })}
               </div>
             </motion.div>
           )}
