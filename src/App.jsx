@@ -13,7 +13,7 @@ import {
   ShieldCheck, ShieldAlert, Sparkles, Palette, Wallet, RefreshCw,
   Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle, Package, Share2,
   FolderOpen, Save, Bookmark, AlertCircle, Box, BoxSelect, LayoutGrid, Router,
-  Volume2, Unplug, Terminal, Eye, GripVertical, DollarSign, Edit
+  Volume2, Unplug, Terminal, Eye, GripVertical, DollarSign, Edit, TrendingUp
 } from 'lucide-react';
 
 const CATALOG = {
@@ -28,7 +28,7 @@ const CATALOG = {
   storage: { hdd500: { name: '500GB HDD', price: 3100 }, hdd1tb: { name: '1TB HDD', price: 5500 }, hdd2tb: { name: '2TB HDD', price: 9800 } },
   accessories: { psu: { name: 'Power Supply', price: 1500 }, rg59: { name: 'RG59 Cable /m', price: 20 }, cat6: { name: 'Cat6 Cable /m', price: 65 }, connectors: { name: 'Connectors', price: 250 } },
   labor: { diy: { name: 'Supply Only', price: 0 }, basic: { name: 'Basic Install', price: 4500 } },
-  cabling: { cat6Box: { name: 'Cat6 Box (305m)', price: 19500 }, keystone: { name: 'Keystone', price: 150 }, faceplate: { name: 'Faceplate', price: 200 }, patchPanel: { name: '24-Port Panel', price: 4500 }, patchCord: { name: 'Patch Cord', price: 450 }, laborPerDrop: 1500 }
+  cabling: { cat6Box: { name: 'Cat6 Box (305m)', price: 19500 }, keystone: { name: 'Keystone', price: 150 }, faceplate: { name: 'Faceplate', price: 200 }, patchPanel: { name: '24-Port Panel', price: 4500 }, patchCord: { name: 'Patch Cord', price: 450 }, laborPerDrop: { name: 'Labor Per Drop', price: 1500 } }
 };
 
 const RACK_EQUIPMENT = {
@@ -49,7 +49,8 @@ const defaultState = {
   fuelDistance: 20, fuelPrice: 190, fuelConsumption: 12, transportFee: 0,
   ipRecords: [],
   rackItems: [],
-  hardwarePrices: {} // NEW: Custom Prices
+  hardwarePrices: {},
+  markupPercent: 20 // NEW: Profit Margin
 };
 
 const TiltCard = ({ children, className, onClick }) => {
@@ -94,13 +95,23 @@ const TiltCard = ({ children, className, onClick }) => {
   );
 };
 
-// NEW: Reusable Pricing Input Component
-const PriceInput = ({ category, itemKey, defaultPrice, currentPrice, onUpdate, bgInput, textMuted, isCustom }) => {
+// UPDATED: Reusable Pricing Input Component with Markup Display
+const PriceInput = ({ category, itemKey, defaultPrice, currentPrice, onUpdate, bgInput, textMuted, isCustom, markup }) => {
+  const cost = currentPrice ?? defaultPrice;
+  const sellingPrice = cost + (cost * (markup / 100));
+  
   return (
     <div className={`flex justify-between items-center p-3 rounded-lg transition-colors border ${isCustom ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent bg-gray-50 dark:bg-gray-700/50'}`}>
-      <span className="text-sm font-medium pr-2 leading-tight">{itemKey}</span>
+      <div className="flex flex-col">
+        <span className="text-sm font-medium pr-2 leading-tight">{itemKey}</span>
+        {markup > 0 && (
+          <span className="text-[10px] text-green-600 dark:text-green-400 font-bold mt-0.5">
+            Sell: KSh {Math.round(sellingPrice).toLocaleString()}
+          </span>
+        )}
+      </div>
       <div className="flex items-center space-x-2 shrink-0">
-        <span className={`text-xs ${textMuted}`}>KSh</span>
+        <span className={`text-xs ${textMuted}`}>Cost</span>
         <input 
           type="number" 
           value={currentPrice ?? defaultPrice} 
@@ -155,12 +166,12 @@ export default function App() {
 
   const businessInfo = { name: 'Ngari Tech Solutions', phone: '0711645837', mpesa: 'Paybill 400200' };
 
-  // --- HELPER: GET PRICE (Custom or Default) ---
   const getPrice = (category, key) => {
     if (appData.hardwarePrices?.[category]?.[key] !== undefined) {
       return appData.hardwarePrices[category][key];
     }
-    return CATALOG[category][key].price;
+    // Handle nested primitive fallback (for old saved data)
+    return CATALOG[category][key].price ?? CATALOG[category][key];
   };
 
   const updatePrice = (category, key, newPrice) => {
@@ -179,15 +190,11 @@ export default function App() {
   const textMain = isLight ? 'text-gray-900' : 'text-gray-100';
   const textMuted = isLight ? 'text-gray-500' : isDark ? 'text-gray-400' : 'text-gray-500';
   const bgCard = isLight ? 'bg-white border-gray-200' : isDark ? 'bg-gray-800 border-gray-700' : 'bg-[#0a0a0a] border-[#222]';
-  
-  // UPDATED: Added better focus rings, hover states, and transitions
   const bgInput = `transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${isLight ? 'bg-gray-50 border-gray-300 text-gray-900 hover:border-gray-400' : isDark ? 'bg-gray-700 border-gray-600 text-white hover:border-gray-500' : 'bg-[#111] border-[#333] text-white hover:border-[#555]'}`;
-  
   const bgButton = isLight ? 'bg-gray-200 text-gray-800 hover:bg-gray-300' : isDark ? 'bg-gray-700 text-white hover:bg-gray-600' : 'bg-[#222] text-white hover:bg-[#333]';
 
   const formatKES = (amount) => `KSh ${Math.round(amount).toLocaleString()}`;
 
-  // --- CALCULATIONS ---
   const camPrice = getPrice('cameras', selectedCameraKey) * appData.quantity;
   const recorderPrice = appData.systemType === 'Analog' ? getPrice('dvrs', 'hik4') : getPrice('nvrs', 'hik4');
   const storagePrice = getPrice('storage', appData.selectedStorage);
@@ -304,7 +311,6 @@ export default function App() {
   return (
     <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain} relative overflow-hidden`} style={{ perspective: '1200px' }}>
       
-      {/* 3D CYBER GRID BACKGROUND */}
       <div className="fixed inset-0 z-0 pointer-events-none" style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}>
         <motion.div
           animate={{ backgroundPosition: ["0px 0px", "0px 40px"] }}
@@ -399,29 +405,48 @@ export default function App() {
               <TiltCard onClick={() => setCurrentView('pricing')} className={`p-4 border shadow-sm hover:shadow-2xl ${bgCard}`}>
                 <DollarSign className="w-8 h-8 text-emerald-500 mb-3" />
                 <h3 className="text-lg font-bold mb-1">Hardware Prices</h3>
-                <p className={`text-xs ${textMuted}`}>Update your supplier costs.</p>
+                <p className={`text-xs ${textMuted}`}>Update costs & margins.</p>
               </TiltCard>
             </motion.div>
           )}
 
-          {/* UPDATED: DYNAMIC PRICING VIEW */}
           {currentView === 'pricing' && (
             <motion.div key="pricing" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="max-w-5xl mx-auto space-y-6 pb-20">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
                 <div>
                   <h2 className="text-3xl font-extrabold tracking-tight">Hardware Pricing</h2>
-                  <p className={textMuted}>Update your supplier costs. Highlighted fields indicate custom pricing.</p>
+                  <p className={textMuted}>Update supplier costs and set your markup margin.</p>
                 </div>
                 <motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('welcome')} className={`px-4 py-2 font-bold rounded-lg flex items-center space-x-2 ${bgButton}`}>
                   <ArrowRight className="w-4 h-4 rotate-180" /> <span>Back</span>
                 </motion.button>
               </div>
 
+              {/* NEW: Global Markup Setting */}
+              <div className={`p-4 rounded-xl border flex items-center justify-between ${bgCard} bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800`}>
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                    <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm">Profit Margin / Markup</h3>
+                    <p className={`text-xs ${textMuted}`}>Applied to calculate recommended selling prices.</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="number" 
+                    value={appData.markupPercent ?? 20} 
+                    onChange={(e) => updateData('markupPercent', Number(e.target.value))} 
+                    className={`w-20 p-2 text-right font-bold text-lg rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 ${bgInput}`} 
+                  />
+                  <span className="font-bold text-lg">%</span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {Object.entries(CATALOG).map(([categoryName, categoryData]) => {
-                  // Skip if no data or if it's primitive (like laborPerDrop inside cabling)
                   if (!categoryData) return null; 
-
                   return (
                     <div key={categoryName} className={`p-6 rounded-2xl border shadow-sm ${bgCard}`}>
                       <h3 className="text-lg font-bold mb-4 flex items-center space-x-2 capitalize border-b pb-2 border-gray-200 dark:border-gray-700">
@@ -430,43 +455,20 @@ export default function App() {
                       </h3>
                       <div className="space-y-2">
                         {Object.entries(categoryData).map(([key, item]) => {
-                          // Handle nested primitives (like laborPerDrop: 1500)
-                          if (typeof item !== 'object' || item === null) {
-                            return (
-                              <PriceInput 
-                                key={key}
-                                category={categoryName}
-                                itemKey={key.replace(/([A-Z])/g, ' $1').trim()} // e.g. labor Per Drop
-                                defaultPrice={item}
-                                currentPrice={appData.hardwarePrices?.[categoryName]?.[key]}
-                                onUpdate={(cat, k, val) => {
-                                  if (Number(val) === item) {
-                                    const newPrices = { ...appData.hardwarePrices };
-                                    if (newPrices[cat]) delete newPrices[cat][k];
-                                    updateData('hardwarePrices', newPrices);
-                                  } else {
-                                    updatePrice(cat, k, val);
-                                  }
-                                }}
-                                bgInput={bgInput}
-                                textMuted={textMuted}
-                                isCustom={appData.hardwarePrices?.[categoryName]?.[key] !== undefined}
-                              />
-                            );
-                          }
-
-                          // Handle standard objects
                           const isCustom = appData.hardwarePrices?.[categoryName]?.[key] !== undefined;
+                          const defaultPrice = typeof item === 'object' ? item.price : item;
+                          const itemName = typeof item === 'object' ? item.name : key.replace(/([A-Z])/g, ' $1').trim();
                           
                           return (
                             <PriceInput 
                               key={key}
                               category={categoryName}
-                              itemKey={item.name || key}
-                              defaultPrice={item.price}
+                              itemKey={itemName}
+                              defaultPrice={defaultPrice}
                               currentPrice={appData.hardwarePrices?.[categoryName]?.[key]}
+                              markup={appData.markupPercent ?? 20}
                               onUpdate={(cat, k, val) => {
-                                if (Number(val) === item.price) {
+                                if (Number(val) === defaultPrice) {
                                   const newPrices = { ...appData.hardwarePrices };
                                   if (newPrices[cat]) delete newPrices[cat][k];
                                   updateData('hardwarePrices', newPrices);
