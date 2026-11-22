@@ -13,7 +13,8 @@ import {
   ShieldCheck, ShieldAlert, Sparkles, Palette, Wallet, RefreshCw,
   Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle, Package, Share2,
   FolderOpen, Save, Bookmark, AlertCircle, Box, BoxSelect, LayoutGrid, Router,
-  Volume2, Unplug, Terminal, Eye, GripVertical, DollarSign, Edit, TrendingUp
+  Volume2, Unplug, Terminal, Eye, GripVertical, DollarSign, Edit, TrendingUp,
+  CheckCircle2, Circle
 } from 'lucide-react';
 
 const CATALOG = {
@@ -40,6 +41,22 @@ const RACK_EQUIPMENT = {
   blank: { name: 'Blanking Panel', size: 1, color: 'bg-gray-600' }
 };
 
+const defaultChecklist = [
+  { id: 1, text: 'Site survey and measurements completed', category: 'Pre-Installation', completed: false },
+  { id: 2, text: 'Cable runs mapped out and approved', category: 'Pre-Installation', completed: false },
+  { id: 3, text: 'Equipment and materials delivered to site', category: 'Pre-Installation', completed: false },
+  { id: 4, text: 'Cable trays, conduits, or trunking installed', category: 'Installation', completed: false },
+  { id: 5, text: 'Cables pulled, dressed, and secured', category: 'Installation', completed: false },
+  { id: 6, text: 'RJ45 / Keystone terminations completed', category: 'Installation', completed: false },
+  { id: 7, text: 'Patch panel dressed and labeled', category: 'Installation', completed: false },
+  { id: 8, text: 'Continuity tested all drops (Fluke/Tester)', category: 'Testing & Commissioning', completed: false },
+  { id: 9, text: 'Speed / Bandwidth tests passed', category: 'Testing & Commissioning', completed: false },
+  { id: 10, text: 'Cameras focused and angles adjusted', category: 'Testing & Commissioning', completed: false },
+  { id: 11, text: 'DVR/NVR configured and recording verified', category: 'Testing & Commissioning', completed: false },
+  { id: 12, text: 'Client shown mobile app access and training', category: 'Handover', completed: false },
+  { id: 13, text: 'Site cleaned and all debris removed', category: 'Handover', completed: false },
+];
+
 const defaultState = {
   clientName: '', clientPhone: '',
   systemType: 'Analog', cameraShape: 'Bullet', quantity: 4, cableLength: 50, selectedStorage: 'hdd500', lensType: '3.6',
@@ -50,7 +67,9 @@ const defaultState = {
   ipRecords: [],
   rackItems: [],
   hardwarePrices: {},
-  markupPercent: 20 // NEW: Profit Margin
+  markupPercent: 20,
+  checklist: defaultChecklist,
+  clientSignoff: { name: '', date: '' }
 };
 
 const TiltCard = ({ children, className, onClick }) => {
@@ -95,7 +114,6 @@ const TiltCard = ({ children, className, onClick }) => {
   );
 };
 
-// UPDATED: Reusable Pricing Input Component with Markup Display
 const PriceInput = ({ category, itemKey, defaultPrice, currentPrice, onUpdate, bgInput, textMuted, isCustom, markup }) => {
   const cost = currentPrice ?? defaultPrice;
   const sellingPrice = cost + (cost * (markup / 100));
@@ -146,7 +164,8 @@ export default function App() {
 
   const [appData, setAppData] = useState(() => {
     const saved = localStorage.getItem('cableiq_current');
-    return saved ? JSON.parse(saved) : defaultState;
+    // Merge with defaultState to prevent crashes if new fields are added
+    return saved ? { ...defaultState, ...JSON.parse(saved) } : defaultState;
   });
 
   const [savedProjects, setSavedProjects] = useState(() => {
@@ -170,7 +189,6 @@ export default function App() {
     if (appData.hardwarePrices?.[category]?.[key] !== undefined) {
       return appData.hardwarePrices[category][key];
     }
-    // Handle nested primitive fallback (for old saved data)
     return CATALOG[category][key].price ?? CATALOG[category][key];
   };
 
@@ -254,7 +272,7 @@ export default function App() {
   };
 
   const handleLoadProject = (project) => {
-    setAppData(project.data);
+    setAppData({ ...defaultState, ...project.data });
     setCurrentView('cctv-planner');
   };
 
@@ -295,6 +313,13 @@ export default function App() {
       setIsSharing(false);
     }
   };
+
+  const toggleChecklistItem = (id) => {
+    const updated = appData.checklist.map(item => item.id === id ? { ...item, completed: !item.completed } : item);
+    updateData('checklist', updated);
+  };
+
+  const checklistProgress = Math.round((appData.checklist.filter(c => c.completed).length / appData.checklist.length) * 100) || 0;
 
   const pageVariants = {
     initial: { opacity: 0, rotateY: -20, scale: 0.95 },
@@ -392,6 +417,11 @@ export default function App() {
                 <h3 className="text-lg font-bold mb-1">IP & VLAN Tracker</h3>
                 <p className={`text-xs ${textMuted}`}>Manage static IPs.</p>
               </TiltCard>
+              <TiltCard onClick={() => setCurrentView('checklist')} className={`p-4 border shadow-sm hover:shadow-2xl ${bgCard}`}>
+                <ClipboardCheck className="w-8 h-8 text-teal-500 mb-3" />
+                <h3 className="text-lg font-bold mb-1">Site Checklist</h3>
+                <p className={`text-xs ${textMuted}`}>Track installation progress.</p>
+              </TiltCard>
               <TiltCard onClick={() => setCurrentView('tools')} className={`p-4 border shadow-sm hover:shadow-2xl ${bgCard}`}>
                 <Wrench className="w-8 h-8 text-green-500 mb-3" />
                 <h3 className="text-lg font-bold mb-1">Engineer Tools</h3>
@@ -410,6 +440,89 @@ export default function App() {
             </motion.div>
           )}
 
+          {currentView === 'checklist' && (
+            <motion.div key="checklist" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="max-w-4xl mx-auto space-y-6">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-3xl font-extrabold tracking-tight">Site Handover Checklist</h2>
+                  <p className={textMuted}>Track progress and ensure no steps are missed.</p>
+                </div>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('welcome')} className={`px-4 py-2 font-bold rounded-lg flex items-center space-x-2 ${bgButton}`}>
+                  <ArrowRight className="w-4 h-4 rotate-180" /> <span>Back</span>
+                </motion.button>
+              </div>
+
+              {/* Progress Bar */}
+              <div className={`p-6 rounded-xl border ${bgCard}`}>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="font-bold">Overall Progress</span>
+                  <span className="font-bold text-blue-600 dark:text-blue-400">{checklistProgress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }} 
+                    animate={{ width: `${checklistProgress}%` }} 
+                    transition={{ duration: 0.5, ease: "easeOut" }}
+                    className={`h-full rounded-full ${checklistProgress === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Group tasks by category */}
+                {['Pre-Installation', 'Installation', 'Testing & Commissioning', 'Handover'].map(category => (
+                  <div key={category} className={`p-6 rounded-xl border ${bgCard}`}>
+                    <h3 className="text-lg font-bold mb-4 border-b pb-2 dark:border-gray-700">{category}</h3>
+                    <div className="space-y-3">
+                      {appData.checklist.filter(item => item.category === category).map(item => (
+                        <div 
+                          key={item.id} 
+                          onClick={() => toggleChecklistItem(item.id)}
+                          className="flex items-start space-x-3 cursor-pointer group"
+                        >
+                          <button className="mt-0.5 shrink-0 transition-colors">
+                            {item.completed 
+                              ? <CheckCircle2 className="w-5 h-5 text-green-500" /> 
+                              : <Circle className="w-5 h-5 text-gray-400 group-hover:text-blue-500" />
+                            }
+                          </button>
+                          <span className={`text-sm ${item.completed ? 'line-through text-gray-400' : ''}`}>
+                            {item.text}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Client Sign-off */}
+              <div className={`p-6 rounded-xl border ${bgCard}`}>
+                <h3 className="text-lg font-bold mb-4">Client Sign-off</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="text-xs mb-1 font-bold">Client Name</label>
+                    <input type="text" placeholder="John Doe" value={appData.clientSignoff.name} onChange={e => updateData('clientSignoff', { ...appData.clientSignoff, name: e.target.value })} className={`w-full p-2 rounded border ${bgInput}`} />
+                  </div>
+                  <div>
+                    <label className="text-xs mb-1 font-bold">Date Signed</label>
+                    <input type="date" value={appData.clientSignoff.date} onChange={e => updateData('clientSignoff', { ...appData.clientSignoff, date: e.target.value })} className={`w-full p-2 rounded border ${bgInput}`} />
+                  </div>
+                </div>
+                <motion.button 
+                  whileTap={{ scale: 0.95 }} 
+                  onClick={() => {
+                    if(checklistProgress < 100) return alert("Please complete all tasks before printing the handover certificate.");
+                    window.print();
+                  }} 
+                  className={`w-full py-3 font-bold rounded-lg flex items-center justify-center space-x-2 ${checklistProgress === 100 ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'}`}
+                >
+                  <Printer className="w-5 h-5" /> <span>Print Handover Certificate</span>
+                </motion.button>
+              </div>
+            </motion.div>
+          )}
+
           {currentView === 'pricing' && (
             <motion.div key="pricing" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="max-w-5xl mx-auto space-y-6 pb-20">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
@@ -422,7 +535,6 @@ export default function App() {
                 </motion.button>
               </div>
 
-              {/* NEW: Global Markup Setting */}
               <div className={`p-4 rounded-xl border flex items-center justify-between ${bgCard} bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800`}>
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
