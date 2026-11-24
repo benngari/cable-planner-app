@@ -69,7 +69,9 @@ const defaultState = {
   hardwarePrices: {},
   markupPercent: 20,
   checklist: defaultChecklist,
-  clientSignoff: { name: '', date: '' }
+  clientSignoff: { name: '', date: '' },
+  subnetIp: '192.168.1.10',
+  subnetCidr: 24
 };
 
 const TiltCard = ({ children, className, onClick }) => {
@@ -164,7 +166,6 @@ export default function App() {
 
   const [appData, setAppData] = useState(() => {
     const saved = localStorage.getItem('cableiq_current');
-    // Merge with defaultState to prevent crashes if new fields are added
     return saved ? { ...defaultState, ...JSON.parse(saved) } : defaultState;
   });
 
@@ -321,6 +322,39 @@ export default function App() {
 
   const checklistProgress = Math.round((appData.checklist.filter(c => c.completed).length / appData.checklist.length) * 100) || 0;
 
+  // Subnet Calculator Logic
+  const calculateSubnet = (ipStr, cidrStr) => {
+    const cidr = parseInt(cidrStr, 10);
+    if (isNaN(cidr) || cidr < 0 || cidr > 32) return null;
+    
+    const ipParts = ipStr.split('.').map(Number);
+    if (ipParts.length !== 4 || ipParts.some(isNaN) || ipParts.some(p => p < 0 || p > 255)) return null;
+    
+    const ipInt = (ipParts[0] << 24) | (ipParts[1] << 16) | (ipParts[2] << 8) | ipParts[3];
+    const maskInt = cidr === 0 ? 0 : (0xFFFFFFFF << (32 - cidr)) >>> 0;
+    
+    const network = (ipInt & maskInt) >>> 0;
+    const broadcast = (network | (~maskInt)) >>> 0;
+    
+    const intToIp = (int) => {
+      return [ (int >>> 24) & 255, (int >>> 16) & 255, (int >>> 8) & 255, int & 255 ].join('.');
+    };
+    
+    const totalHosts = Math.pow(2, (32 - cidr));
+    const usableHosts = totalHosts > 2 ? totalHosts - 2 : 0;
+    
+    return {
+      network: intToIp(network),
+      broadcast: intToIp(broadcast),
+      firstIp: totalHosts > 2 ? intToIp(network + 1) : 'N/A',
+      lastIp: totalHosts > 2 ? intToIp(broadcast - 1) : 'N/A',
+      mask: intToIp(maskInt),
+      usableHosts
+    };
+  };
+  
+  const subnetResult = calculateSubnet(appData.subnetIp || '192.168.1.10', appData.subnetCidr ?? 24);
+
   const pageVariants = {
     initial: { opacity: 0, rotateY: -20, scale: 0.95 },
     animate: { opacity: 1, rotateY: 0, scale: 1, transition: { type: 'spring', stiffness: 100, damping: 20 } },
@@ -452,7 +486,6 @@ export default function App() {
                 </motion.button>
               </div>
 
-              {/* Progress Bar */}
               <div className={`p-6 rounded-xl border ${bgCard}`}>
                 <div className="flex justify-between items-center mb-2">
                   <span className="font-bold">Overall Progress</span>
@@ -469,7 +502,6 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Group tasks by category */}
                 {['Pre-Installation', 'Installation', 'Testing & Commissioning', 'Handover'].map(category => (
                   <div key={category} className={`p-6 rounded-xl border ${bgCard}`}>
                     <h3 className="text-lg font-bold mb-4 border-b pb-2 dark:border-gray-700">{category}</h3>
@@ -496,7 +528,6 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Client Sign-off */}
               <div className={`p-6 rounded-xl border ${bgCard}`}>
                 <h3 className="text-lg font-bold mb-4">Client Sign-off</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -928,6 +959,27 @@ export default function App() {
                   </div>
                   <div className={`p-4 rounded text-center ${isLight ? 'bg-orange-50' : 'bg-orange-900/20'}`}><p className="text-2xl font-bold text-orange-600">{(12 - (appData.voltLength * appData.voltAmps * 0.0164)).toFixed(2)}V</p></div>
                 </motion.div>
+
+                {/* NEW: Subnet Calculator */}
+                <motion.div whileHover={{ y: -3 }} className={`p-6 rounded-xl border ${bgCard} md:col-span-2 lg:col-span-1`}>
+                  <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Globe className="w-5 h-5 text-indigo-500" /> <span>Subnet Calculator</span></h3>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div><label className="text-xs">IP Address</label><input type="text" value={appData.subnetIp || ''} onChange={e => updateData('subnetIp', e.target.value)} className={`w-full p-2 rounded ${bgInput}`} placeholder="192.168.1.10" /></div>
+                    <div><label className="text-xs">CIDR (0-32)</label><input type="number" min="0" max="32" value={appData.subnetCidr ?? 24} onChange={e => updateData('subnetCidr', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                  </div>
+                  {subnetResult ? (
+                    <div className={`p-4 rounded text-sm space-y-1 ${isLight ? 'bg-indigo-50' : 'bg-indigo-900/20'}`}>
+                      <div className="flex justify-between"><span className="text-gray-500">Mask:</span> <span className="font-mono font-bold">{subnetResult.mask}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Network:</span> <span className="font-mono font-bold">{subnetResult.network}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Range:</span> <span className="font-mono font-bold">{subnetResult.firstIp} - {subnetResult.lastIp}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Broadcast:</span> <span className="font-mono font-bold">{subnetResult.broadcast}</span></div>
+                      <div className="flex justify-between border-t border-indigo-200 dark:border-indigo-800 pt-1 mt-1"><span className="text-indigo-600 dark:text-indigo-400 font-bold">Usable IPs:</span> <span className="font-bold text-indigo-700 dark:text-indigo-300">{subnetResult.usableHosts.toLocaleString()}</span></div>
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-red-500 text-sm bg-red-50 dark:bg-red-900/20 rounded">Invalid IP or CIDR</div>
+                  )}
+                </motion.div>
+
               </div>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={`p-6 rounded-xl border mt-6 ${bgCard}`}>
                 <h3 className="text-lg font-bold mb-6 flex items-center space-x-2"><Terminal className="w-5 h-5 text-cyan-500" /> <span>Field Cable Tester & Tracer Guide</span></h3>
