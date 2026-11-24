@@ -14,7 +14,7 @@ import {
   Wifi, Star, Smartphone, Database, Car, Copy, CheckCircle, Package, Share2,
   FolderOpen, Save, Bookmark, AlertCircle, Box, BoxSelect, LayoutGrid, Router,
   Volume2, Unplug, Terminal, Eye, GripVertical, DollarSign, Edit, TrendingUp,
-  CheckCircle2, Circle
+  CheckCircle2, Circle, GitCommit, Scissors, Plug
 } from 'lucide-react';
 
 const CATALOG = {
@@ -71,16 +71,16 @@ const defaultState = {
   checklist: defaultChecklist,
   clientSignoff: { name: '', date: '' },
   subnetIp: '192.168.1.10',
-  subnetCidr: 24
+  subnetCidr: 24,
+  ohmData: { v: '12', i: '1', r: '', p: '' }, // NEW: Ohm's Law
+  fiberData: { length: 1, connectors: 2, splices: 0 } // NEW: Fiber Loss
 };
 
 const TiltCard = ({ children, className, onClick }) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
-
   const mouseXSpring = useSpring(x);
   const mouseYSpring = useSpring(y);
-
   const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["17.5deg", "-17.5deg"]);
   const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-17.5deg", "17.5deg"]);
 
@@ -90,28 +90,15 @@ const TiltCard = ({ children, className, onClick }) => {
     const height = rect.height;
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
-    const xPct = mouseX / width - 0.5;
-    const yPct = mouseY / height - 0.5;
-    x.set(xPct);
-    y.set(yPct);
+    x.set(mouseX / width - 0.5);
+    y.set(mouseY / height - 0.5);
   };
 
-  const handleMouseLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
+  const handleMouseLeave = () => { x.set(0); y.set(0); };
 
   return (
-    <motion.div
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      onClick={onClick}
-      style={{ rotateY, rotateX, transformStyle: "preserve-3d" }}
-      className={`relative rounded-2xl cursor-pointer ${className}`}
-    >
-      <div style={{ transform: "translateZ(30px)" }}>
-        {children}
-      </div>
+    <motion.div onMouseMove={handleMouseMove} onMouseLeave={handleMouseLeave} onClick={onClick} style={{ rotateY, rotateX, transformStyle: "preserve-3d" }} className={`relative rounded-2xl cursor-pointer ${className}`}>
+      <div style={{ transform: "translateZ(30px)" }}>{children}</div>
     </motion.div>
   );
 };
@@ -119,34 +106,16 @@ const TiltCard = ({ children, className, onClick }) => {
 const PriceInput = ({ category, itemKey, defaultPrice, currentPrice, onUpdate, bgInput, textMuted, isCustom, markup }) => {
   const cost = currentPrice ?? defaultPrice;
   const sellingPrice = cost + (cost * (markup / 100));
-  
   return (
     <div className={`flex justify-between items-center p-3 rounded-lg transition-colors border ${isCustom ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10' : 'border-transparent bg-gray-50 dark:bg-gray-700/50'}`}>
       <div className="flex flex-col">
         <span className="text-sm font-medium pr-2 leading-tight">{itemKey}</span>
-        {markup > 0 && (
-          <span className="text-[10px] text-green-600 dark:text-green-400 font-bold mt-0.5">
-            Sell: KSh {Math.round(sellingPrice).toLocaleString()}
-          </span>
-        )}
+        {markup > 0 && <span className="text-[10px] text-green-600 dark:text-green-400 font-bold mt-0.5">Sell: KSh {Math.round(sellingPrice).toLocaleString()}</span>}
       </div>
       <div className="flex items-center space-x-2 shrink-0">
         <span className={`text-xs ${textMuted}`}>Cost</span>
-        <input 
-          type="number" 
-          value={currentPrice ?? defaultPrice} 
-          onChange={(e) => onUpdate(category, itemKey, e.target.value)} 
-          className={`w-24 p-1.5 text-right font-mono text-sm rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${bgInput} ${isCustom ? 'border-blue-500 text-blue-600 dark:text-blue-400 font-bold' : ''}`} 
-        />
-        {isCustom && (
-          <button 
-            onClick={() => onUpdate(category, itemKey, defaultPrice)} 
-            className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors"
-            title="Reset to default"
-          >
-            <RefreshCw className="w-3 h-3" />
-          </button>
-        )}
+        <input type="number" value={currentPrice ?? defaultPrice} onChange={(e) => onUpdate(category, itemKey, e.target.value)} className={`w-24 p-1.5 text-right font-mono text-sm rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${bgInput} ${isCustom ? 'border-blue-500 text-blue-600 dark:text-blue-400 font-bold' : ''}`} />
+        {isCustom && <button onClick={() => onUpdate(category, itemKey, defaultPrice)} className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors" title="Reset to default"><RefreshCw className="w-3 h-3" /></button>}
       </div>
     </div>
   );
@@ -176,20 +145,13 @@ export default function App() {
 
   const updateData = (key, value) => setAppData(prev => ({ ...prev, [key]: value }));
 
-  useEffect(() => {
-    localStorage.setItem('cableiq_current', JSON.stringify(appData));
-  }, [appData]);
-
-  useEffect(() => {
-    localStorage.setItem('cableiq_projects', JSON.stringify(savedProjects));
-  }, [savedProjects]);
+  useEffect(() => { localStorage.setItem('cableiq_current', JSON.stringify(appData)); }, [appData]);
+  useEffect(() => { localStorage.setItem('cableiq_projects', JSON.stringify(savedProjects)); }, [savedProjects]);
 
   const businessInfo = { name: 'Ngari Tech Solutions', phone: '0711645837', mpesa: 'Paybill 400200' };
 
   const getPrice = (category, key) => {
-    if (appData.hardwarePrices?.[category]?.[key] !== undefined) {
-      return appData.hardwarePrices[category][key];
-    }
+    if (appData.hardwarePrices?.[category]?.[key] !== undefined) return appData.hardwarePrices[category][key];
     return CATALOG[category][key].price ?? CATALOG[category][key];
   };
 
@@ -200,8 +162,6 @@ export default function App() {
   };
 
   const selectedCameraKey = `${appData.systemType === 'Analog' ? 'analog' : 'ip'}${appData.cameraShape}`;
-  const selectedCamera = CATALOG.cameras[selectedCameraKey];
-
   const isLight = theme === 'light';
   const isDark = theme === 'dark';
   const isBlack = theme === 'black';
@@ -255,9 +215,7 @@ export default function App() {
     updateData('rackItems', [...appData.rackItems, { id: Date.now(), type }]);
   };
 
-  const removeRackItem = (id) => {
-    updateData('rackItems', appData.rackItems.filter(item => item.id !== id));
-  };
+  const removeRackItem = (id) => updateData('rackItems', appData.rackItems.filter(item => item.id !== id));
 
   const copyMpesa = () => {
     navigator.clipboard.writeText(businessInfo.mpesa);
@@ -272,32 +230,17 @@ export default function App() {
     alert("Project Saved Successfully!");
   };
 
-  const handleLoadProject = (project) => {
-    setAppData({ ...defaultState, ...project.data });
-    setCurrentView('cctv-planner');
-  };
-
-  const handleDeleteProject = (id, e) => {
-    e.stopPropagation();
-    if (window.confirm("Delete this project?")) setSavedProjects(savedProjects.filter(p => p.id !== id));
-  };
-
-  const handleNewProject = () => {
-    if (window.confirm("Start a new blank project? Unsaved changes will be lost.")) {
-      setAppData(defaultState);
-      setCurrentView('cctv-planner');
-    }
-  };
+  const handleLoadProject = (project) => { setAppData({ ...defaultState, ...project.data }); setCurrentView('cctv-planner'); };
+  const handleDeleteProject = (id, e) => { e.stopPropagation(); if (window.confirm("Delete this project?")) setSavedProjects(savedProjects.filter(p => p.id !== id)); };
+  const handleNewProject = () => { if (window.confirm("Start a new blank project? Unsaved changes will be lost.")) { setAppData(defaultState); setCurrentView('cctv-planner'); } };
 
   const handleShareWhatsApp = async () => {
     setIsSharing(true);
     const element = document.getElementById('pdf-cctv-container');
-    
     try {
       const pdfBlob = await html2pdf().set({ margin: 0.5, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } }).from(element).outputPdf('blob');
       const fileName = `Quote_${appData.clientName || 'Client'}.pdf`;
       const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ files: [file], title: 'CCTV Quotation', text: `Hello ${appData.clientName}, here is your quotation.` });
       } else {
@@ -307,12 +250,7 @@ export default function App() {
         if (phoneStr.startsWith('0')) phoneStr = '254' + phoneStr.slice(1);
         window.open(`https://wa.me/${phoneStr}?text=${encodeURIComponent(`Hello ${appData.clientName}, here is your quotation.`)}`, '_blank');
       }
-    } catch (error) {
-      console.error("Error sharing PDF:", error);
-      alert("Could not share PDF.");
-    } finally {
-      setIsSharing(false);
-    }
+    } catch (error) { console.error(error); alert("Could not share PDF."); } finally { setIsSharing(false); }
   };
 
   const toggleChecklistItem = (id) => {
@@ -322,65 +260,72 @@ export default function App() {
 
   const checklistProgress = Math.round((appData.checklist.filter(c => c.completed).length / appData.checklist.length) * 100) || 0;
 
-  // Subnet Calculator Logic
   const calculateSubnet = (ipStr, cidrStr) => {
     const cidr = parseInt(cidrStr, 10);
     if (isNaN(cidr) || cidr < 0 || cidr > 32) return null;
-    
     const ipParts = ipStr.split('.').map(Number);
     if (ipParts.length !== 4 || ipParts.some(isNaN) || ipParts.some(p => p < 0 || p > 255)) return null;
-    
     const ipInt = (ipParts[0] << 24) | (ipParts[1] << 16) | (ipParts[2] << 8) | ipParts[3];
     const maskInt = cidr === 0 ? 0 : (0xFFFFFFFF << (32 - cidr)) >>> 0;
-    
     const network = (ipInt & maskInt) >>> 0;
     const broadcast = (network | (~maskInt)) >>> 0;
-    
-    const intToIp = (int) => {
-      return [ (int >>> 24) & 255, (int >>> 16) & 255, (int >>> 8) & 255, int & 255 ].join('.');
-    };
-    
+    const intToIp = (int) => [ (int >>> 24) & 255, (int >>> 16) & 255, (int >>> 8) & 255, int & 255 ].join('.');
     const totalHosts = Math.pow(2, (32 - cidr));
     const usableHosts = totalHosts > 2 ? totalHosts - 2 : 0;
-    
-    return {
-      network: intToIp(network),
-      broadcast: intToIp(broadcast),
-      firstIp: totalHosts > 2 ? intToIp(network + 1) : 'N/A',
-      lastIp: totalHosts > 2 ? intToIp(broadcast - 1) : 'N/A',
-      mask: intToIp(maskInt),
-      usableHosts
-    };
+    return { network: intToIp(network), broadcast: intToIp(broadcast), firstIp: totalHosts > 2 ? intToIp(network + 1) : 'N/A', lastIp: totalHosts > 2 ? intToIp(broadcast - 1) : 'N/A', mask: intToIp(maskInt), usableHosts };
   };
-  
   const subnetResult = calculateSubnet(appData.subnetIp || '192.168.1.10', appData.subnetCidr ?? 24);
 
-  const pageVariants = {
-    initial: { opacity: 0, rotateY: -20, scale: 0.95 },
-    animate: { opacity: 1, rotateY: 0, scale: 1, transition: { type: 'spring', stiffness: 100, damping: 20 } },
-    exit: { opacity: 0, rotateY: 20, scale: 0.95, transition: { duration: 0.2 } }
+  // Ohm's Law Logic
+  const updateOhm = (field, value) => {
+    let data = { ...appData.ohmData, [field]: value };
+    const numV = parseFloat(data.v), numI = parseFloat(data.i), numR = parseFloat(data.r), numP = parseFloat(data.p);
+    
+    if (field === 'v' && !isNaN(numI)) { data.r = (numV / numI).toFixed(2); data.p = (numV * numI).toFixed(2); }
+    else if (field === 'v' && !isNaN(numR)) { data.i = (numV / numR).toFixed(2); data.p = (numV * data.i).toFixed(2); }
+    else if (field === 'i' && !isNaN(numV)) { data.r = (numV / numI).toFixed(2); data.p = (numV * numI).toFixed(2); }
+    else if (field === 'i' && !isNaN(numR)) { data.v = (numI * numR).toFixed(2); data.p = (data.v * numI).toFixed(2); }
+    else if (field === 'r' && !isNaN(numV)) { data.i = (numV / numR).toFixed(2); data.p = (numV * data.i).toFixed(2); }
+    else if (field === 'r' && !isNaN(numI)) { data.v = (numI * numR).toFixed(2); data.p = (data.v * numI).toFixed(2); }
+    else if (field === 'p' && !isNaN(numV)) { data.i = (numP / numV).toFixed(2); data.r = (numV / data.i).toFixed(2); }
+    else if (field === 'p' && !isNaN(numI)) { data.v = (numP / numI).toFixed(2); data.r = (data.v / numI).toFixed(2); }
+    
+    updateData('ohmData', data);
   };
 
-  const modalVariants = {
-    hidden: { opacity: 0, rotateX: 90, scale: 0.8 },
-    visible: { opacity: 1, rotateX: 0, scale: 1, transition: { type: 'spring', damping: 20, stiffness: 200 } },
-    exit: { opacity: 0, rotateX: -90, scale: 0.8, transition: { duration: 0.2 } }
-  };
+  // Fiber Loss Logic (Standard SMF 1310nm: 0.35dB/km, 0.3dB/connector, 0.1dB/splice)
+  const fiberLoss = ((appData.fiberData?.length || 0) * 0.35) + ((appData.fiberData?.connectors || 0) * 0.3) + ((appData.fiberData?.splices || 0) * 0.1);
+
+  // Pinout Data
+  const pinoutT568B = [
+    { p: 1, c: 'Orange/White', bg: 'bg-orange-200', text: 'text-orange-900' },
+    { p: 2, c: 'Orange', bg: 'bg-orange-500', text: 'text-white' },
+    { p: 3, c: 'Green/White', bg: 'bg-green-200', text: 'text-green-900' },
+    { p: 4, c: 'Blue', bg: 'bg-blue-500', text: 'text-white' },
+    { p: 5, c: 'Blue/White', bg: 'bg-blue-200', text: 'text-blue-900' },
+    { p: 6, c: 'Green', bg: 'bg-green-500', text: 'text-white' },
+    { p: 7, c: 'Brown/White', bg: 'bg-amber-800', text: 'text-white' },
+    { p: 8, c: 'Brown', bg: 'bg-amber-900', text: 'text-white' }
+  ];
+  const pinoutT568A = [
+    { p: 1, c: 'Green/White', bg: 'bg-green-200', text: 'text-green-900' },
+    { p: 2, c: 'Green', bg: 'bg-green-500', text: 'text-white' },
+    { p: 3, c: 'Orange/White', bg: 'bg-orange-200', text: 'text-orange-900' },
+    { p: 4, c: 'Blue', bg: 'bg-blue-500', text: 'text-white' },
+    { p: 5, c: 'Blue/White', bg: 'bg-blue-200', text: 'text-blue-900' },
+    { p: 6, c: 'Orange', bg: 'bg-orange-500', text: 'text-white' },
+    { p: 7, c: 'Brown/White', bg: 'bg-amber-800', text: 'text-white' },
+    { p: 8, c: 'Brown', bg: 'bg-amber-900', text: 'text-white' }
+  ];
+
+  const pageVariants = { initial: { opacity: 0, rotateY: -20, scale: 0.95 }, animate: { opacity: 1, rotateY: 0, scale: 1, transition: { type: 'spring', stiffness: 100, damping: 20 } }, exit: { opacity: 0, rotateY: 20, scale: 0.95, transition: { duration: 0.2 } } };
+  const modalVariants = { hidden: { opacity: 0, rotateX: 90, scale: 0.8 }, visible: { opacity: 1, rotateX: 0, scale: 1, transition: { type: 'spring', damping: 20, stiffness: 200 } }, exit: { opacity: 0, rotateX: -90, scale: 0.8, transition: { duration: 0.2 } } };
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${bgMain} ${textMain} relative overflow-hidden`} style={{ perspective: '1200px' }}>
       
       <div className="fixed inset-0 z-0 pointer-events-none" style={{ perspective: '1000px', transformStyle: 'preserve-3d' }}>
-        <motion.div
-          animate={{ backgroundPosition: ["0px 0px", "0px 40px"] }}
-          transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-          className="absolute inset-0 w-[200%] h-[200%] -left-1/2 -top-1/2 opacity-[0.03] dark:opacity-[0.05]"
-          style={{
-            backgroundImage: `linear-gradient(#3b82f6 1px, transparent 1px), linear-gradient(90deg, #3b82f6 1px, transparent 1px)`,
-            backgroundSize: '40px 40px',
-            transform: 'rotateX(60deg) translateY(-10%)',
-          }}
-        />
+        <motion.div animate={{ backgroundPosition: ["0px 0px", "0px 40px"] }} transition={{ repeat: Infinity, duration: 2, ease: "linear" }} className="absolute inset-0 w-[200%] h-[200%] -left-1/2 -top-1/2 opacity-[0.03] dark:opacity-[0.05]" style={{ backgroundImage: `linear-gradient(#3b82f6 1px, transparent 1px), linear-gradient(90deg, #3b82f6 1px, transparent 1px)`, backgroundSize: '40px 40px', transform: 'rotateX(60deg) translateY(-10%)' }} />
       </div>
 
       <header className={`sticky top-0 z-50 border-b backdrop-blur-md ${isLight ? 'bg-white/80 border-gray-200' : isDark ? 'bg-gray-900/80 border-gray-800' : 'bg-black/80 border-[#222]'}`}>
@@ -399,7 +344,6 @@ export default function App() {
             <motion.button whileHover={{ scale: 1.05, rotateX: 10, rotateY: 10, boxShadow: "0px 10px 20px rgba(34,197,94,0.3)" }} whileTap={{ scale: 0.95 }} onClick={handleNewProject} className={`px-3 py-2 rounded-xl flex items-center space-x-2 text-sm font-bold bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 transition-all`}>
               <Plus className="w-4 h-4" /> <span className="hidden sm:inline">New</span>
             </motion.button>
-            
             <motion.button whileHover={{ scale: 1.1, rotateY: -15 }} whileTap={{ scale: 0.9 }} onClick={() => setCurrentView('welcome')} className={`px-4 py-2 rounded-xl ${bgButton} transition-all`}><HomeIcon className="w-5 h-5" /></motion.button>
             
             <div className="relative">
@@ -459,7 +403,7 @@ export default function App() {
               <TiltCard onClick={() => setCurrentView('tools')} className={`p-4 border shadow-sm hover:shadow-2xl ${bgCard}`}>
                 <Wrench className="w-8 h-8 text-green-500 mb-3" />
                 <h3 className="text-lg font-bold mb-1">Engineer Tools</h3>
-                <p className={`text-xs ${textMuted}`}>Fuel, Storage, Cable Guide.</p>
+                <p className={`text-xs ${textMuted}`}>Calculators, pinouts & guides.</p>
               </TiltCard>
               <TiltCard onClick={() => setCurrentView('upsell')} className={`p-4 border shadow-sm hover:shadow-2xl ${bgCard}`}>
                 <Star className="w-8 h-8 text-purple-500 mb-3" />
@@ -492,12 +436,7 @@ export default function App() {
                   <span className="font-bold text-blue-600 dark:text-blue-400">{checklistProgress}%</span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
-                  <motion.div 
-                    initial={{ width: 0 }} 
-                    animate={{ width: `${checklistProgress}%` }} 
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                    className={`h-full rounded-full ${checklistProgress === 100 ? 'bg-green-500' : 'bg-blue-500'}`}
-                  />
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${checklistProgress}%` }} transition={{ duration: 0.5, ease: "easeOut" }} className={`h-full rounded-full ${checklistProgress === 100 ? 'bg-green-500' : 'bg-blue-500'}`} />
                 </div>
               </div>
 
@@ -507,20 +446,11 @@ export default function App() {
                     <h3 className="text-lg font-bold mb-4 border-b pb-2 dark:border-gray-700">{category}</h3>
                     <div className="space-y-3">
                       {appData.checklist.filter(item => item.category === category).map(item => (
-                        <div 
-                          key={item.id} 
-                          onClick={() => toggleChecklistItem(item.id)}
-                          className="flex items-start space-x-3 cursor-pointer group"
-                        >
+                        <div key={item.id} onClick={() => toggleChecklistItem(item.id)} className="flex items-start space-x-3 cursor-pointer group">
                           <button className="mt-0.5 shrink-0 transition-colors">
-                            {item.completed 
-                              ? <CheckCircle2 className="w-5 h-5 text-green-500" /> 
-                              : <Circle className="w-5 h-5 text-gray-400 group-hover:text-blue-500" />
-                            }
+                            {item.completed ? <CheckCircle2 className="w-5 h-5 text-green-500" /> : <Circle className="w-5 h-5 text-gray-400 group-hover:text-blue-500" />}
                           </button>
-                          <span className={`text-sm ${item.completed ? 'line-through text-gray-400' : ''}`}>
-                            {item.text}
-                          </span>
+                          <span className={`text-sm ${item.completed ? 'line-through text-gray-400' : ''}`}>{item.text}</span>
                         </div>
                       ))}
                     </div>
@@ -531,23 +461,10 @@ export default function App() {
               <div className={`p-6 rounded-xl border ${bgCard}`}>
                 <h3 className="text-lg font-bold mb-4">Client Sign-off</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <label className="text-xs mb-1 font-bold">Client Name</label>
-                    <input type="text" placeholder="John Doe" value={appData.clientSignoff.name} onChange={e => updateData('clientSignoff', { ...appData.clientSignoff, name: e.target.value })} className={`w-full p-2 rounded border ${bgInput}`} />
-                  </div>
-                  <div>
-                    <label className="text-xs mb-1 font-bold">Date Signed</label>
-                    <input type="date" value={appData.clientSignoff.date} onChange={e => updateData('clientSignoff', { ...appData.clientSignoff, date: e.target.value })} className={`w-full p-2 rounded border ${bgInput}`} />
-                  </div>
+                  <div><label className="text-xs mb-1 font-bold">Client Name</label><input type="text" placeholder="John Doe" value={appData.clientSignoff.name} onChange={e => updateData('clientSignoff', { ...appData.clientSignoff, name: e.target.value })} className={`w-full p-2 rounded border ${bgInput}`} /></div>
+                  <div><label className="text-xs mb-1 font-bold">Date Signed</label><input type="date" value={appData.clientSignoff.date} onChange={e => updateData('clientSignoff', { ...appData.clientSignoff, date: e.target.value })} className={`w-full p-2 rounded border ${bgInput}`} /></div>
                 </div>
-                <motion.button 
-                  whileTap={{ scale: 0.95 }} 
-                  onClick={() => {
-                    if(checklistProgress < 100) return alert("Please complete all tasks before printing the handover certificate.");
-                    window.print();
-                  }} 
-                  className={`w-full py-3 font-bold rounded-lg flex items-center justify-center space-x-2 ${checklistProgress === 100 ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'}`}
-                >
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => { if(checklistProgress < 100) return alert("Please complete all tasks before printing the handover certificate."); window.print(); }} className={`w-full py-3 font-bold rounded-lg flex items-center justify-center space-x-2 ${checklistProgress === 100 ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'}`}>
                   <Printer className="w-5 h-5" /> <span>Print Handover Certificate</span>
                 </motion.button>
               </div>
@@ -568,21 +485,14 @@ export default function App() {
 
               <div className={`p-4 rounded-xl border flex items-center justify-between ${bgCard} bg-blue-50/50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800`}>
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
-                    <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                  </div>
+                  <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg"><TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" /></div>
                   <div>
                     <h3 className="font-bold text-sm">Profit Margin / Markup</h3>
                     <p className={`text-xs ${textMuted}`}>Applied to calculate recommended selling prices.</p>
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <input 
-                    type="number" 
-                    value={appData.markupPercent ?? 20} 
-                    onChange={(e) => updateData('markupPercent', Number(e.target.value))} 
-                    className={`w-20 p-2 text-right font-bold text-lg rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 ${bgInput}`} 
-                  />
+                  <input type="number" value={appData.markupPercent ?? 20} onChange={(e) => updateData('markupPercent', Number(e.target.value))} className={`w-20 p-2 text-right font-bold text-lg rounded border focus:outline-none focus:ring-2 focus:ring-blue-500 ${bgInput}`} />
                   <span className="font-bold text-lg">%</span>
                 </div>
               </div>
@@ -601,28 +511,14 @@ export default function App() {
                           const isCustom = appData.hardwarePrices?.[categoryName]?.[key] !== undefined;
                           const defaultPrice = typeof item === 'object' ? item.price : item;
                           const itemName = typeof item === 'object' ? item.name : key.replace(/([A-Z])/g, ' $1').trim();
-                          
                           return (
-                            <PriceInput 
-                              key={key}
-                              category={categoryName}
-                              itemKey={itemName}
-                              defaultPrice={defaultPrice}
-                              currentPrice={appData.hardwarePrices?.[categoryName]?.[key]}
-                              markup={appData.markupPercent ?? 20}
-                              onUpdate={(cat, k, val) => {
+                            <PriceInput key={key} category={categoryName} itemKey={itemName} defaultPrice={defaultPrice} currentPrice={appData.hardwarePrices?.[categoryName]?.[key]} markup={appData.markupPercent ?? 20} onUpdate={(cat, k, val) => {
                                 if (Number(val) === defaultPrice) {
                                   const newPrices = { ...appData.hardwarePrices };
                                   if (newPrices[cat]) delete newPrices[cat][k];
                                   updateData('hardwarePrices', newPrices);
-                                } else {
-                                  updatePrice(cat, k, val);
-                                }
-                              }}
-                              bgInput={bgInput}
-                              textMuted={textMuted}
-                              isCustom={isCustom}
-                            />
+                                } else { updatePrice(cat, k, val); }
+                              }} bgInput={bgInput} textMuted={textMuted} isCustom={isCustom} />
                           );
                         })}
                       </div>
@@ -636,10 +532,7 @@ export default function App() {
           {currentView === 'rack-builder' && (
             <motion.div key="rack" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="max-w-5xl mx-auto space-y-6">
               <div className="flex justify-between items-center mb-8">
-                <div>
-                  <h2 className="text-2xl font-bold">Server Rack Builder</h2>
-                  <p className={textMuted}>Click to add, then drag items up/down to re-arrange.</p>
-                </div>
+                <div><h2 className="text-2xl font-bold">Server Rack Builder</h2><p className={textMuted}>Click to add, then drag items up/down to re-arrange.</p></div>
                 <motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('welcome')} className={`px-4 py-2 font-bold rounded-lg ${bgButton}`}>Back</motion.button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -647,10 +540,7 @@ export default function App() {
                   <h3 className="font-bold text-lg">Available Equipment</h3>
                   {Object.entries(RACK_EQUIPMENT).map(([key, item]) => (
                     <motion.button whileHover={{ x: 5, scale: 1.02 }} whileTap={{ scale: 0.98 }} key={key} onClick={() => addRackItem(key)} className={`w-full flex items-center justify-between p-3 rounded-lg border shadow-sm hover:shadow-md transition-all ${bgCard}`}>
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-4 h-4 rounded-full ${item.color}`}></div>
-                        <span className="font-medium text-sm">{item.name} ({item.size}U)</span>
-                      </div>
+                      <div className="flex items-center space-x-3"><div className={`w-4 h-4 rounded-full ${item.color}`}></div><span className="font-medium text-sm">{item.name} ({item.size}U)</span></div>
                       <Plus className="w-4 h-4 text-gray-400" />
                     </motion.button>
                   ))}
@@ -661,14 +551,7 @@ export default function App() {
                       <h3 className="font-bold">Your Rack Layout</h3>
                       <div className="text-sm font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full">{rackRemainingU}U Available</div>
                     </div>
-                    
-                    <motion.div 
-                      initial={{ rotateX: 25, rotateY: -15, rotateZ: 5 }}
-                      whileHover={{ rotateX: 0, rotateY: 0, rotateZ: 0, scale: 1.02 }}
-                      transition={{ type: "spring", stiffness: 100, damping: 20 }}
-                      className="relative w-full max-w-sm mx-auto bg-gray-900 border-4 border-gray-700 rounded-lg shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] p-2" 
-                      style={{ minHeight: '400px', transformStyle: 'preserve-3d', perspective: 1000 }}
-                    >
+                    <motion.div initial={{ rotateX: 25, rotateY: -15, rotateZ: 5 }} whileHover={{ rotateX: 0, rotateY: 0, rotateZ: 0, scale: 1.02 }} transition={{ type: "spring", stiffness: 100, damping: 20 }} className="relative w-full max-w-sm mx-auto bg-gray-900 border-4 border-gray-700 rounded-lg shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] p-2" style={{ minHeight: '400px', transformStyle: 'preserve-3d', perspective: 1000 }}>
                       {appData.rackItems.length === 0 ? (
                         <div className="flex items-center justify-center h-full text-gray-500 text-sm italic py-20">Click equipment on the left to add it.</div>
                       ) : (
@@ -676,28 +559,16 @@ export default function App() {
                           {appData.rackItems.map((item) => {
                             const eq = RACK_EQUIPMENT[item.type];
                             return (
-                              <Reorder.Item 
-                                key={item.id} 
-                                value={item} 
-                                whileDrag={{ scale: 1.1, rotateX: 10, zIndex: 50, boxShadow: "0px 20px 30px rgba(0,0,0,0.6)", backgroundColor: "#374151" }}
-                                className={`relative w-full ${eq.color} border-b border-gray-800 flex items-center justify-between px-3 text-white font-bold text-sm shadow-inner cursor-grab active:cursor-grabbing`}
-                                style={{ height: `${eq.size * 40}px`, listStyle: 'none' }}
-                              >
-                                <div className="flex items-center space-x-2">
-                                  <GripVertical className="w-4 h-4 opacity-50" />
-                                  <span>{eq.name}</span>
-                                </div>
+                              <Reorder.Item key={item.id} value={item} whileDrag={{ scale: 1.1, rotateX: 10, zIndex: 50, boxShadow: "0px 20px 30px rgba(0,0,0,0.6)", backgroundColor: "#374151" }} className={`relative w-full ${eq.color} border-b border-gray-800 flex items-center justify-between px-3 text-white font-bold text-sm shadow-inner cursor-grab active:cursor-grabbing`} style={{ height: `${eq.size * 40}px`, listStyle: 'none' }}>
+                                <div className="flex items-center space-x-2"><GripVertical className="w-4 h-4 opacity-50" /><span>{eq.name}</span></div>
                                 <button onClick={() => removeRackItem(item.id)} className="p-1 bg-black/20 rounded hover:bg-black/40"><Trash2 className="w-3 h-3 text-white" /></button>
                               </Reorder.Item>
                             );
                           })}
                         </Reorder.Group>
                       )}
-                      {rackRemainingU > 0 && (
-                        <div className="w-full border-t border-gray-700/50 border-dashed flex items-center justify-center text-gray-600 text-xs transition-all duration-500" style={{ height: `${rackRemainingU * 40}px` }}>{rackRemainingU}U Empty Space</div>
-                      )}
+                      {rackRemainingU > 0 && <div className="w-full border-t border-gray-700/50 border-dashed flex items-center justify-center text-gray-600 text-xs transition-all duration-500" style={{ height: `${rackRemainingU * 40}px` }}>{rackRemainingU}U Empty Space</div>}
                     </motion.div>
-                    
                     <div className="mt-6 flex justify-center">
                       <motion.button whileTap={{ scale: 0.95 }} onClick={() => {
                         const element = document.getElementById('pdf-rack-container');
@@ -716,13 +587,9 @@ export default function App() {
                   <div className="bg-gray-200 border-4 border-gray-400 rounded-lg p-2 mx-auto" style={{ width: '300px' }}>
                     {appData.rackItems.map((item) => {
                       const eq = RACK_EQUIPMENT[item.type];
-                      return (
-                        <div key={item.id} className={`${eq.color} border-b border-gray-400 flex items-center px-3 text-white font-bold text-sm`} style={{ height: `${eq.size * 30}px` }}>{eq.name}</div>
-                      );
+                      return <div key={item.id} className={`${eq.color} border-b border-gray-400 flex items-center px-3 text-white font-bold text-sm`} style={{ height: `${eq.size * 30}px` }}>{eq.name}</div>;
                     })}
-                    {rackRemainingU > 0 && (
-                      <div className="border-t border-gray-400 border-dashed flex items-center justify-center text-gray-500 text-xs" style={{ height: `${rackRemainingU * 30}px` }}>{rackRemainingU}U Empty</div>
-                    )}
+                    {rackRemainingU > 0 && <div className="border-t border-gray-400 border-dashed flex items-center justify-center text-gray-500 text-xs" style={{ height: `${rackRemainingU * 30}px` }}>{rackRemainingU}U Empty</div>}
                   </div>
                   <p style={{ marginTop: '20px', fontSize: '12px', textAlign: 'center', color: '#666' }}>Generated by CableIQ - {new Date().toLocaleDateString()}</p>
                 </div>
@@ -784,15 +651,7 @@ export default function App() {
                 </div>
               ) : (
                 savedProjects.map((project, index) => (
-                  <motion.div 
-                    initial={{ opacity: 0, rotateX: 45, y: 50 }} 
-                    animate={{ opacity: 1, rotateX: 0, y: 0 }} 
-                    transition={{ type: "spring", stiffness: 100, delay: index * 0.1 }} 
-                    whileHover={{ scale: 1.02, rotateY: -5, boxShadow: "0px 20px 30px rgba(0,0,0,0.1)" }} 
-                    key={project.id} 
-                    onClick={() => handleLoadProject(project)} 
-                    className={`p-4 rounded-xl border cursor-pointer hover:border-blue-500 flex justify-between items-center ${bgCard}`}
-                  >
+                  <motion.div initial={{ opacity: 0, rotateX: 45, y: 50 }} animate={{ opacity: 1, rotateX: 0, y: 0 }} transition={{ type: "spring", stiffness: 100, delay: index * 0.1 }} whileHover={{ scale: 1.02, rotateY: -5, boxShadow: "0px 20px 30px rgba(0,0,0,0.1)" }} key={project.id} onClick={() => handleLoadProject(project)} className={`p-4 rounded-xl border cursor-pointer hover:border-blue-500 flex justify-between items-center ${bgCard}`}>
                     <div><h3 className="text-lg font-bold text-blue-600 dark:text-blue-400">{project.client}</h3><p className={`text-sm ${textMuted}`}>Date Saved: {project.date}</p></div>
                     <div className="flex items-center space-x-4">
                       <button onClick={(e) => handleDeleteProject(project.id, e)} className="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 rounded hover:bg-red-200"><Trash2 className="w-5 h-5" /></button>
@@ -809,13 +668,7 @@ export default function App() {
               <div className="text-center mb-8"><h2 className="text-3xl font-bold mb-2">Camera Quality Comparison</h2><p className={textMuted}>Click a card to flip it and see the specs.</p></div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 
-                <motion.div 
-                  onClick={() => setFlippedCard(flippedCard === 'standard' ? null : 'standard')}
-                  animate={{ rotateY: flippedCard === 'standard' ? 180 : 0 }}
-                  transition={{ duration: 0.6, type: "spring" }}
-                  style={{ transformStyle: "preserve-3d", cursor: 'pointer' }}
-                  className="relative h-[400px] w-full"
-                >
+                <motion.div onClick={() => setFlippedCard(flippedCard === 'standard' ? null : 'standard')} animate={{ rotateY: flippedCard === 'standard' ? 180 : 0 }} transition={{ duration: 0.6, type: "spring" }} style={{ transformStyle: "preserve-3d", cursor: 'pointer' }} className="relative h-[400px] w-full">
                   <div className={`absolute inset-0 backface-hidden rounded-2xl border overflow-hidden ${bgCard}`} style={{ backfaceVisibility: 'hidden' }}>
                     <div className="h-64 bg-gray-300 dark:bg-gray-700 relative flex items-center justify-center">
                       <span className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm font-bold">Standard 2MP</span>
@@ -835,13 +688,7 @@ export default function App() {
                   </div>
                 </motion.div>
 
-                <motion.div 
-                  onClick={() => setFlippedCard(flippedCard === 'premium' ? null : 'premium')}
-                  animate={{ rotateY: flippedCard === 'premium' ? 180 : 0 }}
-                  transition={{ duration: 0.6, type: "spring" }}
-                  style={{ transformStyle: "preserve-3d", cursor: 'pointer' }}
-                  className="relative h-[400px] w-full"
-                >
+                <motion.div onClick={() => setFlippedCard(flippedCard === 'premium' ? null : 'premium')} animate={{ rotateY: flippedCard === 'premium' ? 180 : 0 }} transition={{ duration: 0.6, type: "spring" }} style={{ transformStyle: "preserve-3d", cursor: 'pointer' }} className="relative h-[400px] w-full">
                   <div className={`absolute inset-0 backface-hidden rounded-2xl border-2 border-purple-500 overflow-hidden shadow-lg ${bgCard}`} style={{ backfaceVisibility: 'hidden' }}>
                     <div className="h-64 bg-gray-300 relative flex items-center justify-center">
                       <span className="absolute top-4 left-4 bg-purple-600 text-white px-3 py-1 rounded-full text-sm font-bold">Premium 4K / ColorVu</span>
@@ -910,8 +757,107 @@ export default function App() {
           )}
 
           {currentView === 'tools' && (
-            <motion.div key="tools" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="space-y-6">
+            <motion.div key="tools" variants={pageVariants} initial="initial" animate="animate" exit="exit" className="space-y-6 pb-20">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h2 className="text-3xl font-extrabold tracking-tight">Engineer Tools</h2>
+                  <p className={textMuted}>Calculators, pinout guides, and field references.</p>
+                </div>
+                <motion.button whileTap={{ scale: 0.95 }} onClick={() => setCurrentView('welcome')} className={`px-4 py-2 font-bold rounded-lg ${bgButton}`}>Back</motion.button>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                {/* Ohm's Law Calculator */}
+                <motion.div whileHover={{ y: -3 }} className={`p-6 rounded-xl border ${bgCard} lg:col-span-2`}>
+                  <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Activity className="w-5 h-5 text-indigo-500" /> <span>Ohm's Law & Power Calculator</span></h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                      <label className="text-xs font-bold text-blue-600 dark:text-blue-400">Voltage (V)</label>
+                      <input type="number" value={appData.ohmData?.v || ''} onChange={e => updateOhm('v', e.target.value)} className={`w-full p-2 rounded font-mono font-bold text-lg border ${bgInput}`} placeholder="12" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-red-600 dark:text-red-400">Current (I)</label>
+                      <input type="number" value={appData.ohmData?.i || ''} onChange={e => updateOhm('i', e.target.value)} className={`w-full p-2 rounded font-mono font-bold text-lg border ${bgInput}`} placeholder="1" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-green-600 dark:text-green-400">Resistance (R)</label>
+                      <input type="number" value={appData.ohmData?.r || ''} onChange={e => updateOhm('r', e.target.value)} className={`w-full p-2 rounded font-mono font-bold text-lg border ${bgInput}`} placeholder="Ω" />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-yellow-600 dark:text-yellow-400">Power (P)</label>
+                      <input type="number" value={appData.ohmData?.p || ''} onChange={e => updateOhm('p', e.target.value)} className={`w-full p-2 rounded font-mono font-bold text-lg border ${bgInput}`} placeholder="Watts" />
+                    </div>
+                  </div>
+                  <p className={`text-xs ${textMuted}`}>Enter any 2 values to automatically calculate the other 2.</p>
+                </motion.div>
+
+                {/* T568 Pinout Guide */}
+                <motion.div whileHover={{ y: -3 }} className={`p-6 rounded-xl border ${bgCard} lg:col-span-1`}>
+                  <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><GitCommit className="w-5 h-5 text-orange-500" /> <span>RJ45 Pinout Guide</span></h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="text-xs font-bold text-center mb-2 bg-gray-200 dark:bg-gray-700 py-1 rounded">T568B</h4>
+                      <div className="space-y-1">
+                        {pinoutT568B.map(pin => (
+                          <div key={pin.p} className={`flex items-center space-x-2 text-xs p-1 rounded border border-gray-200 dark:border-gray-600`}>
+                            <span className="font-bold w-3 text-gray-500">{pin.p}</span>
+                            <div className={`w-4 h-4 rounded-full ${pin.bg} border border-black/20`}></div>
+                            <span className="truncate">{pin.c}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-center mb-2 bg-gray-200 dark:bg-gray-700 py-1 rounded">T568A</h4>
+                      <div className="space-y-1">
+                        {pinoutT568A.map(pin => (
+                          <div key={pin.p} className={`flex items-center space-x-2 text-xs p-1 rounded border border-gray-200 dark:border-gray-600`}>
+                            <span className="font-bold w-3 text-gray-500">{pin.p}</span>
+                            <div className={`w-4 h-4 rounded-full ${pin.bg} border border-black/20`}></div>
+                            <span className="truncate">{pin.c}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Fiber Optic Loss Calculator */}
+                <motion.div whileHover={{ y: -3 }} className={`p-6 rounded-xl border ${bgCard}`}>
+                  <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Scissors className="w-5 h-5 text-pink-500" /> <span>Fiber Loss Calculator</span></h3>
+                  <div className="grid grid-cols-3 gap-2 mb-4">
+                    <div><label className="text-xs">Length (km)</label><input type="number" step="0.1" value={appData.fiberData?.length || 0} onChange={e => updateData('fiberData', {...appData.fiberData, length: Number(e.target.value)})} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                    <div><label className="text-xs">Connectors</label><input type="number" value={appData.fiberData?.connectors || 0} onChange={e => updateData('fiberData', {...appData.fiberData, connectors: Number(e.target.value)})} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                    <div><label className="text-xs">Splices</label><input type="number" value={appData.fiberData?.splices || 0} onChange={e => updateData('fiberData', {...appData.fiberData, splices: Number(e.target.value)})} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                  </div>
+                  <div className={`p-4 rounded text-center ${isLight ? 'bg-pink-50' : 'bg-pink-900/20'}`}>
+                    <p className="text-xs text-gray-500 mb-1">Total Estimated Loss (1310nm SMF)</p>
+                    <p className="text-2xl font-bold text-pink-600 dark:text-pink-400">{fiberLoss.toFixed(2)} dB</p>
+                  </div>
+                </motion.div>
+
+                {/* Subnet Calculator */}
+                <motion.div whileHover={{ y: -3 }} className={`p-6 rounded-xl border ${bgCard} lg:col-span-2`}>
+                  <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Globe className="w-5 h-5 text-indigo-500" /> <span>IPv4 Subnet Calculator</span></h3>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div><label className="text-xs">IP Address</label><input type="text" value={appData.subnetIp || ''} onChange={e => updateData('subnetIp', e.target.value)} className={`w-full p-2 rounded ${bgInput}`} placeholder="192.168.1.10" /></div>
+                    <div><label className="text-xs">CIDR (0-32)</label><input type="number" min="0" max="32" value={appData.subnetCidr ?? 24} onChange={e => updateData('subnetCidr', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
+                  </div>
+                  {subnetResult ? (
+                    <div className={`p-4 rounded text-sm space-y-1 ${isLight ? 'bg-indigo-50' : 'bg-indigo-900/20'}`}>
+                      <div className="flex justify-between"><span className="text-gray-500">Mask:</span> <span className="font-mono font-bold">{subnetResult.mask}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Network:</span> <span className="font-mono font-bold">{subnetResult.network}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Range:</span> <span className="font-mono font-bold">{subnetResult.firstIp} - {subnetResult.lastIp}</span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Broadcast:</span> <span className="font-mono font-bold">{subnetResult.broadcast}</span></div>
+                      <div className="flex justify-between border-t border-indigo-200 dark:border-indigo-800 pt-1 mt-1"><span className="text-indigo-600 dark:text-indigo-400 font-bold">Usable IPs:</span> <span className="font-bold text-indigo-700 dark:text-indigo-300">{subnetResult.usableHosts.toLocaleString()}</span></div>
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-red-500 text-sm bg-red-50 dark:bg-red-900/20 rounded">Invalid IP or CIDR</div>
+                  )}
+                </motion.div>
+
+                {/* Existing Tools */}
                 <motion.div whileHover={{ y: -3 }} className={`p-6 rounded-xl border ${bgCard}`}>
                   <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Car className="w-5 h-5 text-red-500" /> <span>Fuel & Transport</span></h3>
                   <div className="grid grid-cols-2 gap-4 mb-4">
@@ -960,27 +906,9 @@ export default function App() {
                   <div className={`p-4 rounded text-center ${isLight ? 'bg-orange-50' : 'bg-orange-900/20'}`}><p className="text-2xl font-bold text-orange-600">{(12 - (appData.voltLength * appData.voltAmps * 0.0164)).toFixed(2)}V</p></div>
                 </motion.div>
 
-                {/* NEW: Subnet Calculator */}
-                <motion.div whileHover={{ y: -3 }} className={`p-6 rounded-xl border ${bgCard} md:col-span-2 lg:col-span-1`}>
-                  <h3 className="text-lg font-bold mb-4 flex items-center space-x-2"><Globe className="w-5 h-5 text-indigo-500" /> <span>Subnet Calculator</span></h3>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
-                    <div><label className="text-xs">IP Address</label><input type="text" value={appData.subnetIp || ''} onChange={e => updateData('subnetIp', e.target.value)} className={`w-full p-2 rounded ${bgInput}`} placeholder="192.168.1.10" /></div>
-                    <div><label className="text-xs">CIDR (0-32)</label><input type="number" min="0" max="32" value={appData.subnetCidr ?? 24} onChange={e => updateData('subnetCidr', Number(e.target.value))} className={`w-full p-2 rounded ${bgInput}`} /></div>
-                  </div>
-                  {subnetResult ? (
-                    <div className={`p-4 rounded text-sm space-y-1 ${isLight ? 'bg-indigo-50' : 'bg-indigo-900/20'}`}>
-                      <div className="flex justify-between"><span className="text-gray-500">Mask:</span> <span className="font-mono font-bold">{subnetResult.mask}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Network:</span> <span className="font-mono font-bold">{subnetResult.network}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Range:</span> <span className="font-mono font-bold">{subnetResult.firstIp} - {subnetResult.lastIp}</span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Broadcast:</span> <span className="font-mono font-bold">{subnetResult.broadcast}</span></div>
-                      <div className="flex justify-between border-t border-indigo-200 dark:border-indigo-800 pt-1 mt-1"><span className="text-indigo-600 dark:text-indigo-400 font-bold">Usable IPs:</span> <span className="font-bold text-indigo-700 dark:text-indigo-300">{subnetResult.usableHosts.toLocaleString()}</span></div>
-                    </div>
-                  ) : (
-                    <div className="p-4 text-center text-red-500 text-sm bg-red-50 dark:bg-red-900/20 rounded">Invalid IP or CIDR</div>
-                  )}
-                </motion.div>
-
               </div>
+
+              {/* Cable Tester Guide */}
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className={`p-6 rounded-xl border mt-6 ${bgCard}`}>
                 <h3 className="text-lg font-bold mb-6 flex items-center space-x-2"><Terminal className="w-5 h-5 text-cyan-500" /> <span>Field Cable Tester & Tracer Guide</span></h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -1078,20 +1006,7 @@ export default function App() {
                     <div className="relative h-48 bg-gray-200 dark:bg-gray-900 rounded-lg overflow-hidden border border-gray-300 dark:border-gray-700 flex items-center justify-center" style={{ perspective: '800px' }}>
                       <div className="absolute bottom-4 text-xs text-gray-500 z-10">Top-Down View</div>
                       <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-red-500 rounded-full shadow z-10" />
-                      <motion.div 
-                        animate={{ 
-                          width: appData.lensType === '2.8' ? '300px' : appData.lensType === '3.6' ? '220px' : appData.lensType === '4' ? '180px' : '120px',
-                          rotateX: 20
-                        }}
-                        transition={{ type: 'spring', stiffness: 100, damping: 20 }}
-                        className="absolute bottom-10 left-1/2 origin-bottom bg-gradient-to-t from-blue-500/60 to-transparent border-t border-l border-r border-blue-500/80"
-                        style={{
-                          height: '150px',
-                          transform: 'translateX(-50%)',
-                          clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)',
-                          filter: 'drop-shadow(0 10px 10px rgba(59, 130, 246, 0.5))'
-                        }}
-                      />
+                      <motion.div animate={{ width: appData.lensType === '2.8' ? '300px' : appData.lensType === '3.6' ? '220px' : appData.lensType === '4' ? '180px' : '120px', rotateX: 20 }} transition={{ type: 'spring', stiffness: 100, damping: 20 }} className="absolute bottom-10 left-1/2 origin-bottom bg-gradient-to-t from-blue-500/60 to-transparent border-t border-l border-r border-blue-500/80" style={{ height: '150px', transform: 'translateX(-50%)', clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)', filter: 'drop-shadow(0 10px 10px rgba(59, 130, 246, 0.5))' }} />
                     </div>
                   </div>
                 </div>
@@ -1108,11 +1023,7 @@ export default function App() {
                   <div className="flex justify-between text-red-500"><span>Transport:</span> <span>{formatKES(transportTotal)}</span></div>
                 </div>
                 
-                <motion.div
-                  animate={{ y: [0, -5, 0], boxShadow: ["0px 0px 0px rgba(0,0,0,0)", "0px 15px 20px rgba(59,130,246,0.2)", "0px 0px 0px rgba(0,0,0,0)"] }}
-                  transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-                  className="mt-4 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white"
-                >
+                <motion.div animate={{ y: [0, -5, 0], boxShadow: ["0px 0px 0px rgba(0,0,0,0)", "0px 15px 20px rgba(59,130,246,0.2)", "0px 0px 0px rgba(0,0,0,0)"] }} transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }} className="mt-4 p-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
                   <p className="text-sm opacity-80">Total</p>
                   <p className="text-3xl font-bold">{formatKES(totalCCTV)}</p>
                 </motion.div>
